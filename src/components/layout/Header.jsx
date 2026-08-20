@@ -1,4 +1,11 @@
+import { supabase } from "../../lib/supabase";
+import "./Header.css";
+
 function Header() {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <header className="header">
       <div className="header-title">
@@ -15,6 +22,14 @@ function Header() {
           <strong>Usuario</strong>
           <span>Administrador</span>
         </div>
+
+        <button
+          className="logout-button"
+          onClick={handleLogout}
+          type="button"
+        >
+          Cerrar sesión
+        </button>
       </div>
     </header>
   );
