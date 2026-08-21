@@ -1,10 +1,16 @@
-import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
+
 import "./Header.css";
 
 function Header() {
+  const { user, logout } = useAuth();
+
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await logout();
   };
+
+  const email = user?.email || "Usuario";
+  const inicial = email.charAt(0).toUpperCase();
 
   return (
     <header className="header">
@@ -16,11 +22,13 @@ function Header() {
       </div>
 
       <div className="header-user">
-        <div className="user-avatar">G</div>
+        <div className="user-avatar">
+          {inicial}
+        </div>
 
         <div className="user-info">
           <strong>Usuario</strong>
-          <span>Administrador</span>
+          <span>{email}</span>
         </div>
 
         <button
