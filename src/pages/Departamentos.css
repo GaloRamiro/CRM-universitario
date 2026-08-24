@@ -1,0 +1,346 @@
+
+.departamentos-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.departamentos-header {
+  margin-bottom: 24px;
+}
+
+.departamentos-header h1 {
+  margin: 6px 0 8px;
+  font-size: 32px;
+  line-height: 1.2;
+  color: #10233f;
+}
+
+.departamentos-header p {
+  margin: 0;
+  color: #71809a;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* CARD PRINCIPAL */
+
+.departamentos-card,
+.departamentos-lista {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e1e7ef;
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(16, 35, 63, 0.06);
+  overflow: hidden;
+}
+
+.departamentos-card {
+  margin-bottom: 24px;
+}
+
+.departamentos-section {
+  padding: 28px 30px;
+  box-sizing: border-box;
+}
+
+.departamentos-section h2,
+.departamentos-lista-header h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  line-height: 1.3;
+  color: #10233f;
+}
+
+.departamentos-section > p,
+.departamentos-lista-header p {
+  margin: 0 0 22px;
+  color: #71809a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* FORMULARIO */
+
+.departamentos-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.departamentos-form-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.departamentos-form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #243b5a;
+}
+
+.departamentos-form-group input,
+.departamentos-form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d5deea;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #172033;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.departamentos-form-group input {
+  min-height: 48px;
+  padding: 0 15px;
+}
+
+.departamentos-form-group textarea {
+  min-height: 110px;
+  padding: 14px 15px;
+  resize: vertical;
+}
+
+.departamentos-form-group input::placeholder,
+.departamentos-form-group textarea::placeholder {
+  color: #a1aec0;
+}
+
+.departamentos-form-group input:focus,
+.departamentos-form-group textarea:focus {
+  border-color: #074a7b;
+  box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.1);
+}
+
+/* MENSAJES */
+
+.departamentos-mensaje,
+.departamentos-error {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 15px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.departamentos-mensaje {
+  background: #eaf7f0;
+  border: 1px solid #c9ead8;
+  color: #167044;
+}
+
+.departamentos-error {
+  background: #fff0f0;
+  border: 1px solid #f1cccc;
+  color: #b42323;
+}
+
+/* BOTÓN */
+
+.departamentos-form-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.departamentos-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid #074a7b;
+  border-radius: 10px;
+  background: #074a7b;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.departamentos-btn:hover {
+  background: #063f69;
+  transform: translateY(-1px);
+}
+
+.departamentos-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* LISTADO */
+
+.departamentos-lista-header {
+  padding: 28px 30px 20px;
+  box-sizing: border-box;
+}
+
+.departamentos-lista-header p {
+  margin-bottom: 0;
+}
+
+.departamentos-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.departamentos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.departamentos-table th,
+.departamentos-table td {
+  padding: 15px 30px;
+  text-align: left;
+  border-top: 1px solid #e8edf3;
+}
+
+.departamentos-table th {
+  background: #fafbfd;
+  color: #425675;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.departamentos-table td {
+  color: #243b5a;
+  font-size: 14px;
+}
+
+.departamentos-vacio {
+  padding: 30px;
+  color: #71809a;
+  font-size: 14px;
+}
+
+/* TABLET */
+
+@media (max-width: 800px) {
+  .departamentos-page {
+    padding: 20px;
+  }
+
+  .departamentos-header h1 {
+    font-size: 28px;
+  }
+
+  .departamentos-section {
+    padding: 24px;
+  }
+
+  .departamentos-lista-header {
+    padding: 24px 24px 18px;
+  }
+
+  .departamentos-table th,
+  .departamentos-table td {
+    padding: 14px 20px;
+  }
+}
+
+/* MÓVIL */
+
+@media (max-width: 520px) {
+  .departamentos-page {
+    padding: 15px;
+  }
+
+  .departamentos-header {
+    margin-bottom: 18px;
+  }
+
+  .departamentos-header h1 {
+    font-size: 26px;
+    line-height: 1.2;
+  }
+
+  .departamentos-header p {
+    font-size: 14px;
+  }
+
+  .departamentos-card,
+  .departamentos-lista {
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+
+  .departamentos-section {
+    padding: 20px 15px;
+  }
+
+  .departamentos-section h2,
+  .departamentos-lista-header h2 {
+    font-size: 18px;
+  }
+
+  .departamentos-section > p,
+  .departamentos-lista-header p {
+    line-height: 1.5;
+  }
+
+  .departamentos-form {
+    gap: 15px;
+  }
+
+  .departamentos-form-group {
+    gap: 7px;
+  }
+
+  .departamentos-form-group input {
+    min-height: 46px;
+    padding: 0 13px;
+  }
+
+  .departamentos-form-group textarea {
+    min-height: 100px;
+    padding: 12px 13px;
+  }
+
+  .departamentos-form-actions {
+    margin-top: 3px;
+  }
+
+  .departamentos-btn {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .departamentos-mensaje,
+  .departamentos-error {
+    font-size: 13px;
+  }
+
+  .departamentos-lista-header {
+    padding: 20px 15px 16px;
+  }
+
+  .departamentos-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .departamentos-table {
+    min-width: 600px;
+  }
+
+  .departamentos-table th,
+  .departamentos-table td {
+    padding: 13px 15px;
+    white-space: nowrap;
+  }
+
+  .departamentos-vacio {
+    padding: 20px 15px;
+  }
+}

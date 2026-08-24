@@ -1,0 +1,251 @@
+/* =========================================================
+   NUEVA TAREA - CRM
+   ========================================================= */
+
+.nueva-tarea-page {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px;
+  box-sizing: border-box;
+  color: #172033;
+}
+
+.nueva-tarea-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.nueva-tarea-header .eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #075487;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.nueva-tarea-header h1 {
+  margin: 0 0 7px;
+  color: #10233f;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.nueva-tarea-header p {
+  margin: 0;
+  color: #71809a;
+  font-size: 14px;
+}
+
+.nueva-tarea-card {
+  overflow: hidden;
+  margin-bottom: 20px;
+  background: #fff;
+  border: 1px solid #dfe6ef;
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(16, 35, 63, 0.07);
+}
+
+.nueva-tarea-section {
+  padding: 26px 28px;
+}
+
+.nueva-tarea-section + .nueva-tarea-section {
+  border-top: 1px solid #e8edf3;
+}
+
+.nueva-tarea-section h2 {
+  margin: 0 0 5px;
+  color: #10233f;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.nueva-tarea-section > p {
+  margin: 0 0 22px;
+  color: #71809a;
+  font-size: 13px;
+}
+
+.nueva-tarea-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.nueva-tarea-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.nueva-tarea-group label {
+  color: #243b5a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nueva-tarea-group input,
+.nueva-tarea-group textarea,
+.nueva-tarea-group select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 13px;
+  box-sizing: border-box;
+  border: 1px solid #d5deea;
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  color: #172033;
+  font-family: inherit;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.nueva-tarea-group textarea {
+  min-height: 110px;
+  padding: 13px;
+  resize: vertical;
+}
+
+.nueva-tarea-group input:focus,
+.nueva-tarea-group textarea:focus,
+.nueva-tarea-group select:focus {
+  border-color: #074a7b;
+  box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.1);
+}
+
+.nueva-tarea-group input::placeholder,
+.nueva-tarea-group textarea::placeholder {
+  color: #a1aec0;
+}
+
+/* GRID FECHAS */
+
+.nueva-tarea-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.nueva-tarea-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* BOTONES */
+
+.nueva-tarea-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 20px 28px;
+  background: #f8fafc;
+  border-top: 1px solid #e7edf4;
+}
+
+.nueva-tarea-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.nueva-tarea-btn-cancelar {
+  border: 1px solid #d5deea;
+  background: #fff;
+  color: #53667e;
+}
+
+.nueva-tarea-btn-cancelar:hover {
+  background: #f3f6f9;
+}
+
+.nueva-tarea-btn-guardar {
+  border: 1px solid #074a7b;
+  background: #074a7b;
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(7, 74, 123, 0.16);
+}
+
+.nueva-tarea-btn-guardar:hover {
+  background: #063e67;
+  transform: translateY(-1px);
+}
+
+/* MENSAJES */
+
+.nueva-tarea-mensaje {
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: #eaf7f0;
+  border: 1px solid #c9ead8;
+  color: #167044;
+  font-size: 13px;
+}
+
+.nueva-tarea-error {
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: #fff0f0;
+  border: 1px solid #f1cccc;
+  color: #b42323;
+  font-size: 13px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 800px) {
+  .nueva-tarea-page {
+    padding: 24px;
+  }
+
+  .nueva-tarea-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nueva-tarea-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .nueva-tarea-page {
+    padding: 15px;
+  }
+
+  .nueva-tarea-header h1 {
+    font-size: 27px;
+  }
+
+  .nueva-tarea-card {
+    border-radius: 15px;
+  }
+
+  .nueva-tarea-section {
+    padding: 20px 15px;
+  }
+
+  .nueva-tarea-grid,
+  .nueva-tarea-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .nueva-tarea-actions {
+    flex-direction: column-reverse;
+    padding: 15px;
+  }
+
+  .nueva-tarea-btn {
+    width: 100%;
+  }
+}

@@ -58,14 +58,38 @@ function NuevoUsuario() {
     setCargando(true);
 
     try {
-      // Por ahora validamos y dejamos listo el formulario.
-      // La creación real de auth.users se hará mediante Edge Function
-      // para no cerrar la sesión del administrador.
       if (formulario.password.length < 6) {
         throw new Error("La contraseña debe tener al menos 6 caracteres.");
       }
 
-      setMensaje("Formulario validado correctamente. La creación segura de la cuenta será el siguiente paso.");
+      const { data, error: functionError } = await supabase.functions.invoke(
+        "crear-usuario",
+        {
+          body: {
+            nombre: formulario.nombre.trim(),
+            apellido: formulario.apellido.trim(),
+            email: formulario.email.trim().toLowerCase(),
+            password: formulario.password,
+            rol: formulario.rol,
+            departamento_id: formulario.departamento_id || null,
+            activo: formulario.activo,
+          },
+        }
+      );
+
+      if (functionError) {
+        throw new Error(functionError.message || "No se pudo crear el usuario.");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      setMensaje("Usuario creado correctamente. Regresando a usuarios...");
+
+      setTimeout(() => {
+        navigate("/usuarios");
+      }, 1000);
     } catch (err) {
       setError(err.message || "No se pudo procesar el formulario.");
     } finally {

@@ -1,13 +1,481 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import "./NuevaTarea.css";
+
 function NuevaTarea() {
+  const navigate = useNavigate();
+
+  const [formulario, setFormulario] = useState({
+    titulo: "",
+    descripcion: "",
+    fecha_inicio: "",
+    fecha_fin: "",
+    hora_inicio: "",
+    hora_fin: "",
+    prioridad: "media",
+    estado: "pendiente",
+    responsable_id: "",
+  });
+
+  const [usuarios, setUsuarios] = useState([]);
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const cargarUsuarios = async () => {
+      setCargandoUsuarios(true);
+
+      const { data, error } = await supabase
+        .from("usuarios")
+        .select("id, nombre, apellido, email")
+        .eq("activo", true)
+        .order("nombre");
+
+      if (error) {
+        console.error("Error cargando usuarios:", error);
+        setError("No se pudieron cargar los usuarios.");
+      } else {
+        setUsuarios(data || []);
+      }
+
+      setCargandoUsuarios(false);
+    };
+
+    cargarUsuarios();
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormulario((actual) => ({
+      ...actual,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setMensaje("");
+    setError("");
+    setGuardando(true);
+
+    try {
+      // ==============================
+      // VALIDACIONES
+      // ==============================
+
+      if (!formulario.titulo.trim()) {
+        throw new Error("El título de la tarea es obligatorio.");
+      }
+
+      if (!formulario.fecha_inicio) {
+        throw new Error("La fecha de inicio es obligatoria.");
+      }
+
+      if (!formulario.fecha_fin) {
+        throw new Error("La fecha de finalización es obligatoria.");
+      }
+
+      if (formulario.fecha_fin < formulario.fecha_inicio) {
+        throw new Error(
+          "La fecha de finalización no puede ser anterior a la fecha de inicio."
+        );
+      }
+
+      if (
+        formulario.hora_inicio &&
+        formulario.hora_fin &&
+        formulario.fecha_inicio === formulario.fecha_fin &&
+        formulario.hora_fin <= formulario.hora_inicio
+      ) {
+        throw new Error(
+          "La hora de finalización debe ser posterior a la hora de inicio."
+        );
+      }
+
+      // ==============================
+      // CREAR TAREA
+      // ==============================
+
+      const { data, error: insertError } = await supabase
+        .from("tareas")
+        .insert({
+          titulo: formulario.titulo.trim(),
+
+          descripcion: formulario.descripcion.trim() || null,
+
+          // Campos obligatorios de tu tabla
+          fecha_inicio: formulario.fecha_inicio,
+          fecha_fin: formulario.fecha_fin,
+
+          // La vista del calendario utiliza este campo
+          fecha: formulario.fecha_inicio,
+
+          hora_inicio: formulario.hora_inicio || null,
+          hora_fin: formulario.hora_fin || null,
+
+          prioridad: formulario.prioridad,
+
+          // Valores permitidos:
+          // pendiente
+          // en_progreso
+          // completada
+          estado: formulario.estado,
+
+          responsable_id: formulario.responsable_id || null,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("Error creando tarea:", insertError);
+
+        throw new Error(
+          insertError.message || "No se pudo crear la tarea."
+        );
+      }
+
+      console.log("Tarea creada:", data);
+
+      setMensaje("Tarea creada correctamente.");
+
+      // Limpiar formulario
+      setFormulario({
+        titulo: "",
+        descripcion: "",
+        fecha_inicio: "",
+        fecha_fin: "",
+        hora_inicio: "",
+        hora_fin: "",
+        prioridad: "media",
+        estado: "pendiente",
+        responsable_id: "",
+      });
+
+      // Regresar a tareas después de un momento
+      setTimeout(() => {
+        navigate("/tareas");
+      }, 1000);
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.message || "No se pudo crear la tarea."
+      );
+    } finally {
+      setGuardando(false);
+    }
+  };
+
   return (
-    <section className="page">
-      <span className="eyebrow">SOLICITUD</span>
+    <section className="nueva-tarea-page">
 
-      <h1>Nueva tarea</h1>
+      {/* ==============================
+          ENCABEZADO
+      ============================== */}
 
-      <p>
-        Aquí construiremos el formulario de solicitudes.
-      </p>
+      <div className="nueva-tarea-header">
+        <div>
+          <span className="eyebrow">GESTIÓN</span>
+
+          <h1>Nueva tarea</h1>
+
+          <p>
+            Registra una nueva actividad para el equipo.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="nueva-tarea-cancelar"
+          onClick={() => navigate("/tareas")}
+        >
+          Cancelar
+        </button>
+      </div>
+
+      {/* ==============================
+          FORMULARIO
+      ============================== */}
+
+      <form
+        className="nueva-tarea-card"
+        onSubmit={handleSubmit}
+      >
+
+        {/* ==============================
+            INFORMACIÓN
+        ============================== */}
+
+        <div className="nueva-tarea-section">
+
+          <h2>Información de la tarea</h2>
+
+          <p>
+            Define el título y los detalles principales de la actividad.
+          </p>
+
+          <div className="nueva-tarea-grid">
+
+            <div className="form-group form-group-full">
+              <label htmlFor="titulo">
+                Título de la tarea
+              </label>
+
+              <input
+                id="titulo"
+                name="titulo"
+                type="text"
+                value={formulario.titulo}
+                onChange={handleChange}
+                placeholder="Ej. Actualizar página institucional"
+                required
+              />
+            </div>
+
+            <div className="form-group form-group-full">
+              <label htmlFor="descripcion">
+                Descripción
+              </label>
+
+              <textarea
+                id="descripcion"
+                name="descripcion"
+                value={formulario.descripcion}
+                onChange={handleChange}
+                placeholder="Describe qué se debe realizar..."
+                rows="5"
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* ==============================
+            FECHAS Y HORARIOS
+        ============================== */}
+
+        <div className="nueva-tarea-section">
+
+          <h2>Fecha y horario</h2>
+
+          <p>
+            Define cuándo comienza y termina la tarea.
+          </p>
+
+          <div className="nueva-tarea-grid">
+
+            <div className="form-group">
+              <label htmlFor="fecha_inicio">
+                Fecha de inicio
+              </label>
+
+              <input
+                id="fecha_inicio"
+                name="fecha_inicio"
+                type="date"
+                value={formulario.fecha_inicio}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="fecha_fin">
+                Fecha de finalización
+              </label>
+
+              <input
+                id="fecha_fin"
+                name="fecha_fin"
+                type="date"
+                value={formulario.fecha_fin}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="hora_inicio">
+                Hora de inicio
+              </label>
+
+              <input
+                id="hora_inicio"
+                name="hora_inicio"
+                type="time"
+                value={formulario.hora_inicio}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="hora_fin">
+                Hora de finalización
+              </label>
+
+              <input
+                id="hora_fin"
+                name="hora_fin"
+                type="time"
+                value={formulario.hora_fin}
+                onChange={handleChange}
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* ==============================
+            ASIGNACIÓN
+        ============================== */}
+
+        <div className="nueva-tarea-section">
+
+          <h2>Asignación</h2>
+
+          <p>
+            Define prioridad, estado y responsable.
+          </p>
+
+          <div className="nueva-tarea-grid">
+
+            {/* PRIORIDAD */}
+
+            <div className="form-group">
+              <label htmlFor="prioridad">
+                Prioridad
+              </label>
+
+              <select
+                id="prioridad"
+                name="prioridad"
+                value={formulario.prioridad}
+                onChange={handleChange}
+              >
+                <option value="baja">
+                  Baja
+                </option>
+
+                <option value="media">
+                  Media
+                </option>
+
+                <option value="alta">
+                  Alta
+                </option>
+              </select>
+            </div>
+
+            {/* ESTADO */}
+
+            <div className="form-group">
+              <label htmlFor="estado">
+                Estado
+              </label>
+
+              <select
+                id="estado"
+                name="estado"
+                value={formulario.estado}
+                onChange={handleChange}
+              >
+                <option value="pendiente">
+                  Pendiente
+                </option>
+
+                <option value="en_progreso">
+                  En progreso
+                </option>
+
+                <option value="completada">
+                  Completada
+                </option>
+              </select>
+            </div>
+
+            {/* RESPONSABLE */}
+
+            <div className="form-group form-group-full">
+              <label htmlFor="responsable_id">
+                Responsable
+              </label>
+
+              <select
+                id="responsable_id"
+                name="responsable_id"
+                value={formulario.responsable_id}
+                onChange={handleChange}
+                disabled={cargandoUsuarios}
+              >
+                <option value="">
+                  Sin responsable
+                </option>
+
+                {usuarios.map((usuario) => (
+                  <option
+                    key={usuario.id}
+                    value={usuario.id}
+                  >
+                    {usuario.nombre} {usuario.apellido}
+                    {usuario.email
+                      ? ` — ${usuario.email}`
+                      : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ==============================
+            MENSAJES
+        ============================== */}
+
+        {mensaje && (
+          <div className="nueva-tarea-mensaje">
+            {mensaje}
+          </div>
+        )}
+
+        {error && (
+          <div className="nueva-tarea-error">
+            {error}
+          </div>
+        )}
+
+        {/* ==============================
+            BOTONES
+        ============================== */}
+
+        <div className="nueva-tarea-actions">
+
+          <button
+            type="button"
+            className="nueva-tarea-cancelar"
+            onClick={() => navigate("/tareas")}
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            className="nueva-tarea-btn"
+            disabled={guardando}
+          >
+            {guardando
+              ? "Creando tarea..."
+              : "Crear tarea"}
+          </button>
+
+        </div>
+
+      </form>
     </section>
   );
 }
