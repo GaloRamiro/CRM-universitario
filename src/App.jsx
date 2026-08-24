@@ -11,6 +11,7 @@ import Reportes from "./pages/Reportes";
 import Login from "./pages/Login";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import RoleRoute from "./components/RoleRoute";
 
 function App() {
   return (
@@ -24,20 +25,32 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<MainLayout />}>
 
+            {/* Inicio */}
             <Route
               index
               element={<Navigate to="/dashboard" replace />}
             />
 
+            {/* Accesibles para usuarios autenticados */}
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="tareas" element={<Tareas />} />
             <Route path="tareas/nueva" element={<NuevaTarea />} />
-            <Route path="usuarios" element={<Usuarios />} />
-            <Route path="departamentos" element={<Departamentos />} />
-            <Route path="reportes" element={<Reportes />} />
+
+            {/* Solo administradores */}
+            <Route element={<RoleRoute allowedRoles={["admin"]} />}>
+              <Route path="usuarios" element={<Usuarios />} />
+              <Route path="departamentos" element={<Departamentos />} />
+              <Route path="reportes" element={<Reportes />} />
+            </Route>
 
           </Route>
         </Route>
+
+        {/* Ruta desconocida */}
+        <Route
+          path="*"
+          element={<Navigate to="/dashboard" replace />}
+        />
 
       </Routes>
     </BrowserRouter>

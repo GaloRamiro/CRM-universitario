@@ -1,6 +1,11 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 function Sidebar() {
+  const { profile } = useAuth();
+
+  const esAdministrador = profile?.rol === "admin";
+
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
@@ -23,20 +28,24 @@ function Sidebar() {
           Tareas
         </NavLink>
 
-        <NavLink to="/usuarios" className="nav-link">
-          <span>👥</span>
-          Usuarios
-        </NavLink>
+        {esAdministrador && (
+          <>
+            <NavLink to="/usuarios" className="nav-link">
+              <span>👥</span>
+              Usuarios
+            </NavLink>
 
-        <NavLink to="/departamentos" className="nav-link">
-          <span>🏢</span>
-          Departamentos
-        </NavLink>
+            <NavLink to="/departamentos" className="nav-link">
+              <span>🏢</span>
+              Departamentos
+            </NavLink>
 
-        <NavLink to="/reportes" className="nav-link">
-          <span>📈</span>
-          Reportes
-        </NavLink>
+            <NavLink to="/reportes" className="nav-link">
+              <span>📈</span>
+              Reportes
+            </NavLink>
+          </>
+        )}
       </nav>
 
       <div className="sidebar-footer">
@@ -48,3 +57,4 @@ function Sidebar() {
 }
 
 export default Sidebar;
+
