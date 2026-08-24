@@ -20,18 +20,20 @@ function CargaEquipo() {
     setError("");
 
     try {
-      const [{ data: usuariosData, error: usuariosError }, { data: tareasData, error: tareasError }] =
-        await Promise.all([
-          supabase
-            .from("usuarios")
-            .select("id, nombre, apellido, email")
-            .eq("activo", true)
-            .order("nombre"),
+      const [
+        { data: usuariosData, error: usuariosError },
+        { data: tareasData, error: tareasError },
+      ] = await Promise.all([
+        supabase
+          .from("usuarios")
+          .select("id, nombre, apellido, email")
+          .eq("activo", true)
+          .order("nombre"),
 
-          supabase
-            .from("tareas")
-            .select(
-              `
+        supabase
+          .from("tareas")
+          .select(
+            `
                 id,
                 titulo,
                 fecha,
@@ -42,9 +44,9 @@ function CargaEquipo() {
                 prioridad,
                 responsable_id
               `,
-            )
-            .order("fecha_inicio", { ascending: true }),
-        ]);
+          )
+          .order("fecha_inicio", { ascending: true }),
+      ]);
 
       if (usuariosError) {
         throw usuariosError;
@@ -58,9 +60,7 @@ function CargaEquipo() {
       setTareas(tareasData || []);
     } catch (err) {
       console.error("Error cargando carga del equipo:", err);
-      setError(
-        err.message || "No se pudo cargar la información del equipo.",
-      );
+      setError(err.message || "No se pudo cargar la información del equipo.");
     } finally {
       setCargando(false);
     }
@@ -154,11 +154,7 @@ function CargaEquipo() {
 
     const [anio, mes, dia] = fecha.split("-");
 
-    const fechaLocal = new Date(
-      Number(anio),
-      Number(mes) - 1,
-      Number(dia),
-    );
+    const fechaLocal = new Date(Number(anio), Number(mes) - 1, Number(dia));
 
     return fechaLocal.toLocaleDateString("es-EC", {
       weekday: "long",
@@ -200,17 +196,11 @@ function CargaEquipo() {
         </button>
       </div>
 
-      {error && (
-        <div className="carga-equipo-error">
-          {error}
-        </div>
-      )}
+      {error && <div className="carga-equipo-error">{error}</div>}
 
       <div className="carga-equipo-filtro">
         <div>
-          <label htmlFor="fechaCarga">
-            Consultar fecha
-          </label>
+          <label htmlFor="fechaCarga">Consultar fecha</label>
 
           <input
             id="fechaCarga"
@@ -267,16 +257,12 @@ function CargaEquipo() {
           <div>
             <h2>Distribución de trabajo</h2>
 
-            <p>
-              Carga estimada por responsable para el día seleccionado.
-            </p>
+            <p>Carga estimada por responsable para el día seleccionado.</p>
           </div>
         </div>
 
         {cargaUsuarios.length === 0 ? (
-          <div className="carga-equipo-vacio">
-            No existen usuarios activos.
-          </div>
+          <div className="carga-equipo-vacio">No existen usuarios activos.</div>
         ) : (
           <div className="carga-tabla-wrapper">
             <table className="carga-tabla">
@@ -299,20 +285,14 @@ function CargaEquipo() {
                           {usuario.nombre} {usuario.apellido}
                         </strong>
 
-                        {usuario.email && (
-                          <small>{usuario.email}</small>
-                        )}
+                        {usuario.email && <small>{usuario.email}</small>}
                       </div>
                     </td>
 
-                    <td>
-                      {usuario.cantidadTareas}
-                    </td>
+                    <td>{usuario.cantidadTareas}</td>
 
                     <td>
-                      <strong>
-                        {formatearHoras(usuario.minutos)}
-                      </strong>
+                      <strong>{formatearHoras(usuario.minutos)}</strong>
                     </td>
 
                     <td>
@@ -343,9 +323,7 @@ function CargaEquipo() {
                       )}
 
                       {usuario.nivel === "normal" && (
-                        <span className="badge badge-verde">
-                          🟢 Normal
-                        </span>
+                        <span className="badge badge-verde">🟢 Normal</span>
                       )}
                     </td>
                   </tr>
@@ -361,9 +339,7 @@ function CargaEquipo() {
           <div>
             <h2>Tareas asignadas</h2>
 
-            <p>
-              Actividades consideradas para calcular la carga.
-            </p>
+            <p>Actividades consideradas para calcular la carga.</p>
           </div>
         </div>
 
@@ -379,14 +355,9 @@ function CargaEquipo() {
               );
 
               return (
-                <div
-                  className="tarea-carga-item"
-                  key={tarea.id}
-                >
+                <div className="tarea-carga-item" key={tarea.id}>
                   <div>
-                    <strong>
-                      {tarea.titulo}
-                    </strong>
+                    <strong>{tarea.titulo}</strong>
 
                     <span>
                       {usuario
@@ -396,9 +367,7 @@ function CargaEquipo() {
                   </div>
 
                   <div className="tarea-carga-tiempo">
-                    {formatearHoras(
-                      Number(tarea.tiempo_estimado || 0),
-                    )}
+                    {formatearHoras(Number(tarea.tiempo_estimado || 0))}
                   </div>
                 </div>
               );
