@@ -1,112 +1,87 @@
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import "./Usuarios.css";
 
 function Usuarios() {
-  const [usuarios, setUsuarios] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState("");
-
-  const cargarUsuarios = async () => {
-    setCargando(true);
-    setError("");
-
-    const { data, error } = await supabase
-      .from("usuarios")
-      .select(`
-        id,
-        nombre,
-        apellido,
-        email,
-        rol,
-        activo,
-        created_at,
-        departamentos (
-          nombre
-        )
-      `)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error cargando usuarios:", error);
-      setError("No se pudieron cargar los usuarios.");
-      setUsuarios([]);
-    } else {
-      setUsuarios(data || []);
-    }
-
-    setCargando(false);
-  };
-
-  useEffect(() => {
-    cargarUsuarios();
-  }, []);
-
   return (
-    <section className="page">
-      <span className="eyebrow">ADMINISTRACIÓN</span>
-
-      <div className="page-header">
+    <section className="usuarios-page">
+      <div className="usuarios-header">
         <div>
+          <span className="eyebrow">ADMINISTRACIÓN</span>
           <h1>Usuarios</h1>
-          <p>
-            Administra los usuarios y permisos del sistema.
-          </p>
+          <p>Administra los usuarios y permisos del sistema.</p>
         </div>
 
-        <button type="button">
+        <button className="usuarios-btn">
           + Nuevo usuario
         </button>
       </div>
 
-      {cargando && <p>Cargando usuarios...</p>}
+      <div className="usuarios-card">
+        <div className="usuarios-card-header">
+          <div>
+            <h2>Usuarios registrados</h2>
+            <p>Gestiona las cuentas que tienen acceso al CRM.</p>
+          </div>
 
-      {error && <p>{error}</p>}
+          <div className="usuarios-search">
+            <input
+              type="text"
+              placeholder="Buscar usuario..."
+            />
+          </div>
+        </div>
 
-      {!cargando && !error && (
-        <div className="users-table">
-          <table>
+        <div className="usuarios-table-container">
+          <table className="usuarios-table">
             <thead>
               <tr>
-                <th>Nombre</th>
+                <th>Usuario</th>
                 <th>Correo</th>
                 <th>Rol</th>
                 <th>Departamento</th>
                 <th>Estado</th>
+                <th>Acciones</th>
               </tr>
             </thead>
 
             <tbody>
-              {usuarios.map((usuario) => (
-                <tr key={usuario.id}>
-                  <td>
-                    <strong>
-                      {usuario.nombre} {usuario.apellido}
-                    </strong>
-                  </td>
+              <tr>
+                <td>
+                  <div className="usuario-cell">
+                    <div className="usuario-avatar">A</div>
 
-                  <td>{usuario.email}</td>
+                    <div>
+                      <strong>Administrador</strong>
+                      <span>Administrador del sistema</span>
+                    </div>
+                  </div>
+                </td>
 
-                  <td>
-                    {usuario.rol}
-                  </td>
+                <td>tu-correo-de-prueba@gmail.com</td>
 
-                  <td>
-                    {usuario.departamentos?.nombre || "Sin departamento"}
-                  </td>
+                <td>
+                  <span className="rol-badge rol-admin">
+                    Administrador
+                  </span>
+                </td>
 
-                  <td>
-                    {usuario.activo ? "Activo" : "Inactivo"}
-                  </td>
-                </tr>
-              ))}
+                <td>Administración</td>
+
+                <td>
+                  <span className="estado-badge activo">
+                    Activo
+                  </span>
+                </td>
+
+                <td>
+                  <button className="accion-btn">
+                    Editar
+                  </button>
+                </td>
+              </tr>
             </tbody>
           </table>
-
-          {usuarios.length === 0 && (
-            <p>No existen usuarios registrados.</p>
-          )}
         </div>
-      )}
+      </div>
     </section>
   );
 }
