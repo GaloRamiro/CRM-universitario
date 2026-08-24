@@ -5,6 +5,7 @@ import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Tareas from "./pages/Tareas";
 import NuevaTarea from "./pages/NuevaTarea";
+import NuevoUsuario from "./pages/NuevoUsuario";
 import Usuarios from "./pages/Usuarios";
 import Departamentos from "./pages/Departamentos";
 import Reportes from "./pages/Reportes";
@@ -39,6 +40,8 @@ function App() {
             {/* Solo administradores */}
             <Route element={<RoleRoute allowedRoles={["admin"]} />}>
               <Route path="usuarios" element={<Usuarios />} />
+                <Route path="usuarios/nuevo" element={<NuevoUsuario />} />
+
               <Route path="departamentos" element={<Departamentos />} />
               <Route path="reportes" element={<Reportes />} />
             </Route>

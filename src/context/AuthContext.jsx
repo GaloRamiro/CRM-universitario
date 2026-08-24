@@ -1,7 +1,13 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
 import { supabase } from "../lib/supabase";
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -64,17 +70,19 @@ export function AuthProvider({ children }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const authUser = session?.user ?? null;
+    } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const authUser = session?.user ?? null;
 
-      setUser(authUser);
+        setUser(authUser);
 
-      if (authUser) {
-        await cargarPerfil(authUser);
-      } else {
-        setProfile(null);
+        if (authUser) {
+          await cargarPerfil(authUser);
+        } else {
+          setProfile(null);
+        }
       }
-    });
+    );
 
     return () => {
       mounted = false;
@@ -84,19 +92,20 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     await supabase.auth.signOut();
+
     setUser(null);
     setProfile(null);
   };
 
-  const value = {
-    user,
-    profile,
-    loading,
-    logout,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        loading,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
