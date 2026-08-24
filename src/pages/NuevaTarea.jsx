@@ -13,6 +13,7 @@ function NuevaTarea() {
     fecha_fin: "",
     hora_inicio: "",
     hora_fin: "",
+    tiempo_estimado: 60,
     prioridad: "media",
     estado: "pendiente",
     responsable_id: "",
@@ -82,7 +83,7 @@ function NuevaTarea() {
 
       if (formulario.fecha_fin < formulario.fecha_inicio) {
         throw new Error(
-          "La fecha de finalización no puede ser anterior a la fecha de inicio."
+          "La fecha de finalización no puede ser anterior a la fecha de inicio.",
         );
       }
 
@@ -93,8 +94,15 @@ function NuevaTarea() {
         formulario.hora_fin <= formulario.hora_inicio
       ) {
         throw new Error(
-          "La hora de finalización debe ser posterior a la hora de inicio."
+          "La hora de finalización debe ser posterior a la hora de inicio.",
         );
+      }
+
+      if (
+        !formulario.tiempo_estimado ||
+        Number(formulario.tiempo_estimado) <= 0
+      ) {
+        throw new Error("El tiempo estimado debe ser mayor que 0 minutos.");
       }
 
       // ==============================
@@ -108,22 +116,22 @@ function NuevaTarea() {
 
           descripcion: formulario.descripcion.trim() || null,
 
-          // Campos obligatorios de tu tabla
           fecha_inicio: formulario.fecha_inicio,
+
           fecha_fin: formulario.fecha_fin,
 
-          // La vista del calendario utiliza este campo
+          // El calendario utiliza este campo
           fecha: formulario.fecha_inicio,
 
           hora_inicio: formulario.hora_inicio || null,
+
           hora_fin: formulario.hora_fin || null,
+
+          // Tiempo estimado en minutos
+          tiempo_estimado: Number(formulario.tiempo_estimado) || 0,
 
           prioridad: formulario.prioridad,
 
-          // Valores permitidos:
-          // pendiente
-          // en_progreso
-          // completada
           estado: formulario.estado,
 
           responsable_id: formulario.responsable_id || null,
@@ -134,16 +142,17 @@ function NuevaTarea() {
       if (insertError) {
         console.error("Error creando tarea:", insertError);
 
-        throw new Error(
-          insertError.message || "No se pudo crear la tarea."
-        );
+        throw new Error(insertError.message || "No se pudo crear la tarea.");
       }
 
       console.log("Tarea creada:", data);
 
       setMensaje("Tarea creada correctamente.");
 
-      // Limpiar formulario
+      // ==============================
+      // LIMPIAR FORMULARIO
+      // ==============================
+
       setFormulario({
         titulo: "",
         descripcion: "",
@@ -151,21 +160,23 @@ function NuevaTarea() {
         fecha_fin: "",
         hora_inicio: "",
         hora_fin: "",
+        tiempo_estimado: 60,
         prioridad: "media",
         estado: "pendiente",
         responsable_id: "",
       });
 
-      // Regresar a tareas después de un momento
+      // ==============================
+      // VOLVER A TAREAS
+      // ==============================
+
       setTimeout(() => {
         navigate("/tareas");
       }, 1000);
     } catch (err) {
       console.error(err);
 
-      setError(
-        err.message || "No se pudo crear la tarea."
-      );
+      setError(err.message || "No se pudo crear la tarea.");
     } finally {
       setGuardando(false);
     }
@@ -173,7 +184,6 @@ function NuevaTarea() {
 
   return (
     <section className="nueva-tarea-page">
-
       {/* ==============================
           ENCABEZADO
       ============================== */}
@@ -184,9 +194,7 @@ function NuevaTarea() {
 
           <h1>Nueva tarea</h1>
 
-          <p>
-            Registra una nueva actividad para el equipo.
-          </p>
+          <p>Registra una nueva actividad para el equipo.</p>
         </div>
 
         <button
@@ -202,29 +210,19 @@ function NuevaTarea() {
           FORMULARIO
       ============================== */}
 
-      <form
-        className="nueva-tarea-card"
-        onSubmit={handleSubmit}
-      >
-
+      <form className="nueva-tarea-card" onSubmit={handleSubmit}>
         {/* ==============================
             INFORMACIÓN
         ============================== */}
 
         <div className="nueva-tarea-section">
-
           <h2>Información de la tarea</h2>
 
-          <p>
-            Define el título y los detalles principales de la actividad.
-          </p>
+          <p>Define el título y los detalles principales de la actividad.</p>
 
           <div className="nueva-tarea-grid">
-
             <div className="form-group form-group-full">
-              <label htmlFor="titulo">
-                Título de la tarea
-              </label>
+              <label htmlFor="titulo">Título de la tarea</label>
 
               <input
                 id="titulo"
@@ -232,15 +230,13 @@ function NuevaTarea() {
                 type="text"
                 value={formulario.titulo}
                 onChange={handleChange}
-                placeholder="Ej. Actualizar página institucional"
+                placeholder="Ej. Diseñar 30 artes para redes sociales"
                 required
               />
             </div>
 
             <div className="form-group form-group-full">
-              <label htmlFor="descripcion">
-                Descripción
-              </label>
+              <label htmlFor="descripcion">Descripción</label>
 
               <textarea
                 id="descripcion"
@@ -251,7 +247,6 @@ function NuevaTarea() {
                 rows="5"
               />
             </div>
-
           </div>
         </div>
 
@@ -260,19 +255,13 @@ function NuevaTarea() {
         ============================== */}
 
         <div className="nueva-tarea-section">
-
           <h2>Fecha y horario</h2>
 
-          <p>
-            Define cuándo comienza y termina la tarea.
-          </p>
+          <p>Define cuándo comienza y termina la tarea.</p>
 
           <div className="nueva-tarea-grid">
-
             <div className="form-group">
-              <label htmlFor="fecha_inicio">
-                Fecha de inicio
-              </label>
+              <label htmlFor="fecha_inicio">Fecha de inicio</label>
 
               <input
                 id="fecha_inicio"
@@ -285,9 +274,7 @@ function NuevaTarea() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="fecha_fin">
-                Fecha de finalización
-              </label>
+              <label htmlFor="fecha_fin">Fecha de finalización</label>
 
               <input
                 id="fecha_fin"
@@ -299,10 +286,34 @@ function NuevaTarea() {
               />
             </div>
 
+            {/* ==============================
+                TIEMPO ESTIMADO
+            ============================== */}
+
             <div className="form-group">
-              <label htmlFor="hora_inicio">
-                Hora de inicio
-              </label>
+              <label htmlFor="tiempo_estimado">Tiempo estimado</label>
+
+              <div className="tiempo-estimado-input">
+                <input
+                  id="tiempo_estimado"
+                  name="tiempo_estimado"
+                  type="number"
+                  min="5"
+                  step="5"
+                  value={formulario.tiempo_estimado}
+                  onChange={handleChange}
+                  placeholder="60"
+                  required
+                />
+
+                <span>minutos</span>
+              </div>
+
+              <small>Ejemplo: 60 minutos = 1 hora de trabajo.</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="hora_inicio">Hora de inicio</label>
 
               <input
                 id="hora_inicio"
@@ -314,9 +325,7 @@ function NuevaTarea() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="hora_fin">
-                Hora de finalización
-              </label>
+              <label htmlFor="hora_fin">Hora de finalización</label>
 
               <input
                 id="hora_fin"
@@ -326,7 +335,6 @@ function NuevaTarea() {
                 onChange={handleChange}
               />
             </div>
-
           </div>
         </div>
 
@@ -335,21 +343,15 @@ function NuevaTarea() {
         ============================== */}
 
         <div className="nueva-tarea-section">
-
           <h2>Asignación</h2>
 
-          <p>
-            Define prioridad, estado y responsable.
-          </p>
+          <p>Define prioridad, estado y responsable.</p>
 
           <div className="nueva-tarea-grid">
-
             {/* PRIORIDAD */}
 
             <div className="form-group">
-              <label htmlFor="prioridad">
-                Prioridad
-              </label>
+              <label htmlFor="prioridad">Prioridad</label>
 
               <select
                 id="prioridad"
@@ -357,26 +359,18 @@ function NuevaTarea() {
                 value={formulario.prioridad}
                 onChange={handleChange}
               >
-                <option value="baja">
-                  Baja
-                </option>
+                <option value="baja">Baja</option>
 
-                <option value="media">
-                  Media
-                </option>
+                <option value="media">Media</option>
 
-                <option value="alta">
-                  Alta
-                </option>
+                <option value="alta">Alta</option>
               </select>
             </div>
 
             {/* ESTADO */}
 
             <div className="form-group">
-              <label htmlFor="estado">
-                Estado
-              </label>
+              <label htmlFor="estado">Estado</label>
 
               <select
                 id="estado"
@@ -384,26 +378,18 @@ function NuevaTarea() {
                 value={formulario.estado}
                 onChange={handleChange}
               >
-                <option value="pendiente">
-                  Pendiente
-                </option>
+                <option value="pendiente">Pendiente</option>
 
-                <option value="en_progreso">
-                  En progreso
-                </option>
+                <option value="en_progreso">En progreso</option>
 
-                <option value="completada">
-                  Completada
-                </option>
+                <option value="completada">Completada</option>
               </select>
             </div>
 
             {/* RESPONSABLE */}
 
             <div className="form-group form-group-full">
-              <label htmlFor="responsable_id">
-                Responsable
-              </label>
+              <label htmlFor="responsable_id">Responsable</label>
 
               <select
                 id="responsable_id"
@@ -412,24 +398,16 @@ function NuevaTarea() {
                 onChange={handleChange}
                 disabled={cargandoUsuarios}
               >
-                <option value="">
-                  Sin responsable
-                </option>
+                <option value="">Sin responsable</option>
 
                 {usuarios.map((usuario) => (
-                  <option
-                    key={usuario.id}
-                    value={usuario.id}
-                  >
+                  <option key={usuario.id} value={usuario.id}>
                     {usuario.nombre} {usuario.apellido}
-                    {usuario.email
-                      ? ` — ${usuario.email}`
-                      : ""}
+                    {usuario.email ? ` — ${usuario.email}` : ""}
                   </option>
                 ))}
               </select>
             </div>
-
           </div>
         </div>
 
@@ -437,24 +415,15 @@ function NuevaTarea() {
             MENSAJES
         ============================== */}
 
-        {mensaje && (
-          <div className="nueva-tarea-mensaje">
-            {mensaje}
-          </div>
-        )}
+        {mensaje && <div className="nueva-tarea-mensaje">{mensaje}</div>}
 
-        {error && (
-          <div className="nueva-tarea-error">
-            {error}
-          </div>
-        )}
+        {error && <div className="nueva-tarea-error">{error}</div>}
 
         {/* ==============================
             BOTONES
         ============================== */}
 
         <div className="nueva-tarea-actions">
-
           <button
             type="button"
             className="nueva-tarea-cancelar"
@@ -468,13 +437,9 @@ function NuevaTarea() {
             className="nueva-tarea-btn"
             disabled={guardando}
           >
-            {guardando
-              ? "Creando tarea..."
-              : "Crear tarea"}
+            {guardando ? "Creando tarea..." : "Crear tarea"}
           </button>
-
         </div>
-
       </form>
     </section>
   );

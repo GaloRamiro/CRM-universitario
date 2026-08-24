@@ -24,7 +24,8 @@ function Tareas() {
 
     const { data, error } = await supabase
       .from("tareas")
-      .select(`
+      .select(
+        `
         id,
         titulo,
         descripcion,
@@ -35,8 +36,10 @@ function Tareas() {
         hora_fin,
         prioridad,
         estado,
-        responsable_id
-      `)
+        responsable_id,
+        tiempo_estimado
+      `,
+      )
       .order("fecha_inicio", { ascending: true })
       .order("hora_inicio", { ascending: true });
 
@@ -60,6 +63,7 @@ function Tareas() {
       responsable: tarea.responsable_id || "Sin responsable",
       estado: tarea.estado || "pendiente",
       prioridad: tarea.prioridad || "media",
+      tiempoEstimado: tarea.tiempo_estimado || 60,
     }));
 
     setTareas(tareasFormateadas);
@@ -163,9 +167,7 @@ function Tareas() {
 
   const obtenerTituloFecha = () => {
     if (vista === "dia") {
-      return `${nombresDias[fechaActual.getDay()]} ${
-        fechaActual.getDate()
-      } de ${nombresMeses[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`;
+      return `${nombresDias[fechaActual.getDay()]} ${fechaActual.getDate()} de ${nombresMeses[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`;
     }
 
     if (vista === "mes") {
@@ -181,9 +183,7 @@ function Tareas() {
 
     return `${inicio.getDate()} ${
       nombresMeses[inicio.getMonth()]
-    } - ${fin.getDate()} ${
-      nombresMeses[fin.getMonth()]
-    } ${fin.getFullYear()}`;
+    } - ${fin.getDate()} ${nombresMeses[fin.getMonth()]} ${fin.getFullYear()}`;
   };
 
   const nombreEstado = (estado) => {
@@ -206,48 +206,42 @@ function Tareas() {
     return prioridades[prioridad] || prioridad;
   };
 
- const renderTarea = (tarea) => (
-  <div
-    key={tarea.id}
-    className={`tarea-item prioridad-${tarea.prioridad}`}
-    onClick={() => navigate(`/tareas/${tarea.id}/editar`)}
-    role="button"
-    tabIndex={0}
-  >
-    <div className="tarea-hora">
-      {tarea.horaInicio}
-      <span>{tarea.horaFin}</span>
-    </div>
+  const renderTarea = (tarea) => (
+    <div
+      key={tarea.id}
+      className={`tarea-item prioridad-${tarea.prioridad}`}
+      onClick={() => navigate(`/tareas/${tarea.id}/editar`)}
+      role="button"
+      tabIndex={0}
+    >
+      <div className="tarea-hora">
+        {tarea.horaInicio}
+        <span>{tarea.horaFin}</span>
+      </div>
 
-    <div className="tarea-contenido">
-      <strong>{tarea.titulo}</strong>
+      <div className="tarea-contenido">
+        <strong>{tarea.titulo}</strong>
 
-      {tarea.descripcion && (
-        <p>{tarea.descripcion}</p>
-      )}
+        {tarea.descripcion && <p>{tarea.descripcion}</p>}
 
-      <div className="tarea-meta">
-        <span
-          className={`tarea-estado estado-${tarea.estado}`}
-        >
-          {nombreEstado(tarea.estado)}
-        </span>
+        <div className="tarea-meta">
+          <span className={`tarea-estado estado-${tarea.estado}`}>
+            {nombreEstado(tarea.estado)}
+          </span>
 
-        <span
-          className={`tarea-prioridad prioridad-${tarea.prioridad}`}
-        >
-          {nombrePrioridad(tarea.prioridad)}
-        </span>
+          <span className={`tarea-prioridad prioridad-${tarea.prioridad}`}>
+            {nombrePrioridad(tarea.prioridad)}
+          </span>
 
-        <span>
-          {tarea.responsable === "Sin responsable"
-            ? "Sin responsable"
-            : tarea.responsable}
-        </span>
+          <span>
+            {tarea.responsable === "Sin responsable"
+              ? "Sin responsable"
+              : tarea.responsable}
+          </span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 
   const renderDia = () => {
     const tareasHoy = tareasDeFecha(fechaActual);
@@ -259,8 +253,7 @@ function Tareas() {
             <span className="eyebrow">AGENDA DIARIA</span>
 
             <h2>
-              {nombresDias[fechaActual.getDay()]}{" "}
-              {fechaActual.getDate()}
+              {nombresDias[fechaActual.getDay()]} {fechaActual.getDate()}
             </h2>
           </div>
 
@@ -275,22 +268,14 @@ function Tareas() {
             const hora = index + 7;
 
             const tareasHora = tareasHoy.filter((tarea) => {
-              const horaInicio = parseInt(
-                tarea.horaInicio.split(":")[0],
-                10
-              );
+              const horaInicio = parseInt(tarea.horaInicio.split(":")[0], 10);
 
               return horaInicio === hora;
             });
 
             return (
-              <div
-                className="franja-horaria"
-                key={hora}
-              >
-                <div className="hora">
-                  {String(hora).padStart(2, "0")}:00
-                </div>
+              <div className="franja-horaria" key={hora}>
+                <div className="hora">{String(hora).padStart(2, "0")}:00</div>
 
                 <div className="franja-contenido">
                   {tareasHora.map(renderTarea)}
@@ -308,21 +293,15 @@ function Tareas() {
       {diasSemana.map((dia) => {
         const tareasDia = tareasDeFecha(dia);
 
-        const esHoy =
-          formatearFecha(dia) ===
-          formatearFecha(new Date());
+        const esHoy = formatearFecha(dia) === formatearFecha(new Date());
 
         return (
           <div
-            className={`dia-columna ${
-              esHoy ? "dia-hoy" : ""
-            }`}
+            className={`dia-columna ${esHoy ? "dia-hoy" : ""}`}
             key={formatearFecha(dia)}
           >
             <div className="dia-header">
-              <span>
-                {nombresDias[dia.getDay()].slice(0, 3)}
-              </span>
+              <span>{nombresDias[dia.getDay()].slice(0, 3)}</span>
 
               <strong>{dia.getDate()}</strong>
             </div>
@@ -331,9 +310,7 @@ function Tareas() {
               {tareasDia.length > 0 ? (
                 tareasDia.map(renderTarea)
               ) : (
-                <span className="sin-tareas">
-                  Sin tareas
-                </span>
+                <span className="sin-tareas">Sin tareas</span>
               )}
             </div>
           </div>
@@ -346,13 +323,13 @@ function Tareas() {
     const primerDia = new Date(
       fechaActual.getFullYear(),
       fechaActual.getMonth(),
-      1
+      1,
     );
 
     const ultimoDia = new Date(
       fechaActual.getFullYear(),
       fechaActual.getMonth() + 1,
-      0
+      0,
     );
 
     const espaciosIniciales = primerDia.getDay();
@@ -363,48 +340,29 @@ function Tareas() {
       dias.push(null);
     }
 
-    for (
-      let dia = 1;
-      dia <= ultimoDia.getDate();
-      dia++
-    ) {
+    for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
       dias.push(
-        new Date(
-          fechaActual.getFullYear(),
-          fechaActual.getMonth(),
-          dia
-        )
+        new Date(fechaActual.getFullYear(), fechaActual.getMonth(), dia),
       );
     }
 
     return (
       <div className="calendario-mes">
         {nombresDias.map((dia) => (
-          <div
-            className="mes-dia-nombre"
-            key={dia}
-          >
+          <div className="mes-dia-nombre" key={dia}>
             {dia.slice(0, 3)}
           </div>
         ))}
 
         {dias.map((dia, index) => {
           if (!dia) {
-            return (
-              <div
-                className="mes-celda vacia"
-                key={index}
-              />
-            );
+            return <div className="mes-celda vacia" key={index} />;
           }
 
           const tareasDia = tareasDeFecha(dia);
 
           return (
-            <div
-              className="mes-celda"
-              key={formatearFecha(dia)}
-            >
+            <div className="mes-celda" key={formatearFecha(dia)}>
               <strong>{dia.getDate()}</strong>
 
               <div className="mes-tareas">
@@ -418,9 +376,7 @@ function Tareas() {
                 ))}
 
                 {tareasDia.length > 3 && (
-                  <span>
-                    +{tareasDia.length - 3} más
-                  </span>
+                  <span>+{tareasDia.length - 3} más</span>
                 )}
               </div>
             </div>
@@ -433,44 +389,29 @@ function Tareas() {
   const renderAnio = () => (
     <div className="calendario-anio">
       {nombresMeses.map((mes, index) => {
-        const tareasMes = tareasFiltradas.filter(
-          (tarea) => {
-            if (!tarea.fecha) return false;
+        const tareasMes = tareasFiltradas.filter((tarea) => {
+          if (!tarea.fecha) return false;
 
-            const fecha = new Date(
-              `${tarea.fecha}T00:00:00`
-            );
+          const fecha = new Date(`${tarea.fecha}T00:00:00`);
 
-            return (
-              fecha.getFullYear() ===
-                fechaActual.getFullYear() &&
-              fecha.getMonth() === index
-            );
-          }
-        );
+          return (
+            fecha.getFullYear() === fechaActual.getFullYear() &&
+            fecha.getMonth() === index
+          );
+        });
 
         return (
-          <div
-            className="anio-mes"
-            key={mes}
-          >
+          <div className="anio-mes" key={mes}>
             <h3>{mes}</h3>
 
             <div className="anio-contador">
               <strong>{tareasMes.length}</strong>
 
-              <span>
-                {tareasMes.length === 1
-                  ? "tarea"
-                  : "tareas"}
-              </span>
+              <span>{tareasMes.length === 1 ? "tarea" : "tareas"}</span>
             </div>
 
             {tareasMes.slice(0, 3).map((tarea) => (
-              <div
-                className="anio-tarea"
-                key={tarea.id}
-              >
+              <div className="anio-tarea" key={tarea.id}>
                 <strong>{tarea.titulo}</strong>
                 <span>{tarea.fecha}</span>
               </div>
@@ -489,10 +430,7 @@ function Tareas() {
 
           <h1>Tareas</h1>
 
-          <p>
-            Organiza, consulta y controla las
-            actividades del equipo.
-          </p>
+          <p>Organiza, consulta y controla las actividades del equipo.</p>
         </div>
 
         <button
@@ -516,11 +454,7 @@ function Tareas() {
               <button
                 key={valor}
                 type="button"
-                className={
-                  vista === valor
-                    ? "vista-activa"
-                    : ""
-                }
+                className={vista === valor ? "vista-activa" : ""}
                 onClick={() => setVista(valor)}
               >
                 {texto}
@@ -531,49 +465,30 @@ function Tareas() {
           <div className="tareas-filtros">
             <select
               value={filtroEstado}
-              onChange={(e) =>
-                setFiltroEstado(e.target.value)
-              }
+              onChange={(e) => setFiltroEstado(e.target.value)}
             >
-              <option value="todas">
-                Todos los estados
-              </option>
+              <option value="todas">Todos los estados</option>
 
-              <option value="pendiente">
-                Pendientes
-              </option>
+              <option value="pendiente">Pendientes</option>
 
-              <option value="en_proceso">
-                En proceso
-              </option>
+              <option value="en_proceso">En proceso</option>
 
-              <option value="completada">
-                Completadas
-              </option>
+              <option value="completada">Completadas</option>
             </select>
           </div>
         </div>
 
         <div className="tareas-navegacion">
           <div className="tareas-navegacion-botones">
-            <button
-              type="button"
-              onClick={() => cambiarFecha(-1)}
-            >
+            <button type="button" onClick={() => cambiarFecha(-1)}>
               ‹
             </button>
 
-            <button
-              type="button"
-              onClick={irHoy}
-            >
+            <button type="button" onClick={irHoy}>
               Hoy
             </button>
 
-            <button
-              type="button"
-              onClick={() => cambiarFecha(1)}
-            >
+            <button type="button" onClick={() => cambiarFecha(1)}>
               ›
             </button>
           </div>

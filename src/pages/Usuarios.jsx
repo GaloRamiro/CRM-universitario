@@ -21,7 +21,8 @@ function Usuarios() {
 
       const { data, error } = await supabase
         .from("usuarios")
-        .select(`
+        .select(
+          `
           id,
           nombre,
           apellido,
@@ -31,7 +32,8 @@ function Usuarios() {
           departamentos (
             nombre
           )
-        `)
+        `,
+        )
         .order("created_at", { ascending: false });
 
       if (!activo) return;
@@ -63,9 +65,7 @@ function Usuarios() {
 
     const email = (usuario.email || "").toLowerCase();
     const rol = (usuario.rol || "").toLowerCase();
-    const departamento = (
-      usuario.departamentos?.nombre || ""
-    ).toLowerCase();
+    const departamento = (usuario.departamentos?.nombre || "").toLowerCase();
 
     return (
       nombreCompleto.includes(texto) ||
@@ -83,9 +83,7 @@ function Usuarios() {
 
           <h1>Usuarios</h1>
 
-          <p>
-            Administra los usuarios y permisos del sistema.
-          </p>
+          <p>Administra los usuarios y permisos del sistema.</p>
         </div>
 
         <button
@@ -102,9 +100,7 @@ function Usuarios() {
           <div>
             <h2>Usuarios registrados</h2>
 
-            <p>
-              Gestiona las cuentas que tienen acceso al CRM.
-            </p>
+            <p>Gestiona las cuentas que tienen acceso al CRM.</p>
           </div>
 
           <div className="usuarios-search">
@@ -118,13 +114,9 @@ function Usuarios() {
         </div>
 
         <div className="usuarios-table-container">
-          {cargando && (
-            <p>Cargando usuarios...</p>
-          )}
+          {cargando && <p>Cargando usuarios...</p>}
 
-          {error && (
-            <p>{error}</p>
-          )}
+          {error && <p>{error}</p>}
 
           {!cargando && !error && (
             <table className="usuarios-table">
@@ -145,41 +137,30 @@ function Usuarios() {
                     ? usuario.nombre.charAt(0).toUpperCase()
                     : "U";
 
-                  const nombreCompleto =
-                    `${usuario.nombre || ""} ${
-                      usuario.apellido || ""
-                    }`.trim();
+                  const nombreCompleto = `${usuario.nombre || ""} ${
+                    usuario.apellido || ""
+                  }`.trim();
 
                   return (
                     <tr key={usuario.id}>
                       <td>
                         <div className="usuario-cell">
-                          <div className="usuario-avatar">
-                            {inicial}
-                          </div>
+                          <div className="usuario-avatar">{inicial}</div>
 
                           <div>
-                            <strong>
-                              {nombreCompleto || "Usuario"}
-                            </strong>
+                            <strong>{nombreCompleto || "Usuario"}</strong>
 
-                            <span>
-                              Usuario del sistema
-                            </span>
+                            <span>Usuario del sistema</span>
                           </div>
                         </div>
                       </td>
 
-                      <td>
-                        {usuario.email}
-                      </td>
+                      <td>{usuario.email}</td>
 
                       <td>
                         <span
                           className={`rol-badge ${
-                            usuario.rol === "admin"
-                              ? "rol-admin"
-                              : ""
+                            usuario.rol === "admin" ? "rol-admin" : ""
                           }`}
                         >
                           {usuario.rol || "Usuario"}
@@ -187,8 +168,7 @@ function Usuarios() {
                       </td>
 
                       <td>
-                        {usuario.departamentos?.nombre ||
-                          "Sin departamento"}
+                        {usuario.departamentos?.nombre || "Sin departamento"}
                       </td>
 
                       <td>
@@ -197,9 +177,7 @@ function Usuarios() {
                             usuario.activo ? "activo" : ""
                           }`}
                         >
-                          {usuario.activo
-                            ? "Activo"
-                            : "Inactivo"}
+                          {usuario.activo ? "Activo" : "Inactivo"}
                         </span>
                       </td>
 
@@ -221,19 +199,15 @@ function Usuarios() {
             </table>
           )}
 
-          {!cargando &&
-            !error &&
-            usuarios.length === 0 && (
-              <p>No existen usuarios registrados.</p>
-            )}
+          {!cargando && !error && usuarios.length === 0 && (
+            <p>No existen usuarios registrados.</p>
+          )}
 
           {!cargando &&
             !error &&
             usuarios.length > 0 &&
             usuariosFiltrados.length === 0 && (
-              <p>
-                No se encontraron usuarios con esa búsqueda.
-              </p>
+              <p>No se encontraron usuarios con esa búsqueda.</p>
             )}
         </div>
       </div>

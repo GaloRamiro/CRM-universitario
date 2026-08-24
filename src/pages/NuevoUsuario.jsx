@@ -74,11 +74,13 @@ function NuevoUsuario() {
             departamento_id: formulario.departamento_id || null,
             activo: formulario.activo,
           },
-        }
+        },
       );
 
       if (functionError) {
-        throw new Error(functionError.message || "No se pudo crear el usuario.");
+        throw new Error(
+          functionError.message || "No se pudo crear el usuario.",
+        );
       }
 
       if (data?.error) {

@@ -33,16 +33,11 @@ function EditarUsuario() {
       ] = await Promise.all([
         supabase
           .from("usuarios")
-          .select(
-            "id, nombre, apellido, email, rol, activo, departamento_id"
-          )
+          .select("id, nombre, apellido, email, rol, activo, departamento_id")
           .eq("id", id)
           .single(),
 
-        supabase
-          .from("departamentos")
-          .select("id, nombre")
-          .order("nombre"),
+        supabase.from("departamentos").select("id, nombre").order("nombre"),
       ]);
 
       if (usuarioError) {
@@ -53,10 +48,7 @@ function EditarUsuario() {
       }
 
       if (departamentosError) {
-        console.error(
-          "Error cargando departamentos:",
-          departamentosError
-        );
+        console.error("Error cargando departamentos:", departamentosError);
       }
 
       setFormulario({
@@ -115,7 +107,7 @@ function EditarUsuario() {
       if (updateError) {
         console.error("Error actualizando usuario:", updateError);
         throw new Error(
-          updateError.message || "No se pudo actualizar el usuario."
+          updateError.message || "No se pudo actualizar el usuario.",
         );
       }
 
@@ -126,9 +118,7 @@ function EditarUsuario() {
       }, 1000);
     } catch (err) {
       console.error(err);
-      setError(
-        err.message || "No se pudo actualizar el usuario."
-      );
+      setError(err.message || "No se pudo actualizar el usuario.");
     } finally {
       setGuardando(false);
     }
@@ -166,9 +156,7 @@ function EditarUsuario() {
 
           <h1>Editar usuario</h1>
 
-          <p>
-            Modifica la información y permisos de esta cuenta.
-          </p>
+          <p>Modifica la información y permisos de esta cuenta.</p>
         </div>
 
         <button
@@ -180,16 +168,11 @@ function EditarUsuario() {
         </button>
       </div>
 
-      <form
-        className="nuevo-usuario-card"
-        onSubmit={handleSubmit}
-      >
+      <form className="nuevo-usuario-card" onSubmit={handleSubmit}>
         <div className="nuevo-usuario-section">
           <h2>Información personal</h2>
 
-          <p>
-            Actualiza los datos básicos del usuario.
-          </p>
+          <p>Actualiza los datos básicos del usuario.</p>
 
           <div className="nuevo-usuario-grid">
             <div className="form-group">
@@ -219,9 +202,7 @@ function EditarUsuario() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">
-                Correo electrónico
-              </label>
+              <label htmlFor="email">Correo electrónico</label>
 
               <input
                 id="email"
@@ -238,9 +219,7 @@ function EditarUsuario() {
         <div className="nuevo-usuario-section">
           <h2>Acceso y permisos</h2>
 
-          <p>
-            Modifica el rol y departamento del usuario.
-          </p>
+          <p>Modifica el rol y departamento del usuario.</p>
 
           <div className="nuevo-usuario-grid">
             <div className="form-group">
@@ -252,24 +231,16 @@ function EditarUsuario() {
                 value={formulario.rol}
                 onChange={handleChange}
               >
-                <option value="usuario">
-                  Usuario
-                </option>
+                <option value="usuario">Usuario</option>
 
-                <option value="supervisor">
-                  Supervisor
-                </option>
+                <option value="supervisor">Supervisor</option>
 
-                <option value="admin">
-                  Administrador
-                </option>
+                <option value="admin">Administrador</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label htmlFor="departamento_id">
-                Departamento
-              </label>
+              <label htmlFor="departamento_id">Departamento</label>
 
               <select
                 id="departamento_id"
@@ -277,15 +248,10 @@ function EditarUsuario() {
                 value={formulario.departamento_id}
                 onChange={handleChange}
               >
-                <option value="">
-                  Sin departamento
-                </option>
+                <option value="">Sin departamento</option>
 
                 {departamentos.map((departamento) => (
-                  <option
-                    key={departamento.id}
-                    value={departamento.id}
-                  >
+                  <option key={departamento.id} value={departamento.id}>
                     {departamento.nombre}
                   </option>
                 ))}
@@ -300,22 +266,13 @@ function EditarUsuario() {
               checked={formulario.activo}
               onChange={handleChange}
             />
-
             Usuario activo
           </label>
         </div>
 
-        {mensaje && (
-          <div className="nuevo-usuario-mensaje">
-            {mensaje}
-          </div>
-        )}
+        {mensaje && <div className="nuevo-usuario-mensaje">{mensaje}</div>}
 
-        {error && (
-          <div className="nuevo-usuario-error">
-            {error}
-          </div>
-        )}
+        {error && <div className="nuevo-usuario-error">{error}</div>}
 
         <div className="nuevo-usuario-actions">
           <button
@@ -331,9 +288,7 @@ function EditarUsuario() {
             className="nuevo-usuario-btn"
             disabled={guardando}
           >
-            {guardando
-              ? "Guardando..."
-              : "Guardar cambios"}
+            {guardando ? "Guardando..." : "Guardar cambios"}
           </button>
         </div>
       </form>

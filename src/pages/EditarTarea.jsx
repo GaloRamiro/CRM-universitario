@@ -34,7 +34,8 @@ function EditarTarea() {
 
     const { data, error } = await supabase
       .from("tareas")
-      .select(`
+      .select(
+        `
         id,
         titulo,
         descripcion,
@@ -46,7 +47,8 @@ function EditarTarea() {
         prioridad,
         estado,
         responsable_id
-      `)
+      `,
+      )
       .eq("id", id)
       .single();
 
@@ -150,16 +152,13 @@ function EditarTarea() {
 
   return (
     <section className="editar-tarea-page">
-
       <div className="editar-tarea-header">
         <div>
           <span className="eyebrow">GESTIÓN</span>
 
           <h1>Editar tarea</h1>
 
-          <p>
-            Modifica la información y asignación de esta actividad.
-          </p>
+          <p>Modifica la información y asignación de esta actividad.</p>
         </div>
 
         <button
@@ -171,11 +170,7 @@ function EditarTarea() {
         </button>
       </div>
 
-      <form
-        className="editar-tarea-card"
-        onSubmit={guardarCambios}
-      >
-
+      <form className="editar-tarea-card" onSubmit={guardarCambios}>
         <div className="formulario-seccion">
           <div className="seccion-titulo">
             <span>01</span>
@@ -187,40 +182,31 @@ function EditarTarea() {
           </div>
 
           <div className="campo campo-completo">
-            <label htmlFor="titulo">
-              Título de la tarea
-            </label>
+            <label htmlFor="titulo">Título de la tarea</label>
 
             <input
               id="titulo"
               type="text"
               value={formulario.titulo}
-              onChange={(e) =>
-                cambiarCampo("titulo", e.target.value)
-              }
+              onChange={(e) => cambiarCampo("titulo", e.target.value)}
               placeholder="Ej. Actualizar página institucional"
             />
           </div>
 
           <div className="campo campo-completo">
-            <label htmlFor="descripcion">
-              Descripción
-            </label>
+            <label htmlFor="descripcion">Descripción</label>
 
             <textarea
               id="descripcion"
               rows="5"
               value={formulario.descripcion}
-              onChange={(e) =>
-                cambiarCampo("descripcion", e.target.value)
-              }
+              onChange={(e) => cambiarCampo("descripcion", e.target.value)}
               placeholder="Describe la tarea..."
             />
           </div>
         </div>
 
         <div className="formulario-seccion">
-
           <div className="seccion-titulo">
             <span>02</span>
 
@@ -231,84 +217,53 @@ function EditarTarea() {
           </div>
 
           <div className="formulario-grid">
-
             <div className="campo">
-              <label htmlFor="fechaInicio">
-                Fecha de inicio
-              </label>
+              <label htmlFor="fechaInicio">Fecha de inicio</label>
 
               <input
                 id="fechaInicio"
                 type="date"
                 value={formulario.fechaInicio}
-                onChange={(e) =>
-                  cambiarCampo(
-                    "fechaInicio",
-                    e.target.value
-                  )
-                }
+                onChange={(e) => cambiarCampo("fechaInicio", e.target.value)}
               />
             </div>
 
             <div className="campo">
-              <label htmlFor="fechaFin">
-                Fecha de finalización
-              </label>
+              <label htmlFor="fechaFin">Fecha de finalización</label>
 
               <input
                 id="fechaFin"
                 type="date"
                 value={formulario.fechaFin}
-                onChange={(e) =>
-                  cambiarCampo(
-                    "fechaFin",
-                    e.target.value
-                  )
-                }
+                onChange={(e) => cambiarCampo("fechaFin", e.target.value)}
               />
             </div>
 
             <div className="campo">
-              <label htmlFor="horaInicio">
-                Hora de inicio
-              </label>
+              <label htmlFor="horaInicio">Hora de inicio</label>
 
               <input
                 id="horaInicio"
                 type="time"
                 value={formulario.horaInicio}
-                onChange={(e) =>
-                  cambiarCampo(
-                    "horaInicio",
-                    e.target.value
-                  )
-                }
+                onChange={(e) => cambiarCampo("horaInicio", e.target.value)}
               />
             </div>
 
             <div className="campo">
-              <label htmlFor="horaFin">
-                Hora de finalización
-              </label>
+              <label htmlFor="horaFin">Hora de finalización</label>
 
               <input
                 id="horaFin"
                 type="time"
                 value={formulario.horaFin}
-                onChange={(e) =>
-                  cambiarCampo(
-                    "horaFin",
-                    e.target.value
-                  )
-                }
+                onChange={(e) => cambiarCampo("horaFin", e.target.value)}
               />
             </div>
-
           </div>
         </div>
 
         <div className="formulario-seccion">
-
           <div className="seccion-titulo">
             <span>03</span>
 
@@ -319,21 +274,13 @@ function EditarTarea() {
           </div>
 
           <div className="formulario-grid">
-
             <div className="campo">
-              <label htmlFor="prioridad">
-                Prioridad
-              </label>
+              <label htmlFor="prioridad">Prioridad</label>
 
               <select
                 id="prioridad"
                 value={formulario.prioridad}
-                onChange={(e) =>
-                  cambiarCampo(
-                    "prioridad",
-                    e.target.value
-                  )
-                }
+                onChange={(e) => cambiarCampo("prioridad", e.target.value)}
               >
                 <option value="baja">Baja</option>
                 <option value="media">Media</option>
@@ -342,34 +289,20 @@ function EditarTarea() {
             </div>
 
             <div className="campo">
-              <label htmlFor="estado">
-                Estado
-              </label>
+              <label htmlFor="estado">Estado</label>
 
               <select
                 id="estado"
                 value={formulario.estado}
-                onChange={(e) =>
-                  cambiarCampo(
-                    "estado",
-                    e.target.value
-                  )
-                }
+                onChange={(e) => cambiarCampo("estado", e.target.value)}
               >
-                <option value="pendiente">
-                  Pendiente
-                </option>
+                <option value="pendiente">Pendiente</option>
 
-                <option value="en_proceso">
-                  En proceso
-                </option>
+                <option value="en_proceso">En proceso</option>
 
-                <option value="completada">
-                  Completada
-                </option>
+                <option value="completada">Completada</option>
               </select>
             </div>
-
           </div>
         </div>
 
@@ -388,7 +321,6 @@ function EditarTarea() {
         )}
 
         <div className="acciones-formulario">
-
           <button
             type="button"
             className="btn-cancelar"
@@ -398,18 +330,10 @@ function EditarTarea() {
             Cancelar
           </button>
 
-          <button
-            type="submit"
-            className="btn-guardar"
-            disabled={guardando}
-          >
-            {guardando
-              ? "Guardando..."
-              : "Guardar cambios"}
+          <button type="submit" className="btn-guardar" disabled={guardando}>
+            {guardando ? "Guardando..." : "Guardar cambios"}
           </button>
-
         </div>
-
       </form>
     </section>
   );

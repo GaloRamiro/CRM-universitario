@@ -80,9 +80,7 @@ function Departamentos() {
     }
 
     setDepartamentos((actuales) =>
-      [...actuales, data].sort((a, b) =>
-        a.nombre.localeCompare(b.nombre)
-      )
+      [...actuales, data].sort((a, b) => a.nombre.localeCompare(b.nombre)),
     );
 
     setNombre("");
@@ -136,17 +134,9 @@ function Departamentos() {
             </div>
           </div>
 
-          {mensaje && (
-            <div className="departamentos-mensaje">
-              {mensaje}
-            </div>
-          )}
+          {mensaje && <div className="departamentos-mensaje">{mensaje}</div>}
 
-          {error && (
-            <div className="departamentos-error">
-              {error}
-            </div>
-          )}
+          {error && <div className="departamentos-error">{error}</div>}
 
           <div className="departamentos-actions">
             <button
@@ -173,16 +163,10 @@ function Departamentos() {
             <p>No existen departamentos registrados.</p>
           ) : (
             departamentos.map((departamento) => (
-              <div
-                className="departamento-item"
-                key={departamento.id}
-              >
+              <div className="departamento-item" key={departamento.id}>
                 <div>
                   <strong>{departamento.nombre}</strong>
-                  <p>
-                    {departamento.descripcion ||
-                      "Sin descripción"}
-                  </p>
+                  <p>{departamento.descripcion || "Sin descripción"}</p>
                 </div>
               </div>
             ))

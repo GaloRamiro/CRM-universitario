@@ -60,9 +60,7 @@ function Dashboard() {
 
             <h3>Sin datos todavía</h3>
 
-            <p>
-              Cuando comencemos a registrar solicitudes aparecerán aquí.
-            </p>
+            <p>Cuando comencemos a registrar solicitudes aparecerán aquí.</p>
           </div>
         </div>
 
