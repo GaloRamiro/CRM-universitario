@@ -3,13 +3,16 @@
 ========================================= */
 
 .main-layout {
+  width: 100%;
   min-height: 100vh;
+
   display: flex;
+
   background: #f5f7fb;
 }
 
 /* =========================================
-   CONTENIDO
+   CONTENIDO PRINCIPAL
 ========================================= */
 
 .main-content {
@@ -22,12 +25,14 @@
 }
 
 /* =========================================
-   CONTENIDO DE PÁGINA
+   CONTENIDO DE LAS PÁGINAS
 ========================================= */
 
-.main-page {
+.page-content {
   flex: 1;
-  padding: 24px;
+
+  padding: 28px;
+
   min-width: 0;
 }
 
@@ -44,47 +49,56 @@
 ========================================= */
 
 @media (max-width: 900px) {
-  .main-page {
-    padding: 20px;
+  .page-content {
+    padding: 24px;
   }
 }
 
 /* =========================================
-   CELULAR
+   MÓVIL
 ========================================= */
 
 @media (max-width: 768px) {
-  .main-page {
-    padding: 16px;
+  .main-layout {
+    display: block;
+  }
+
+  .main-content {
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  .page-content {
+    padding: 20px 16px;
   }
 
   .mobile-overlay {
-    display: block;
-
     position: fixed;
+
     inset: 0;
 
     width: 100%;
     height: 100%;
 
-    border: none;
-    padding: 0;
-    margin: 0;
+    display: block;
+
+    border: 0;
 
     background: rgba(15, 23, 42, 0.35);
 
     cursor: pointer;
 
-    z-index: 900;
+    z-index: 999;
   }
 }
 
 /* =========================================
-   CELULAR PEQUEÑO
+   MÓVIL PEQUEÑO
 ========================================= */
 
 @media (max-width: 480px) {
-  .main-page {
-    padding: 12px;
+  .page-content {
+    padding: 16px 12px;
   }
 }
+

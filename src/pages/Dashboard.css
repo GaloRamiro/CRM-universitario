@@ -479,3 +479,21 @@
   }
 }
 
+
+.tareas-header-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.tareas-header-acciones button {
+  flex-shrink: 0;
+}
+
+.tareas-btn-secundario,
+.tareas-btn-principal {
+  margin: 0;
+}
+

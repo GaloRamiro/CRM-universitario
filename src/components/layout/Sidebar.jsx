@@ -22,7 +22,6 @@ function Icon({ children }) {
 
 function Sidebar({ mobileOpen, onClose }) {
   const { profile } = useAuth();
-
   const [colapsado, setColapsado] = useState(false);
 
   const esAdministrador = profile?.rol === "admin";
@@ -38,35 +37,30 @@ function Sidebar({ mobileOpen, onClose }) {
 
   return (
     <aside
-      className={`sidebar
-        ${colapsado ? "sidebar-colapsado" : ""}
-        ${mobileOpen ? "sidebar-open" : ""}
-      `}
+      className={[
+        "sidebar",
+        colapsado ? "sidebar-colapsado" : "",
+        mobileOpen ? "sidebar-open" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
-      {/* ==========================================
-          MARCA
-      ========================================== */}
-
+      {/* MARCA */}
       <div className="sidebar-brand">
         <div className="brand-icon">G</div>
 
-        {!colapsado && (
-          <div className="brand-text">
-            <h1>Gestión</h1>
-            <span>Requerimientos</span>
-          </div>
-        )}
+        <div className="brand-text">
+          <h1>Gestión</h1>
+          <span>Requerimientos</span>
+        </div>
 
-        {/* BOTÓN COLAPSAR DESKTOP */}
-
+        {/* BOTÓN DESKTOP */}
         <button
           type="button"
           className="sidebar-toggle"
-          onClick={() => setColapsado(!colapsado)}
-          title={colapsado ? "Expandir menú" : "Ocultar menú"}
-          aria-label={
-            colapsado ? "Expandir menú" : "Ocultar menú"
-          }
+          onClick={() => setColapsado((prev) => !prev)}
+          title={colapsado ? "Expandir menú" : "Colapsar menú"}
+          aria-label={colapsado ? "Expandir menú" : "Colapsar menú"}
         >
           <Icon>
             {colapsado ? (
@@ -76,254 +70,140 @@ function Sidebar({ mobileOpen, onClose }) {
             )}
           </Icon>
         </button>
+
+        {/* BOTÓN CERRAR MÓVIL */}
+        <button
+          type="button"
+          className="sidebar-mobile-close"
+          onClick={onClose}
+          aria-label="Cerrar menú"
+        >
+          <Icon>
+            <line x1="6" y1="6" x2="18" y2="18" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+          </Icon>
+        </button>
       </div>
 
-      {/* ==========================================
-          NAVEGACIÓN
-      ========================================== */}
-
+      {/* NAVEGACIÓN */}
       <nav className="sidebar-nav">
 
         {/* DASHBOARD */}
-
         <NavLink
           to="/dashboard"
           className={linkClass}
-          title={colapsado ? "Dashboard" : ""}
           onClick={handleLinkClick}
+          title={colapsado ? "Dashboard" : undefined}
         >
           <Icon>
-            <rect
-              x="3"
-              y="3"
-              width="7"
-              height="7"
-            />
-
-            <rect
-              x="14"
-              y="3"
-              width="7"
-              height="7"
-            />
-
-            <rect
-              x="3"
-              y="14"
-              width="7"
-              height="7"
-            />
-
-            <rect
-              x="14"
-              y="14"
-              width="7"
-              height="7"
-            />
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
           </Icon>
 
-          {!colapsado && <span>Dashboard</span>}
+          <span>Dashboard</span>
         </NavLink>
 
         {/* TAREAS */}
-
         <NavLink
           to="/tareas"
           className={linkClass}
-          title={colapsado ? "Tareas" : ""}
           onClick={handleLinkClick}
+          title={colapsado ? "Tareas" : undefined}
         >
           <Icon>
-            <rect
-              x="4"
-              y="3"
-              width="16"
-              height="18"
-              rx="2"
-            />
-
-            <line
-              x1="8"
-              y1="8"
-              x2="16"
-              y2="8"
-            />
-
-            <line
-              x1="8"
-              y1="12"
-              x2="16"
-              y2="12"
-            />
-
-            <line
-              x1="8"
-              y1="16"
-              x2="13"
-              y2="16"
-            />
+            <rect x="4" y="3" width="16" height="18" rx="2" />
+            <line x1="8" y1="8" x2="16" y2="8" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+            <line x1="8" y1="16" x2="13" y2="16" />
           </Icon>
 
-          {!colapsado && <span>Tareas</span>}
+          <span>Tareas</span>
         </NavLink>
 
-        {/* CARGA DEL EQUIPO */}
-
+        {/* CARGA */}
         <NavLink
           to="/carga-equipo"
           className={linkClass}
-          title={colapsado ? "Carga del equipo" : ""}
           onClick={handleLinkClick}
+          title={colapsado ? "Carga del equipo" : undefined}
         >
           <Icon>
-            <circle
-              cx="9"
-              cy="7"
-              r="3"
-            />
-
-            <circle
-              cx="17"
-              cy="8"
-              r="2.5"
-            />
-
-            <path
-              d="M3 21v-2a6 6 0 0 1 12 0v2"
-            />
-
-            <path
-              d="M14 14a5 5 0 0 1 7 4v3"
-            />
+            <circle cx="9" cy="7" r="3" />
+            <circle cx="17" cy="8" r="2.5" />
+            <path d="M3 21v-2a6 6 0 0 1 12 0v2" />
+            <path d="M14 14a5 5 0 0 1 7 4v3" />
           </Icon>
 
-          {!colapsado && <span>Carga</span>}
+          <span>Carga</span>
         </NavLink>
 
-        {/* ==========================================
-            ADMINISTRACIÓN
-        ========================================== */}
-
+        {/* ADMINISTRACIÓN */}
         {esAdministrador && (
           <>
             {/* USUARIOS */}
-
             <NavLink
               to="/usuarios"
               className={linkClass}
-              title={colapsado ? "Usuarios" : ""}
               onClick={handleLinkClick}
+              title={colapsado ? "Usuarios" : undefined}
             >
               <Icon>
-                <path
-                  d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-                />
-
-                <circle
-                  cx="9"
-                  cy="7"
-                  r="4"
-                />
-
-                <path
-                  d="M22 21v-2a4 4 0 0 0-3-3.87"
-                />
-
-                <path
-                  d="M16 3.13a4 4 0 0 1 0 7.75"
-                />
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </Icon>
 
-              {!colapsado && <span>Usuarios</span>}
+              <span>Usuarios</span>
             </NavLink>
 
             {/* DEPARTAMENTOS */}
-
             <NavLink
               to="/departamentos"
               className={linkClass}
-              title={colapsado ? "Departamentos" : ""}
               onClick={handleLinkClick}
+              title={colapsado ? "Departamentos" : undefined}
             >
               <Icon>
                 <path d="M3 21h18" />
-
-                <path
-                  d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"
-                />
-
+                <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" />
                 <path d="M9 7h2" />
                 <path d="M13 7h2" />
-
                 <path d="M9 11h2" />
                 <path d="M13 11h2" />
-
                 <path d="M9 15h2" />
                 <path d="M13 15h2" />
               </Icon>
 
-              {!colapsado && (
-                <span>Departamentos</span>
-              )}
+              <span>Departamentos</span>
             </NavLink>
 
             {/* REPORTES */}
-
             <NavLink
               to="/reportes"
               className={linkClass}
-              title={colapsado ? "Reportes" : ""}
               onClick={handleLinkClick}
+              title={colapsado ? "Reportes" : undefined}
             >
               <Icon>
-                <line
-                  x1="4"
-                  y1="19"
-                  x2="4"
-                  y2="10"
-                />
-
-                <line
-                  x1="10"
-                  y1="19"
-                  x2="10"
-                  y2="5"
-                />
-
-                <line
-                  x1="16"
-                  y1="19"
-                  x2="16"
-                  y2="12"
-                />
-
-                <line
-                  x1="22"
-                  y1="19"
-                  x2="22"
-                  y2="8"
-                />
+                <line x1="4" y1="19" x2="4" y2="10" />
+                <line x1="10" y1="19" x2="10" y2="5" />
+                <line x1="16" y1="19" x2="16" y2="12" />
+                <line x1="22" y1="19" x2="22" y2="8" />
               </Icon>
 
-              {!colapsado && <span>Reportes</span>}
+              <span>Reportes</span>
             </NavLink>
           </>
         )}
       </nav>
 
-      {/* ==========================================
-          FOOTER
-      ========================================== */}
-
+      {/* FOOTER */}
       <div className="sidebar-footer">
-        {!colapsado ? (
-          <>
-            <span>CRM interno</span>
-            <small>v1.0</small>
-          </>
-        ) : (
-          <small>v1.0</small>
-        )}
+        <span>CRM interno</span>
+        <small>v1.0</small>
       </div>
     </aside>
   );
