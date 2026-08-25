@@ -1028,6 +1028,29 @@
   font-weight: 600;
 }
 
+/* =========================================================
+   BOTON SECUNDARIO
+   ========================================================= */
+
+.tareas-btn-secundario {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #d5deea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #074a7b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tareas-btn-secundario:hover {
+  background: #eef5fa;
+  border-color: #074a7b;
+  transform: translateY(-1px);
+}
+
 @keyframes tareas-spin {
   to {
     transform: rotate(360deg);
@@ -1136,7 +1159,12 @@
     flex-direction: column;
     margin-bottom: 18px;
   }
-
+   .tareas-header-acciones {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  
   .tareas-header h1 {
     font-size: 27px;
   }

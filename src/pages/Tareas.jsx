@@ -858,7 +858,7 @@ function Tareas() {
               navigate("/tareas/completadas")
             }
           >
-            Tareas completadas
+            Dashboard
           </button>
 
           <button
