@@ -1,0 +1,481 @@
+/* =========================================
+   SOLICITUDES RECIENTES
+   ========================================= */
+
+.dashboard-grid > .dashboard-panel:first-child {
+  overflow: hidden;
+}
+
+.dashboard-grid > .dashboard-panel:first-child .panel-header {
+  margin-bottom: 18px;
+}
+
+/* Contenedor de las solicitudes */
+.recent-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Cada solicitud */
+.recent-request-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+
+  padding: 13px 14px;
+
+  background: #f8fafc;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.recent-request-item:hover {
+  background: #ffffff;
+  border-color: #d7e0ea;
+  transform: translateY(-1px);
+}
+
+/* Información principal */
+.recent-request-info {
+  min-width: 0;
+}
+
+.recent-request-title {
+  margin: 0 0 4px;
+
+  font-size: 14px;
+  font-weight: 700;
+  color: #172033;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-request-user {
+  margin: 0;
+
+  font-size: 12px;
+  color: #7b8798;
+}
+
+/* Información derecha */
+.recent-request-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Estado */
+.recent-request-status {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Estados */
+.recent-request-status.pendiente {
+  background: #fff7e6;
+  color: #b77900;
+}
+
+.recent-request-status.en-progreso {
+  background: #eaf3ff;
+  color: #1769aa;
+}
+
+.recent-request-status.completada {
+  background: #eaf8f0;
+  color: #21864b;
+}
+
+.recent-request-status.cancelada {
+  background: #fcebec;
+  color: #c43d45;
+}
+
+/* Prioridad */
+.recent-request-priority {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7b8798;
+}
+
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+
+@media (max-width: 900px) {
+  .recent-request-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .recent-request-meta {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .recent-request-item {
+    padding: 12px;
+  }
+
+  .recent-request-title {
+    white-space: normal;
+  }
+
+  .recent-request-meta {
+    flex-wrap: wrap;
+  }
+}
+
+/* ================================
+   SOLICITUDES RECIENTES
+================================ */
+
+.recent-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 10px;
+}
+
+.recent-task {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid #e8edf3;
+}
+
+.recent-task:last-child {
+  border-bottom: none;
+}
+
+.recent-task-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.recent-task-info strong {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-task-info span {
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.recent-task-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ================================
+   PRIORIDAD
+================================ */
+
+.priority-badge,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.priority-badge {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.priority-alta {
+  background: #fff1f2;
+  color: #dc2626;
+}
+
+.priority-media {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.priority-baja {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* ================================
+   ESTADO
+================================ */
+
+.status-pendiente {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.status-en_progreso {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.status-completada {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+/* ================================
+   RESPONSIVE
+================================ */
+
+@media (max-width: 900px) {
+  .recent-task {
+    align-items: flex-start;
+  }
+
+  .recent-task-meta {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 600px) {
+  .recent-task {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .recent-task-info {
+    width: 100%;
+  }
+
+  .recent-task-info strong {
+    white-space: normal;
+  }
+
+  .recent-task-meta {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+}
+
+
+/* ========================================
+   SOLICITUDES RECIENTES
+   ======================================== */
+
+.recent-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+/* Cada solicitud */
+
+.recent-task {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #e7ebf0;
+  border-radius: 12px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  font: inherit;
+}
+
+.recent-task:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.recent-task:focus-visible {
+  outline: 2px solid #074a7b;
+  outline-offset: 2px;
+}
+
+/* Información principal */
+
+.recent-task-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.recent-task-info strong {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-task-info span {
+  color: #718096;
+  font-size: 12px;
+}
+
+/* Estados y prioridades */
+
+.recent-task-meta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priority-badge,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Prioridades */
+
+.priority-alta {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.priority-media {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.priority-baja {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* Estados */
+
+.status-pendiente {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.status-en_progreso {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-completada {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+/* ========================================
+   PAGINACIÓN
+   ======================================== */
+
+.recent-tasks-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #edf0f4;
+}
+
+.recent-tasks-pagination span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.recent-tasks-pagination button {
+  border: 1px solid #dbe2ea;
+  background: #ffffff;
+  color: #074a7b;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.recent-tasks-pagination button:hover:not(:disabled) {
+  background: #f4f8fb;
+  border-color: #074a7b;
+}
+
+.recent-tasks-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 700px) {
+  .recent-task {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .recent-task-meta {
+    width: 100%;
+  }
+
+  .recent-tasks-pagination {
+    flex-wrap: wrap;
+  }
+}
+

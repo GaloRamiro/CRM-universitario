@@ -1,32 +1,93 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
 import { supabase } from "../lib/supabase";
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const cargarPerfil = async (authUser) => {
+    if (!authUser) {
+      setProfile(null);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select(`
+        id,
+        nombre,
+        apellido,
+        email,
+        rol,
+        activo,
+        departamento_id
+      `)
+      .eq("auth_user_id", authUser.id)
+      .single();
+
+    if (error) {
+      console.error("Error cargando perfil:", error);
+      setProfile(null);
+      return;
+    }
+
+    setProfile(data);
+  };
 
   useEffect(() => {
     let mounted = true;
 
-    const getSession = async () => {
+    const inicializarSesion = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
+      if (!mounted) return;
+
+      const authUser = session?.user ?? null;
+
+      setUser(authUser);
+
+      if (authUser) {
+        await cargarPerfil(authUser);
+      } else {
+        setProfile(null);
+      }
+
       if (mounted) {
-        setUser(session?.user ?? null);
         setLoading(false);
       }
     };
 
-    getSession();
+    inicializarSesion();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+
+      const authUser = session?.user ?? null;
+
+      setUser(authUser);
+
+      if (authUser) {
+        await cargarPerfil(authUser);
+      } else {
+        setProfile(null);
+      }
+
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
     return () => {
@@ -36,17 +97,26 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = async () => {
-    await supabase.auth.signOut();
-  };
+    const { error } = await supabase.auth.signOut();
 
-  const value = {
-    user,
-    loading,
-    logout,
+    if (error) {
+      console.error("Error cerrando sesión:", error);
+      throw error;
+    }
+
+    setUser(null);
+    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        loading,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

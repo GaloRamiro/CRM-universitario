@@ -1,0 +1,387 @@
+.departamentos-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.departamentos-header {
+  margin-bottom: 24px;
+}
+
+.departamentos-header h1 {
+  margin: 6px 0 8px;
+  font-size: 32px;
+  line-height: 1.2;
+  color: #10233f;
+}
+
+.departamentos-header p {
+  margin: 0;
+  color: #71809a;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* =========================
+   TARJETAS
+========================= */
+
+.departamentos-card {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e1e7ef;
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(16, 35, 63, 0.06);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+/* =========================
+   SECCIONES
+========================= */
+
+.departamentos-section {
+  padding: 28px 30px 20px;
+  box-sizing: border-box;
+}
+
+.departamentos-section h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  line-height: 1.3;
+  color: #10233f;
+}
+
+.departamentos-section > p {
+  margin: 0;
+  color: #71809a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* =========================
+   FORMULARIO
+========================= */
+
+.departamentos-card form {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 30px 28px;
+}
+
+.departamentos-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* IMPORTANTE:
+   El JSX usa .form-group
+*/
+
+.form-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #243b5a;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d5deea;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #172033;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-group input {
+  min-height: 48px;
+  padding: 0 15px;
+}
+
+.form-group textarea {
+  min-height: 110px;
+  padding: 14px 15px;
+  resize: vertical;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #a1aec0;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #074a7b;
+  box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.1);
+}
+
+/* =========================
+   MENSAJES
+========================= */
+
+.departamentos-mensaje,
+.departamentos-error {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 15px;
+  margin-top: 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.departamentos-mensaje {
+  background: #eaf7f0;
+  border: 1px solid #c9ead8;
+  color: #167044;
+}
+
+.departamentos-error {
+  background: #fff0f0;
+  border: 1px solid #f1cccc;
+  color: #b42323;
+}
+
+/* =========================
+   BOTÓN
+========================= */
+
+/* IMPORTANTE:
+   El JSX usa .departamentos-actions
+*/
+
+.departamentos-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 18px;
+}
+
+.departamentos-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid #074a7b;
+  border-radius: 10px;
+  background: #074a7b;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.departamentos-btn:hover {
+  background: #063f69;
+  transform: translateY(-1px);
+}
+
+.departamentos-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================
+   LISTADO
+========================= */
+
+.departamentos-lista {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 30px 30px;
+}
+
+.departamento-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-top: 1px solid #e8edf3;
+}
+
+.departamento-item:first-child {
+  border-top: none;
+}
+
+.departamento-item strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #10233f;
+  font-size: 15px;
+}
+
+.departamento-item p {
+  margin: 0;
+  color: #71809a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.departamentos-lista > p {
+  margin: 0;
+  padding: 10px 0;
+  color: #71809a;
+  font-size: 14px;
+}
+
+/* =========================
+   TABLET
+========================= */
+
+@media (max-width: 800px) {
+  .departamentos-page {
+    padding: 24px 20px;
+  }
+
+  .departamentos-header h1 {
+    font-size: 28px;
+  }
+
+  .departamentos-card {
+    border-radius: 18px;
+  }
+
+  .departamentos-section {
+    padding: 24px 22px 18px;
+  }
+
+  .departamentos-card form {
+    padding: 0 22px 24px;
+  }
+
+  .departamentos-lista {
+    padding: 0 22px 24px;
+  }
+
+  .departamentos-btn {
+    min-height: 46px;
+  }
+}
+
+/* =========================
+   MÓVIL
+========================= */
+
+@media (max-width: 520px) {
+  .departamentos-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 18px 14px;
+  }
+
+  .departamentos-header {
+    margin-bottom: 18px;
+  }
+
+  .departamentos-header h1 {
+    font-size: 25px;
+    line-height: 1.2;
+  }
+
+  .departamentos-header p {
+    font-size: 14px;
+  }
+
+  .departamentos-card {
+    width: 100%;
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+
+  .departamentos-section {
+    padding: 20px 16px 16px;
+  }
+
+  .departamentos-section h2 {
+    font-size: 18px;
+  }
+
+  .departamentos-section > p {
+    font-size: 13px;
+  }
+
+  .departamentos-card form {
+    padding: 0 16px 20px;
+  }
+
+  .departamentos-form {
+    gap: 15px;
+  }
+
+  .form-group {
+    gap: 7px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-group input {
+    min-height: 46px;
+    padding: 0 13px;
+    font-size: 14px;
+  }
+
+  .form-group textarea {
+    min-height: 100px;
+    padding: 12px 13px;
+    font-size: 14px;
+  }
+
+  .departamentos-actions {
+    margin-top: 15px;
+  }
+
+  .departamentos-btn {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .departamentos-mensaje,
+  .departamentos-error {
+    margin-top: 15px;
+    font-size: 13px;
+  }
+
+  .departamentos-lista {
+    padding: 0 16px 20px;
+  }
+
+  .departamento-item {
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 0;
+  }
+
+  .departamento-item strong {
+    font-size: 14px;
+  }
+
+  .departamento-item p {
+    font-size: 13px;
+  }
+}
+

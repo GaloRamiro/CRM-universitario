@@ -20,7 +20,6 @@
     #f4f7fa;
 }
 
-
 /* ==============================
    CARD
 ================================ */
@@ -41,7 +40,6 @@
     0 20px 50px rgba(15, 23, 42, 0.08),
     0 4px 12px rgba(15, 23, 42, 0.04);
 }
-
 
 /* ==============================
    HEADER
@@ -86,7 +84,6 @@
   color: #64748b;
 }
 
-
 /* ==============================
    FORM
 ================================ */
@@ -96,7 +93,6 @@
   flex-direction: column;
   gap: 20px;
 }
-
 
 /* ==============================
    INPUT GROUP
@@ -152,10 +148,8 @@
 .form-group input:focus {
   border-color: #074a7b;
 
-  box-shadow:
-    0 0 0 3px rgba(7, 74, 123, 0.1);
+  box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.1);
 }
-
 
 /* ==============================
    MESSAGE
@@ -174,7 +168,6 @@
   font-size: 13px;
   line-height: 1.4;
 }
-
 
 /* ==============================
    BUTTON
@@ -207,8 +200,7 @@
 .login-button:hover {
   transform: translateY(-1px);
 
-  box-shadow:
-    0 8px 20px rgba(7, 74, 123, 0.2);
+  box-shadow: 0 8px 20px rgba(7, 74, 123, 0.2);
 }
 
 .login-button:active {
@@ -221,7 +213,6 @@
 
   transform: none;
 }
-
 
 /* ==============================
    FOOTER
@@ -237,13 +228,11 @@
   color: #94a3b8;
 }
 
-
 /* ==============================
    RESPONSIVE
 ================================ */
 
 @media (max-width: 600px) {
-
   .login-page {
     padding: 20px;
   }
@@ -261,16 +250,13 @@
   .login-header p {
     font-size: 13px;
   }
-
 }
-
 
 /* ==============================
    SMALL MOBILE
 ================================ */
 
 @media (max-width: 380px) {
-
   .login-page {
     padding: 14px;
   }
@@ -282,5 +268,4 @@
   .login-header h1 {
     font-size: 25px;
   }
-
 }

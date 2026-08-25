@@ -1,0 +1,300 @@
+.carga-equipo-page {
+  padding: 32px;
+}
+
+.carga-equipo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.carga-equipo-header h1 {
+  margin: 6px 0;
+  color: #172033;
+}
+
+.carga-equipo-header p {
+  margin: 0;
+  color: #687386;
+}
+
+.carga-equipo-recargar {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  background: #074a7b;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.carga-equipo-filtro {
+  background: white;
+  border: 1px solid #e7ebf0;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.carga-equipo-filtro label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #172033;
+}
+
+.carga-equipo-filtro input {
+  border: 1px solid #d9dfe7;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font: inherit;
+}
+
+.carga-equipo-fecha {
+  color: #687386;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.carga-equipo-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.carga-resumen-card {
+  background: white;
+  border: 1px solid #e7ebf0;
+  border-radius: 20px;
+  padding: 22px;
+}
+
+.carga-resumen-card span {
+  display: block;
+  color: #687386;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.carga-resumen-card strong {
+  font-size: 28px;
+  color: #172033;
+}
+
+.carga-resumen-card.carga-alta {
+  border-left: 4px solid #d99b00;
+}
+
+.carga-resumen-card.carga-roja {
+  border-left: 4px solid #d64545;
+}
+
+.alerta-sobrecarga {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff5f5;
+  border: 1px solid #f1caca;
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.alerta-icono {
+  font-size: 24px;
+}
+
+.alerta-sobrecarga strong {
+  color: #a52828;
+}
+
+.alerta-sobrecarga p {
+  margin: 4px 0 0;
+  color: #765050;
+}
+
+.carga-equipo-card {
+  background: white;
+  border: 1px solid #e7ebf0;
+  border-radius: 24px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 25px rgba(23, 32, 51, 0.05);
+}
+
+.carga-equipo-card-header {
+  margin-bottom: 20px;
+}
+
+.carga-equipo-card-header h2 {
+  margin: 0 0 6px;
+  color: #172033;
+}
+
+.carga-equipo-card-header p {
+  margin: 0;
+  color: #687386;
+}
+
+.carga-tabla-wrapper {
+  overflow-x: auto;
+}
+
+.carga-tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.carga-tabla th {
+  text-align: left;
+  padding: 14px;
+  color: #687386;
+  font-size: 13px;
+  border-bottom: 1px solid #e7ebf0;
+}
+
+.carga-tabla td {
+  padding: 17px 14px;
+  border-bottom: 1px solid #eef1f4;
+}
+
+.responsable-info strong {
+  display: block;
+  color: #172033;
+}
+
+.responsable-info small {
+  color: #8993a4;
+}
+
+.barra-carga {
+  width: 150px;
+  height: 9px;
+  background: #edf0f4;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.barra-carga-progreso {
+  height: 100%;
+  border-radius: 20px;
+}
+
+.nivel-normal {
+  background: #38a169;
+}
+
+.nivel-alta {
+  background: #d99b00;
+}
+
+.nivel-sobrecargado {
+  background: #d64545;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.badge-verde {
+  background: #e9f7ef;
+  color: #237a45;
+}
+
+.badge-amarillo {
+  background: #fff7df;
+  color: #946c00;
+}
+
+.badge-rojo {
+  background: #fff0f0;
+  color: #b52d2d;
+}
+
+.carga-equipo-vacio {
+  padding: 30px;
+  text-align: center;
+  color: #8993a4;
+}
+
+.lista-tareas-carga {
+  display: flex;
+  flex-direction: column;
+}
+
+.tarea-carga-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid #eef1f4;
+}
+
+.tarea-carga-item:last-child {
+  border-bottom: none;
+}
+
+.tarea-carga-item strong {
+  display: block;
+  color: #172033;
+}
+
+.tarea-carga-item span {
+  display: block;
+  margin-top: 5px;
+  color: #687386;
+  font-size: 14px;
+}
+
+.tarea-carga-tiempo {
+  font-weight: 700;
+  color: #074a7b;
+  white-space: nowrap;
+}
+
+.carga-equipo-error {
+  background: #fff0f0;
+  border: 1px solid #f1caca;
+  color: #a52828;
+  padding: 15px 18px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .carga-equipo-page {
+    padding: 20px;
+  }
+
+  .carga-equipo-resumen {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .carga-equipo-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .carga-equipo-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .carga-equipo-filtro {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
