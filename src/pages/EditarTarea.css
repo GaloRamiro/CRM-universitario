@@ -1,0 +1,271 @@
+.editar-tarea-page {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 28px 60px;
+  box-sizing: border-box;
+}
+
+.editar-tarea-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.editar-tarea-header h1 {
+  margin: 6px 0 8px;
+  font-size: 34px;
+  font-weight: 800;
+  color: #172033;
+  letter-spacing: -0.8px;
+}
+
+.editar-tarea-header p {
+  margin: 0;
+  color: #667085;
+  font-size: 15px;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #074a7b;
+}
+
+.editar-tarea-card {
+  background: #ffffff;
+  border: 1px solid #e4eaf1;
+  border-radius: 24px;
+  box-shadow: 0 14px 40px rgba(23, 32, 51, 0.08);
+  overflow: hidden;
+}
+
+.formulario-seccion {
+  padding: 30px 34px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.seccion-titulo {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.seccion-titulo > span {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #eaf3f9;
+  color: #074a7b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.seccion-titulo h2 {
+  margin: 0 0 5px;
+  font-size: 20px;
+  color: #172033;
+}
+
+.seccion-titulo p {
+  margin: 0;
+  color: #7a8495;
+  font-size: 14px;
+}
+
+.formulario-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.campo-completo {
+  margin-bottom: 20px;
+}
+
+.campo label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #344054;
+}
+
+.campo input,
+.campo textarea,
+.campo select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d7dee8;
+  border-radius: 12px;
+  background: #fbfcfe;
+  color: #172033;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.campo input,
+.campo select {
+  height: 48px;
+  padding: 0 14px;
+}
+
+.campo textarea {
+  padding: 13px 14px;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.campo input:focus,
+.campo textarea:focus,
+.campo select:focus {
+  border-color: #074a7b;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(7, 74, 123, 0.08);
+}
+
+.acciones-formulario {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px 34px;
+  background: #f8fafc;
+}
+
+.btn-secundario,
+.btn-cancelar,
+.btn-guardar {
+  border: 0;
+  border-radius: 11px;
+  min-height: 44px;
+  padding: 0 18px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-secundario,
+.btn-cancelar {
+  background: #ffffff;
+  color: #475467;
+  border: 1px solid #d7dee8;
+}
+
+.btn-secundario:hover,
+.btn-cancelar:hover {
+  background: #f2f5f8;
+  transform: translateY(-1px);
+}
+
+.btn-guardar {
+  background: #074a7b;
+  color: white;
+  box-shadow: 0 8px 18px rgba(7, 74, 123, 0.2);
+}
+
+.btn-guardar:hover {
+  background: #053b63;
+  transform: translateY(-1px);
+}
+
+.btn-guardar:disabled,
+.btn-cancelar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mensaje-error,
+.mensaje-exito {
+  margin: 0 34px 20px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.mensaje-error {
+  background: #fff1f1;
+  border: 1px solid #ffd5d5;
+  color: #b42318;
+}
+
+.mensaje-exito {
+  background: #ecfdf3;
+  border: 1px solid #c6f0d5;
+  color: #067647;
+}
+
+.estado-carga {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #667085;
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #e4eaf1;
+  border-top-color: #074a7b;
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 700px) {
+  .editar-tarea-page {
+    padding: 20px 14px 40px;
+  }
+
+  .editar-tarea-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .formulario-seccion {
+    padding: 24px 20px;
+  }
+
+  .formulario-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .acciones-formulario {
+    padding: 20px;
+    flex-direction: column-reverse;
+  }
+
+  .btn-cancelar,
+  .btn-guardar {
+    width: 100%;
+  }
+}

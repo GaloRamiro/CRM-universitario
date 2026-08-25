@@ -1,0 +1,90 @@
+/* =========================================
+   MAIN LAYOUT
+========================================= */
+
+.main-layout {
+  min-height: 100vh;
+  display: flex;
+  background: #f5f7fb;
+}
+
+/* =========================================
+   CONTENIDO
+========================================= */
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================
+   CONTENIDO DE PÁGINA
+========================================= */
+
+.main-page {
+  flex: 1;
+  padding: 24px;
+  min-width: 0;
+}
+
+/* =========================================
+   OVERLAY MÓVIL
+========================================= */
+
+.mobile-overlay {
+  display: none;
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+  .main-page {
+    padding: 20px;
+  }
+}
+
+/* =========================================
+   CELULAR
+========================================= */
+
+@media (max-width: 768px) {
+  .main-page {
+    padding: 16px;
+  }
+
+  .mobile-overlay {
+    display: block;
+
+    position: fixed;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    border: none;
+    padding: 0;
+    margin: 0;
+
+    background: rgba(15, 23, 42, 0.35);
+
+    cursor: pointer;
+
+    z-index: 900;
+  }
+}
+
+/* =========================================
+   CELULAR PEQUEÑO
+========================================= */
+
+@media (max-width: 480px) {
+  .main-page {
+    padding: 12px;
+  }
+}
