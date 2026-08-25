@@ -6,20 +6,30 @@
   width: 250px;
   min-width: 250px;
   height: 100vh;
+
   background: #ffffff;
   border-right: 1px solid #e8edf3;
+
   display: flex;
   flex-direction: column;
+
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  overflow: hidden;
+
+  z-index: 1000;
+
   transition:
     width 0.25s ease,
-    min-width 0.25s ease;
-  overflow: hidden;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+    transform 0.25s ease;
 }
 
-/* SIDEBAR COLAPSADO */
+/* =========================================
+   SIDEBAR COLAPSADO
+========================================= */
 
 .sidebar.sidebar-colapsado {
   width: 76px;
@@ -32,11 +42,17 @@
 
 .sidebar-brand {
   height: 82px;
+  min-height: 82px;
+
   padding: 0 14px;
+
   display: flex;
   align-items: center;
+
   gap: 12px;
+
   border-bottom: 1px solid #edf1f5;
+
   position: relative;
 }
 
@@ -45,36 +61,58 @@
   padding: 0;
 }
 
+/* =========================================
+   ICONO G
+========================================= */
+
 .brand-icon {
   width: 42px;
   height: 42px;
   min-width: 42px;
+
   border-radius: 12px;
+
   background: #074a7b;
-  color: white;
+  color: #ffffff;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   font-size: 20px;
   font-weight: 800;
 }
 
+/* =========================================
+   TEXTO MARCA
+========================================= */
+
 .brand-text {
   min-width: 0;
+  overflow: hidden;
 }
 
 .brand-text h1 {
   margin: 0;
+
+  color: #172033;
+
   font-size: 18px;
   line-height: 1.1;
-  color: #172033;
+
+  white-space: nowrap;
 }
 
 .brand-text span {
   display: block;
+
   margin-top: 4px;
-  font-size: 11px;
+
   color: #7b8798;
+
+  font-size: 11px;
+
+  white-space: nowrap;
 }
 
 /* =========================================
@@ -83,8 +121,9 @@
 
 .sidebar-toggle {
   position: absolute;
+
   right: -13px;
-  top: 29px;
+  top: 27px;
 
   width: 28px;
   height: 28px;
@@ -100,14 +139,14 @@
   justify-content: center;
 
   cursor: pointer;
-  z-index: 10;
+
+  z-index: 20;
 
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 
   transition:
     background 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+    color 0.2s ease;
 }
 
 .sidebar-toggle:hover {
@@ -126,32 +165,47 @@
 
 .sidebar-nav {
   flex: 1;
+
   padding: 20px 12px;
+
   display: flex;
   flex-direction: column;
+
   gap: 6px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
+/* =========================================
+   LINKS
+========================================= */
+
 .nav-link {
+  width: 100%;
   min-height: 46px;
+
   padding: 0 14px;
 
   display: flex;
   align-items: center;
+
   gap: 13px;
 
   border-radius: 12px;
 
   color: #657286;
+
   text-decoration: none;
 
   font-size: 14px;
   font-weight: 500;
 
+  flex-shrink: 0;
+
   transition:
     background 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+    color 0.2s ease;
 }
 
 .nav-link:hover {
@@ -162,6 +216,7 @@
 .nav-link-activo {
   background: #eaf3f9;
   color: #074a7b;
+
   font-weight: 700;
 }
 
@@ -176,8 +231,15 @@
 .sidebar-icon {
   width: 20px;
   height: 20px;
+
   min-width: 20px;
+
+  flex-shrink: 0;
 }
+
+/* =========================================
+   COLAPSADO
+========================================= */
 
 .sidebar-colapsado .nav-link {
   justify-content: center;
@@ -195,6 +257,7 @@
 
 .sidebar-footer {
   min-height: 65px;
+
   padding: 15px;
 
   border-top: 1px solid #edf1f5;
@@ -204,7 +267,10 @@
   justify-content: space-between;
 
   color: #8a95a5;
+
   font-size: 11px;
+
+  flex-shrink: 0;
 }
 
 .sidebar-colapsado .sidebar-footer {
@@ -216,10 +282,11 @@
 }
 
 /* =========================================
-   RESPONSIVE
+   TABLET
 ========================================= */
 
 @media (max-width: 900px) {
+
   .sidebar {
     width: 76px;
     min-width: 76px;
@@ -244,4 +311,90 @@
   .sidebar .sidebar-footer {
     justify-content: center;
   }
+
 }
+
+/* =========================================
+   CELULAR
+========================================= */
+
+@media (max-width: 768px) {
+
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+
+    transform: translateX(-100%);
+
+    box-shadow: 12px 0 35px rgba(16, 35, 63, 0.15);
+  }
+
+  /*
+    En celular siempre será menú completo.
+    No queremos que aparezca reducido a 76px.
+  */
+
+  .sidebar.sidebar-colapsado {
+    width: 280px;
+    min-width: 280px;
+  }
+
+  .sidebar.sidebar-colapsado .brand-text,
+  .sidebar.sidebar-colapsado .nav-link span,
+  .sidebar.sidebar-colapsado .sidebar-footer span {
+    display: block;
+  }
+
+  .sidebar.sidebar-colapsado .sidebar-brand {
+    justify-content: flex-start;
+    padding: 0 14px;
+  }
+
+  .sidebar.sidebar-colapsado .nav-link {
+    justify-content: flex-start;
+    padding: 0 14px;
+  }
+
+  .sidebar.sidebar-colapsado .sidebar-footer {
+    justify-content: space-between;
+  }
+
+  /*
+    El botón circular de escritorio
+    desaparece en celular.
+  */
+
+  .sidebar-toggle {
+    display: none;
+  }
+
+}
+
+/* =========================================
+   CELULAR PEQUEÑO
+========================================= */
+
+@media (max-width: 480px) {
+
+  .sidebar,
+  .sidebar.sidebar-colapsado {
+    width: 285px;
+    min-width: 285px;
+  }
+
+  .sidebar-brand {
+    height: 76px;
+    min-height: 76px;
+  }
+
+  .sidebar-nav {
+    padding: 16px 12px;
+  }
+
+  .nav-link {
+    min-height: 46px;
+    font-size: 14px;
+  }
+
+}
+

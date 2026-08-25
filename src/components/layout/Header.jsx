@@ -1,8 +1,7 @@
 import { useAuth } from "../../context/AuthContext";
-
 import "./Header.css";
 
-function Header() {
+function Header({ onMenuClick }) {
   const { user, logout } = useAuth();
 
   const handleLogout = async () => {
@@ -14,14 +13,32 @@ function Header() {
 
   return (
     <header className="header">
-      <div className="header-title">
-        <h2>Panel de gestión</h2>
-        <p>
-          Administra y controla los requerimientos de tu equipo.
-        </p>
+
+      <div className="header-left">
+
+        <button
+          type="button"
+          className="mobile-menu-button"
+          onClick={onMenuClick}
+          aria-label="Abrir menú"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div className="header-title">
+          <h2>Panel de gestión</h2>
+
+          <p>
+            Administra y controla los requerimientos de tu equipo.
+          </p>
+        </div>
+
       </div>
 
       <div className="header-user">
+
         <div className="user-avatar">
           {inicial}
         </div>
@@ -38,7 +55,9 @@ function Header() {
         >
           Cerrar sesión
         </button>
+
       </div>
+
     </header>
   );
 }

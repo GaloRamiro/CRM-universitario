@@ -1,0 +1,20 @@
+[33md28fd73[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/desarollo[m[33m)[m feat: departemeos arreglado el css
+[33mf031aa5[m[33m ([m[1;31morigin/feature/desarollo[m[33m)[m feat: mejorar dashboared con datos reales y paginacion
+[33m2f31602[m feat: implementar autenticacion y proteccion de rutas
+[33m63b89cb[m Feat : extructura de tareas mejor estilo visual
+[33m52a937c[m feat: generacion de reportes y creacion de nuevas tareas con departamentos
+[33mad2fc1c[m feat: agregar carga de equipo y mejorar sidebar
+[33mf693605[m feat: tareas nueva tarea
+[33me879614[m feat: implementar gestion de uarurios y roles
+[33m5197ce6[m feat: conectar usuarios consupabase
+[33m48a471a[m feat:diseñar modulos de usuarios
+[33m35c3bbf[m feat: agregar control de roles y mostrar usuarios
+[33m1429a3c[m feta: controlar acceso por roles
+[33mecb0989[m feat: integrar perfil de usuario en AuthContext
+[33m6fdb66c[m fix: configurar rutas SPA para Vercel
+[33mf78e431[m chore: proteger variables de entorno
+[33mf3a89bd[m feat: implementar autenticacion y estilos del login
+[33me4c4ecc[m feature: implemetar interfaz base responsive
+[33m67419a0[m Feature: crear estructuras de base del CRM de tareas
+[33m296705f[m feat: crear estructura base y navegación
+[33md34a615[m chore: crear proyecto inicial React
