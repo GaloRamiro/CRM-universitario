@@ -107,7 +107,7 @@ function Sidebar() {
             <path d="M14 14a5 5 0 0 1 7 4v3" />
           </Icon>
 
-          {!colapsado && <span>Carga del equipo</span>}
+          {!colapsado && <span>Carga</span>}
         </NavLink>
 
         {/* OPCIONES DE ADMINISTRADOR */}
