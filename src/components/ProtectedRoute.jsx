@@ -1,38 +1,14 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 
 function ProtectedRoute() {
-  const [cargando, setCargando] = useState(true);
-  const [sesion, setSesion] = useState(null);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    const obtenerSesion = async () => {
-      const { data } = await supabase.auth.getSession();
-
-      setSesion(data.session);
-      setCargando(false);
-    };
-
-    obtenerSesion();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSesion(session);
-      setCargando(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  if (cargando) {
+  if (loading) {
     return <p>Verificando sesión...</p>;
   }
 
-  if (!sesion) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 

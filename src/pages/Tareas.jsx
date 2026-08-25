@@ -77,7 +77,10 @@ function Tareas() {
       }
 
       if (departamentosError) {
-        console.error("Error cargando departamentos:", departamentosError);
+        console.error(
+          "Error cargando departamentos:",
+          departamentosError
+        );
       }
 
       setTareas(tareasData || []);
@@ -105,7 +108,9 @@ function Tareas() {
     if (!id) return null;
 
     return (
-      departamentos.find((departamento) => departamento.id === id) || null
+      departamentos.find(
+        (departamento) => departamento.id === id
+      ) || null
     );
   };
 
@@ -116,7 +121,9 @@ function Tareas() {
       return "Sin responsable";
     }
 
-    return `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim();
+    return `${usuario.nombre || ""} ${
+      usuario.apellido || ""
+    }`.trim();
   };
 
   const obtenerNombreDepartamento = (id) => {
@@ -190,19 +197,27 @@ function Tareas() {
     const nuevaFecha = new Date(fechaActual);
 
     if (vista === "dia") {
-      nuevaFecha.setDate(nuevaFecha.getDate() + cantidad);
+      nuevaFecha.setDate(
+        nuevaFecha.getDate() + cantidad
+      );
     }
 
     if (vista === "semana") {
-      nuevaFecha.setDate(nuevaFecha.getDate() + cantidad * 7);
+      nuevaFecha.setDate(
+        nuevaFecha.getDate() + cantidad * 7
+      );
     }
 
     if (vista === "mes") {
-      nuevaFecha.setMonth(nuevaFecha.getMonth() + cantidad);
+      nuevaFecha.setMonth(
+        nuevaFecha.getMonth() + cantidad
+      );
     }
 
     if (vista === "anio") {
-      nuevaFecha.setFullYear(nuevaFecha.getFullYear() + cantidad);
+      nuevaFecha.setFullYear(
+        nuevaFecha.getFullYear() + cantidad
+      );
     }
 
     setFechaActual(nuevaFecha);
@@ -230,7 +245,9 @@ function Tareas() {
     return Array.from({ length: 7 }, (_, index) => {
       const fecha = new Date(inicioSemana);
 
-      fecha.setDate(inicioSemana.getDate() + index);
+      fecha.setDate(
+        inicioSemana.getDate() + index
+      );
 
       return fecha;
     });
@@ -240,19 +257,41 @@ function Tareas() {
   // FILTROS
   // =========================================================
 
+  /*
+   * IMPORTANTE:
+   *
+   * Las tareas completadas NO se muestran en esta pantalla.
+   *
+   * Permanecen guardadas en Supabase con:
+   *
+   * estado = "completada"
+   *
+   * La pantalla "Tareas completadas" podrá consultarlas
+   * posteriormente.
+   */
+
+  const tareasActivas = useMemo(() => {
+    return tareas.filter(
+      (tarea) => tarea.estado !== "completada"
+    );
+  }, [tareas]);
+
   const tareasFiltradas = useMemo(() => {
     if (filtroEstado === "todas") {
-      return tareas;
+      return tareasActivas;
     }
 
-    return tareas.filter((tarea) => tarea.estado === filtroEstado);
-  }, [tareas, filtroEstado]);
+    return tareasActivas.filter(
+      (tarea) => tarea.estado === filtroEstado
+    );
+  }, [tareasActivas, filtroEstado]);
 
   const tareasDeFecha = (fecha) => {
     const fechaTexto = formatearFecha(fecha);
 
     return tareasFiltradas.filter((tarea) => {
-      const fechaTarea = tarea.fecha || tarea.fecha_inicio;
+      const fechaTarea =
+        tarea.fecha || tarea.fecha_inicio;
 
       return fechaTarea === fechaTexto;
     });
@@ -279,18 +318,26 @@ function Tareas() {
       baja: "Baja",
     };
 
-    return prioridades[prioridad] || prioridad || "Media";
+    return (
+      prioridades[prioridad] ||
+      prioridad ||
+      "Media"
+    );
   };
 
   const obtenerTituloFecha = () => {
     if (vista === "dia") {
       return `${nombresDias[fechaActual.getDay()]} ${
         fechaActual.getDate()
-      } de ${nombresMeses[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`;
+      } de ${
+        nombresMeses[fechaActual.getMonth()]
+      } ${fechaActual.getFullYear()}`;
     }
 
     if (vista === "mes") {
-      return `${nombresMeses[fechaActual.getMonth()]} ${fechaActual.getFullYear()}`;
+      return `${
+        nombresMeses[fechaActual.getMonth()]
+      } ${fechaActual.getFullYear()}`;
     }
 
     if (vista === "anio") {
@@ -308,7 +355,7 @@ function Tareas() {
   };
 
   // =========================================================
-  // ICONOS / AVATAR
+  // AVATAR
   // =========================================================
 
   const obtenerIniciales = (id) => {
@@ -318,8 +365,11 @@ function Tareas() {
       return "SR";
     }
 
-    const nombre = usuario.nombre?.charAt(0) || "";
-    const apellido = usuario.apellido?.charAt(0) || "";
+    const nombre =
+      usuario.nombre?.charAt(0) || "";
+
+    const apellido =
+      usuario.apellido?.charAt(0) || "";
 
     return `${nombre}${apellido}`.toUpperCase();
   };
@@ -328,28 +378,53 @@ function Tareas() {
   // TARJETA DE TAREA
   // =========================================================
 
-  const renderTarea = (tarea, modo = "normal") => {
-    const fecha = tarea.fecha || tarea.fecha_inicio;
+  const renderTarea = (
+    tarea,
+    modo = "normal"
+  ) => {
+    const fecha =
+      tarea.fecha || tarea.fecha_inicio;
 
-    const responsable = obtenerNombreUsuario(tarea.responsable_id);
-    const departamento = obtenerNombreDepartamento(
-      tarea.departamento_id
-    );
+    const responsable =
+      obtenerNombreUsuario(
+        tarea.responsable_id
+      );
 
-    const iniciales = obtenerIniciales(tarea.responsable_id);
+    const departamento =
+      obtenerNombreDepartamento(
+        tarea.departamento_id
+      );
+
+    const iniciales =
+      obtenerIniciales(
+        tarea.responsable_id
+      );
 
     return (
       <article
         key={tarea.id}
-        className={`tarea-card-item prioridad-${tarea.prioridad || "media"} ${
-          modo === "mes" ? "tarea-card-mes" : ""
+        className={`tarea-card-item prioridad-${
+          tarea.prioridad || "media"
+        } ${
+          modo === "mes"
+            ? "tarea-card-mes"
+            : ""
         }`}
-        onClick={() => navigate(`/tareas/${tarea.id}/editar`)}
+        onClick={() =>
+          navigate(
+            `/tareas/${tarea.id}/editar`
+          )
+        }
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            navigate(`/tareas/${tarea.id}/editar`);
+          if (
+            e.key === "Enter" ||
+            e.key === " "
+          ) {
+            navigate(
+              `/tareas/${tarea.id}/editar`
+            );
           }
         }}
       >
@@ -357,7 +432,9 @@ function Tareas() {
 
         <div className="tarea-card-top">
           <div className="tarea-card-titulo">
-            <strong>{tarea.titulo || "Sin título"}</strong>
+            <strong>
+              {tarea.titulo || "Sin título"}
+            </strong>
 
             {tarea.descripcion && (
               <p>{tarea.descripcion}</p>
@@ -365,7 +442,9 @@ function Tareas() {
           </div>
 
           <span
-            className={`tarea-status estado-${tarea.estado || "pendiente"}`}
+            className={`tarea-status estado-${
+              tarea.estado || "pendiente"
+            }`}
           >
             {nombreEstado(tarea.estado)}
           </span>
@@ -375,7 +454,9 @@ function Tareas() {
 
         <div className="tarea-card-info">
           <div className="tarea-info-item">
-            <span className="tarea-info-label">Fecha</span>
+            <span className="tarea-info-label">
+              Fecha
+            </span>
 
             <span className="tarea-info-value">
               {formatearFechaBonita(fecha)}
@@ -383,10 +464,13 @@ function Tareas() {
           </div>
 
           <div className="tarea-info-item">
-            <span className="tarea-info-label">Horario</span>
+            <span className="tarea-info-label">
+              Horario
+            </span>
 
             <span className="tarea-info-value">
               {tarea.hora_inicio || "--:--"}
+
               {tarea.hora_fin
                 ? ` - ${tarea.hora_fin}`
                 : ""}
@@ -394,7 +478,9 @@ function Tareas() {
           </div>
 
           <div className="tarea-info-item">
-            <span className="tarea-info-label">Tiempo</span>
+            <span className="tarea-info-label">
+              Tiempo
+            </span>
 
             <span className="tarea-info-value">
               {tarea.tiempo_estimado || 0} min
@@ -413,20 +499,28 @@ function Tareas() {
             <div>
               <small>Responsable</small>
 
-              <strong>{responsable}</strong>
+              <strong>
+                {responsable}
+              </strong>
             </div>
           </div>
 
           <div className="tarea-departamento">
             <small>Departamento</small>
 
-            <strong>{departamento}</strong>
+            <strong>
+              {departamento}
+            </strong>
           </div>
 
           <span
-            className={`tarea-prioridad prioridad-${tarea.prioridad || "media"}`}
+            className={`tarea-prioridad prioridad-${
+              tarea.prioridad || "media"
+            }`}
           >
-            {nombrePrioridad(tarea.prioridad)}
+            {nombrePrioridad(
+              tarea.prioridad
+            )}
           </span>
         </div>
       </article>
@@ -438,7 +532,8 @@ function Tareas() {
   // =========================================================
 
   const renderDia = () => {
-    const tareasHoy = tareasDeFecha(fechaActual);
+    const tareasHoy =
+      tareasDeFecha(fechaActual);
 
     return (
       <div className="vista-dia">
@@ -457,17 +552,21 @@ function Tareas() {
 
           <span className="contador-tareas">
             {tareasHoy.length}{" "}
-            {tareasHoy.length === 1 ? "tarea" : "tareas"}
+            {tareasHoy.length === 1
+              ? "tarea"
+              : "tareas"}
           </span>
         </div>
 
         {tareasHoy.length === 0 ? (
           <div className="estado-vacio">
-            <strong>No hay tareas para este día</strong>
+            <strong>
+              No hay tareas para este día
+            </strong>
 
             <span>
-              Puedes crear una nueva tarea desde el botón
-              superior.
+              Puedes crear una nueva tarea
+              desde el botón superior.
             </span>
           </div>
         ) : (
@@ -489,7 +588,8 @@ function Tareas() {
     return (
       <div className="calendario-semana">
         {diasSemana.map((dia) => {
-          const tareasDia = tareasDeFecha(dia);
+          const tareasDia =
+            tareasDeFecha(dia);
 
           const esHoy =
             formatearFecha(dia) ===
@@ -507,7 +607,9 @@ function Tareas() {
                   {nombresDias[dia.getDay()]}
                 </span>
 
-                <strong>{dia.getDate()}</strong>
+                <strong>
+                  {dia.getDate()}
+                </strong>
 
                 <small>
                   {tareasDia.length}{" "}
@@ -552,7 +654,8 @@ function Tareas() {
       0
     );
 
-    const espaciosIniciales = primerDia.getDay();
+    const espaciosIniciales =
+      primerDia.getDay();
 
     const dias = [];
 
@@ -599,7 +702,8 @@ function Tareas() {
             );
           }
 
-          const tareasDia = tareasDeFecha(dia);
+          const tareasDia =
+            tareasDeFecha(dia);
 
           const esHoy =
             formatearFecha(dia) ===
@@ -613,7 +717,9 @@ function Tareas() {
               key={formatearFecha(dia)}
             >
               <div className="mes-celda-header">
-                <strong>{dia.getDate()}</strong>
+                <strong>
+                  {dia.getDate()}
+                </strong>
 
                 {tareasDia.length > 0 && (
                   <span>
@@ -654,24 +760,27 @@ function Tareas() {
       <div className="calendario-anio">
         {nombresMeses.map((mes, index) => {
           const tareasMes =
-            tareasFiltradas.filter((tarea) => {
-              const fechaTarea =
-                tarea.fecha || tarea.fecha_inicio;
+            tareasFiltradas.filter(
+              (tarea) => {
+                const fechaTarea =
+                  tarea.fecha ||
+                  tarea.fecha_inicio;
 
-              if (!fechaTarea) {
-                return false;
+                if (!fechaTarea) {
+                  return false;
+                }
+
+                const fecha = new Date(
+                  `${fechaTarea}T00:00:00`
+                );
+
+                return (
+                  fecha.getFullYear() ===
+                    fechaActual.getFullYear() &&
+                  fecha.getMonth() === index
+                );
               }
-
-              const fecha = new Date(
-                `${fechaTarea}T00:00:00`
-              );
-
-              return (
-                fecha.getFullYear() ===
-                  fechaActual.getFullYear() &&
-                fecha.getMonth() === index
-              );
-            });
+            );
 
           return (
             <div
@@ -681,7 +790,6 @@ function Tareas() {
               <div className="anio-mes-header">
                 <div>
                   <span>MES</span>
-
                   <h3>{mes}</h3>
                 </div>
 
@@ -742,15 +850,27 @@ function Tareas() {
           </p>
         </div>
 
-        <button
-          className="tareas-btn-principal"
-          type="button"
-          onClick={() =>
-            navigate("/tareas/nueva")
-          }
-        >
-          + Nueva tarea
-        </button>
+        <div className="tareas-header-acciones">
+          <button
+            className="tareas-btn-secundario"
+            type="button"
+            onClick={() =>
+              navigate("/tareas/completadas")
+            }
+          >
+            Tareas completadas
+          </button>
+
+          <button
+            className="tareas-btn-principal"
+            type="button"
+            onClick={() =>
+              navigate("/tareas/nueva")
+            }
+          >
+            + Nueva tarea
+          </button>
+        </div>
       </div>
 
       {/* CONTENEDOR */}
@@ -795,7 +915,7 @@ function Tareas() {
               }
             >
               <option value="todas">
-                Todos los estados
+                Todas las tareas activas
               </option>
 
               <option value="pendiente">
@@ -805,10 +925,6 @@ function Tareas() {
               <option value="en_proceso">
                 En proceso
               </option>
-
-              <option value="completada">
-                Completadas
-              </option>
             </select>
           </div>
         </div>
@@ -816,9 +932,7 @@ function Tareas() {
         {/* NAVEGACIÓN */}
 
         <div className="tareas-navegacion">
-
           <div className="tareas-navegacion-botones">
-
             <button
               type="button"
               onClick={() =>
@@ -845,13 +959,11 @@ function Tareas() {
             >
               ›
             </button>
-
           </div>
 
           <h2>
             {obtenerTituloFecha()}
           </h2>
-
         </div>
 
         {/* CONTENIDO */}
@@ -860,7 +972,9 @@ function Tareas() {
           <div className="tareas-contenido">
             <div className="estado-cargando">
               <span className="loader" />
-              <p>Cargando tareas...</p>
+              <p>
+                Cargando tareas...
+              </p>
             </div>
           </div>
         )}
@@ -908,3 +1022,4 @@ function Tareas() {
 }
 
 export default Tareas;
+

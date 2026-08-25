@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    const getSession = async () => {
+    const inicializarSesion = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -63,26 +63,32 @@ export function AuthProvider({ children }) {
         setProfile(null);
       }
 
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     };
 
-    getSession();
+    inicializarSesion();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const authUser = session?.user ?? null;
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
 
-        setUser(authUser);
+      const authUser = session?.user ?? null;
 
-        if (authUser) {
-          await cargarPerfil(authUser);
-        } else {
-          setProfile(null);
-        }
+      setUser(authUser);
+
+      if (authUser) {
+        await cargarPerfil(authUser);
+      } else {
+        setProfile(null);
       }
-    );
+
+      if (mounted) {
+        setLoading(false);
+      }
+    });
 
     return () => {
       mounted = false;
@@ -91,7 +97,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("Error cerrando sesión:", error);
+      throw error;
+    }
 
     setUser(null);
     setProfile(null);
