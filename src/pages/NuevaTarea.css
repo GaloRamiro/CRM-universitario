@@ -201,6 +201,100 @@
   font-size: 13px;
 }
 
+/* =========================================================
+   TEXTOS DE AYUDA / CAMPOS OPCIONALES
+   ========================================================= */
+
+.campo-ayuda {
+  display: block;
+  margin-top: 7px;
+  color: #7b899d;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+/* Cuando el texto indica que el campo es opcional */
+.campo-ayuda.opcional {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #7b899d;
+}
+
+/* Pequeño indicador visual */
+.campo-ayuda.opcional::before {
+  content: "ⓘ";
+  flex-shrink: 0;
+  color: #075487;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Texto de ayuda para tiempo estimado */
+.campo-ayuda-tiempo {
+  display: block;
+  margin-top: 7px;
+  color: #7b899d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+/* =========================================================
+   TEXTOS DE AYUDA
+   ========================================================= */
+
+.nueva-tarea-help {
+  display: block;
+  margin-top: 2px;
+  color: #7b899d;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.nueva-tarea-help::before {
+  display: inline-block;
+  margin-right: 5px;
+  color: #075487;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+@media (max-width: 520px) {
+  .nueva-tarea-help {
+    font-size: 11px;
+  }
+}
+/* =========================================================
+   CONTENEDOR DEL CAMPO
+   ========================================================= */
+
+.nueva-tarea-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* El texto de ayuda no debe generar demasiado espacio */
+.nueva-tarea-group .campo-ayuda {
+  margin-bottom: 0;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 520px) {
+  .campo-ayuda {
+    font-size: 11px;
+  }
+
+  .campo-ayuda.opcional {
+    gap: 5px;
+  }
+}
+
+
 /* RESPONSIVE */
 
 @media (max-width: 800px) {
