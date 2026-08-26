@@ -386,3 +386,396 @@
     height: 38px;
   }
 }
+/* =========================================================
+   MEJORAS DE EXPERIENCIA - NOTIFICACIONES
+========================================================= */
+
+/* Botón marcar todas */
+
+.notification-read-all {
+  border: none;
+  background: transparent;
+  color: #074a7b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 5px 0;
+  transition: opacity 0.2s ease;
+}
+
+.notification-read-all:hover {
+  opacity: 0.7;
+}
+
+
+/* Campanita cuando llega una nueva */
+
+.notification-bell-active {
+  animation: notificationBell 0.8s ease-in-out 3;
+}
+
+@keyframes notificationBell {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  20% {
+    transform: rotate(-15deg);
+  }
+
+  40% {
+    transform: rotate(15deg);
+  }
+
+  60% {
+    transform: rotate(-10deg);
+  }
+
+  80% {
+    transform: rotate(10deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+
+/* Nueva notificación */
+
+.notification-new {
+  animation: notificationNew 0.8s ease;
+}
+
+@keyframes notificationNew {
+  0% {
+    transform: translateX(10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+
+/* Hover */
+
+.notification-item {
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.notification-item:hover {
+  transform: translateX(2px);
+}
+
+
+/* Estado vacío */
+
+.notification-empty {
+  padding: 35px 20px;
+  text-align: center;
+}
+
+.notification-empty > span {
+  display: block;
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.notification-empty strong {
+  display: block;
+  font-size: 14px;
+  color: #172033;
+  margin-bottom: 4px;
+}
+
+.notification-empty p {
+  margin: 0;
+  font-size: 12px;
+  color: #7b8494;
+}
+
+
+/* Mejor separación del encabezado */
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+
+/* Notificación no leída */
+
+.notification-unread {
+  position: relative;
+}
+
+
+/* Punto de notificación */
+
+.notification-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #074a7b;
+  margin-left: 8px;
+}
+
+
+/* Iconos */
+
+.notification-item-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #eef5fa;
+  font-size: 16px;
+}
+
+
+/* Contenido */
+
+.notification-item-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.notification-item-content strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.notification-item-content p {
+  margin: 0 0 5px;
+  line-height: 1.35;
+}
+
+
+/* Responsive */
+
+@media (max-width: 600px) {
+  .notification-panel {
+    position: fixed;
+    top: 60px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+
+  .notification-header {
+    padding: 16px;
+  }
+
+  .notification-item {
+    padding: 14px;
+  }
+}
+
+/* =========================================================
+   NOTIFICACIONES - MEJORAS DE EXPERIENCIA
+========================================================= */
+
+.notification-read-all {
+  border: none;
+  background: transparent;
+  color: #074a7b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 5px 0;
+  transition: opacity 0.2s ease;
+}
+
+.notification-read-all:hover {
+  opacity: 0.7;
+}
+
+/* Campana cuando llega una notificación */
+
+.notification-bell-active {
+  animation: notificationBell 0.8s ease-in-out 3;
+}
+
+@keyframes notificationBell {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  20% {
+    transform: rotate(-15deg);
+  }
+
+  40% {
+    transform: rotate(15deg);
+  }
+
+  60% {
+    transform: rotate(-10deg);
+  }
+
+  80% {
+    transform: rotate(10deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* Entrada de nueva notificación */
+
+.notification-new {
+  animation: notificationNew 0.8s ease;
+}
+
+@keyframes notificationNew {
+  0% {
+    transform: translateX(10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Hover */
+
+.notification-item {
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.notification-item:hover {
+  transform: translateX(2px);
+}
+
+/* Estado vacío */
+
+.notification-empty {
+  padding: 35px 20px;
+  text-align: center;
+}
+
+.notification-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.notification-empty strong {
+  display: block;
+  font-size: 14px;
+  color: #172033;
+  margin-bottom: 4px;
+}
+
+.notification-empty p {
+  margin: 0;
+  font-size: 12px;
+  color: #7b8494;
+}
+
+/* Header del panel */
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+/* Notificación no leída */
+
+.notification-unread {
+  position: relative;
+}
+
+/* Punto azul */
+
+.notification-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #074a7b;
+  margin-left: 8px;
+}
+
+/* Iconos */
+
+.notification-item-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #eef5fa;
+  color: #074a7b;
+}
+
+/* Contenido */
+
+.notification-item-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.notification-item-content strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.notification-item-content p {
+  margin: 0 0 5px;
+  line-height: 1.35;
+}
+
+/* Icono de campana */
+
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+
+@media (max-width: 600px) {
+  .notification-panel {
+    position: fixed;
+    top: 60px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+
+  .notification-header {
+    padding: 16px;
+  }
+
+  .notification-item {
+    padding: 14px;
+  }
+}
