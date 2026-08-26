@@ -11,9 +11,8 @@ function NuevaTarea() {
     descripcion: "",
     fecha_inicio: "",
     fecha_fin: "",
-    hora_inicio: "",
+    hora_inicio: "08:00",
     hora_fin: "",
-    tiempo_estimado: 60,
     prioridad: "media",
     estado: "pendiente",
     responsable_id: "",
@@ -23,16 +22,20 @@ function NuevaTarea() {
   const [usuarios, setUsuarios] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
 
-  const [cargandoDepartamentos, setCargandoDepartamentos] = useState(true);
-  const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
-  const [guardando, setGuardando] = useState(false);
+  const [cargandoDepartamentos, setCargandoDepartamentos] =
+    useState(true);
 
+  const [cargandoUsuarios, setCargandoUsuarios] =
+    useState(true);
+
+  const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
 
   // ==========================================
   // CARGAR USUARIOS
   // ==========================================
+
   useEffect(() => {
     const cargarUsuarios = async () => {
       setCargandoUsuarios(true);
@@ -59,6 +62,7 @@ function NuevaTarea() {
   // ==========================================
   // CARGAR DEPARTAMENTOS
   // ==========================================
+
   useEffect(() => {
     const cargarDepartamentos = async () => {
       setCargandoDepartamentos(true);
@@ -84,6 +88,7 @@ function NuevaTarea() {
   // ==========================================
   // CAMBIAR CAMPOS
   // ==========================================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -96,6 +101,7 @@ function NuevaTarea() {
   // ==========================================
   // GUARDAR TAREA
   // ==========================================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -109,90 +115,113 @@ function NuevaTarea() {
       // ==========================================
 
       if (!formulario.titulo.trim()) {
-        throw new Error("El título de la tarea es obligatorio.");
+        throw new Error(
+          "El título de la tarea es obligatorio."
+        );
       }
 
       if (!formulario.fecha_inicio) {
-        throw new Error("La fecha de inicio es obligatoria.");
+        throw new Error(
+          "La fecha de inicio es obligatoria."
+        );
       }
 
       if (!formulario.fecha_fin) {
-        throw new Error("La fecha de finalización es obligatoria.");
+        throw new Error(
+          "La fecha de finalización es obligatoria."
+        );
       }
 
-      if (formulario.fecha_fin < formulario.fecha_inicio) {
+      if (
+        formulario.fecha_fin <
+        formulario.fecha_inicio
+      ) {
         throw new Error(
           "La fecha de finalización no puede ser anterior a la fecha de inicio."
         );
       }
 
+      // ==========================================
+      // VALIDAR HORAS
+      // ==========================================
+
       if (
         formulario.hora_inicio &&
         formulario.hora_fin &&
-        formulario.fecha_inicio === formulario.fecha_fin &&
-        formulario.hora_fin <= formulario.hora_inicio
+        formulario.fecha_inicio ===
+          formulario.fecha_fin &&
+        formulario.hora_fin <=
+          formulario.hora_inicio
       ) {
         throw new Error(
           "La hora de finalización debe ser posterior a la hora de inicio."
         );
       }
 
-      if (
-        !formulario.tiempo_estimado ||
-        Number(formulario.tiempo_estimado) <= 0
-      ) {
-        throw new Error("El tiempo estimado debe ser mayor que 0 minutos.");
-      }
-
       // ==========================================
       // CREAR TAREA
       // ==========================================
 
-      const { data, error: insertError } = await supabase
-        .from("tareas")
-        .insert({
-          titulo: formulario.titulo.trim(),
+      const { data, error: insertError } =
+        await supabase
+          .from("tareas")
+          .insert({
+            titulo: formulario.titulo.trim(),
 
-          descripcion: formulario.descripcion.trim() || null,
+            descripcion:
+              formulario.descripcion.trim() || null,
 
-          fecha_inicio: formulario.fecha_inicio,
+            fecha_inicio:
+              formulario.fecha_inicio,
 
-          fecha_fin: formulario.fecha_fin,
+            fecha_fin:
+              formulario.fecha_fin,
 
-          // El calendario utiliza este campo
-          fecha: formulario.fecha_inicio,
+            // El calendario utiliza este campo
+            fecha:
+              formulario.fecha_inicio,
 
-          hora_inicio: formulario.hora_inicio || null,
+            // Por defecto comienza a las 08:00
+            hora_inicio:
+              formulario.hora_inicio || "08:00",
 
-          hora_fin: formulario.hora_fin || null,
+            // Puede quedar vacío si no existe
+            // una hora límite específica
+            hora_fin:
+              formulario.hora_fin || null,
 
-          // Tiempo estimado en minutos
-          tiempo_estimado: Number(formulario.tiempo_estimado) || 0,
+            prioridad:
+              formulario.prioridad,
 
-          prioridad: formulario.prioridad,
+            estado:
+              formulario.estado,
 
-          estado: formulario.estado,
+            responsable_id:
+              formulario.responsable_id || null,
 
-          // Responsable
-          responsable_id: formulario.responsable_id || null,
-
-          // Departamento
-          departamento_id: formulario.departamento_id || null,
-        })
-        .select()
-        .single();
+            departamento_id:
+              formulario.departamento_id || null,
+          })
+          .select()
+          .single();
 
       if (insertError) {
-        console.error("Error creando tarea:", insertError);
+        console.error(
+          "Error creando tarea:",
+          insertError
+        );
 
         throw new Error(
-          insertError.message || "No se pudo crear la tarea."
+          insertError.message ||
+            "No se pudo crear la tarea."
         );
       }
 
       console.log("Tarea creada:", data);
 
-      setMensaje("Tarea creada correctamente.");
+      setMensaje(
+        "Tarea creada correctamente."
+      );
 
       // ==========================================
       // LIMPIAR FORMULARIO
@@ -203,9 +232,8 @@ function NuevaTarea() {
         descripcion: "",
         fecha_inicio: "",
         fecha_fin: "",
-        hora_inicio: "",
+        hora_inicio: "08:00",
         hora_fin: "",
-        tiempo_estimado: 60,
         prioridad: "media",
         estado: "pendiente",
         responsable_id: "",
@@ -223,7 +251,8 @@ function NuevaTarea() {
       console.error(err);
 
       setError(
-        err.message || "No se pudo crear la tarea."
+        err.message ||
+          "No se pudo crear la tarea."
       );
     } finally {
       setGuardando(false);
@@ -233,56 +262,66 @@ function NuevaTarea() {
   return (
     <section className="nueva-tarea-page">
 
-      {/* ==============================
+      {/* ==========================================
           ENCABEZADO
-      ============================== */}
+      ========================================== */}
 
       <div className="nueva-tarea-header">
-        <div>
-          <span className="eyebrow">GESTIÓN</span>
 
-          <h1>Nueva tarea</h1>
+        <div>
+          <span className="eyebrow">
+            GESTIÓN
+          </span>
+
+          <h1>
+            Nueva tarea
+          </h1>
 
           <p>
-            Registra una nueva actividad para el equipo.
+            Registra una nueva actividad para
+            el equipo.
           </p>
         </div>
 
         <button
           type="button"
-          className="nueva-tarea-cancelar"
+          className="nueva-tarea-btn nueva-tarea-btn-cancelar"
           onClick={() => navigate("/tareas")}
         >
           Cancelar
         </button>
+
       </div>
 
-      {/* ==============================
+      {/* ==========================================
           FORMULARIO
-      ============================== */}
+      ========================================== */}
 
       <form
         className="nueva-tarea-card"
         onSubmit={handleSubmit}
       >
 
-        {/* ==============================
+        {/* ==========================================
             INFORMACIÓN
-        ============================== */}
+        ========================================== */}
 
         <div className="nueva-tarea-section">
 
-          <h2>Información de la tarea</h2>
+          <h2>
+            Información de la tarea
+          </h2>
 
           <p>
-            Define el título y los detalles principales de la actividad.
+            Define el título y los detalles
+            principales de la actividad.
           </p>
 
           <div className="nueva-tarea-grid">
 
             {/* TÍTULO */}
 
-            <div className="form-group form-group-full">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="titulo">
                 Título de la tarea
@@ -302,7 +341,7 @@ function NuevaTarea() {
 
             {/* DESCRIPCIÓN */}
 
-            <div className="form-group form-group-full">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="descripcion">
                 Descripción
@@ -320,25 +359,29 @@ function NuevaTarea() {
             </div>
 
           </div>
+
         </div>
 
-        {/* ==============================
+        {/* ==========================================
             FECHAS Y HORARIOS
-        ============================== */}
+        ========================================== */}
 
         <div className="nueva-tarea-section">
 
-          <h2>Fecha y horario</h2>
+          <h2>
+            Fecha y horario
+          </h2>
 
           <p>
-            Define cuándo comienza y termina la tarea.
+            Define la ventana disponible para
+            realizar la tarea.
           </p>
 
           <div className="nueva-tarea-grid">
 
             {/* FECHA INICIO */}
 
-            <div className="form-group">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="fecha_inicio">
                 Fecha de inicio
@@ -357,7 +400,7 @@ function NuevaTarea() {
 
             {/* FECHA FIN */}
 
-            <div className="form-group">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="fecha_fin">
                 Fecha de finalización
@@ -374,41 +417,9 @@ function NuevaTarea() {
 
             </div>
 
-            {/* TIEMPO ESTIMADO */}
-
-            <div className="form-group">
-
-              <label htmlFor="tiempo_estimado">
-                Tiempo estimado
-              </label>
-
-              <div className="tiempo-estimado-input">
-
-                <input
-                  id="tiempo_estimado"
-                  name="tiempo_estimado"
-                  type="number"
-                  min="5"
-                  step="5"
-                  value={formulario.tiempo_estimado}
-                  onChange={handleChange}
-                  placeholder="60"
-                  required
-                />
-
-                <span>minutos</span>
-
-              </div>
-
-              <small>
-                Ejemplo: 60 minutos = 1 hora de trabajo.
-              </small>
-
-            </div>
-
             {/* HORA INICIO */}
 
-            <div className="form-group">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="hora_inicio">
                 Hora de inicio
@@ -422,11 +433,16 @@ function NuevaTarea() {
                 onChange={handleChange}
               />
 
+              <small className="nueva-tarea-help">
+                Por defecto, la jornada comienza
+                a las 08:00.
+              </small>
+
             </div>
 
             {/* HORA FIN */}
 
-            <div className="form-group">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="hora_fin">
                 Hora de finalización
@@ -440,28 +456,37 @@ function NuevaTarea() {
                 onChange={handleChange}
               />
 
+              <small className="nueva-tarea-help">
+                Opcional. Úsala cuando exista
+                una hora límite específica.
+              </small>
+
             </div>
 
           </div>
+
         </div>
 
-        {/* ==============================
+        {/* ==========================================
             ASIGNACIÓN
-        ============================== */}
+        ========================================== */}
 
         <div className="nueva-tarea-section">
 
-          <h2>Asignación</h2>
+          <h2>
+            Asignación
+          </h2>
 
           <p>
-            Define prioridad, estado, departamento y responsable.
+            Define prioridad, estado,
+            departamento y responsable.
           </p>
 
           <div className="nueva-tarea-grid">
 
             {/* PRIORIDAD */}
 
-            <div className="form-group">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="prioridad">
                 Prioridad
@@ -492,7 +517,7 @@ function NuevaTarea() {
 
             {/* ESTADO */}
 
-            <div className="form-group">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="estado">
                 Estado
@@ -509,8 +534,8 @@ function NuevaTarea() {
                   Pendiente
                 </option>
 
-                <option value="en_progreso">
-                  En progreso
+                <option value="en_proceso">
+                  En proceso
                 </option>
 
                 <option value="completada">
@@ -523,7 +548,7 @@ function NuevaTarea() {
 
             {/* DEPARTAMENTO */}
 
-            <div className="form-group">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="departamento_id">
                 Departamento
@@ -541,14 +566,16 @@ function NuevaTarea() {
                   Sin departamento
                 </option>
 
-                {departamentos.map((departamento) => (
-                  <option
-                    key={departamento.id}
-                    value={departamento.id}
-                  >
-                    {departamento.nombre}
-                  </option>
-                ))}
+                {departamentos.map(
+                  (departamento) => (
+                    <option
+                      key={departamento.id}
+                      value={departamento.id}
+                    >
+                      {departamento.nombre}
+                    </option>
+                  )
+                )}
 
               </select>
 
@@ -556,7 +583,7 @@ function NuevaTarea() {
 
             {/* RESPONSABLE */}
 
-            <div className="form-group">
+            <div className="nueva-tarea-group">
 
               <label htmlFor="responsable_id">
                 Responsable
@@ -574,28 +601,33 @@ function NuevaTarea() {
                   Sin responsable
                 </option>
 
-                {usuarios.map((usuario) => (
-                  <option
-                    key={usuario.id}
-                    value={usuario.id}
-                  >
-                    {usuario.nombre} {usuario.apellido}
-                    {usuario.email
-                      ? ` — ${usuario.email}`
-                      : ""}
-                  </option>
-                ))}
+                {usuarios.map(
+                  (usuario) => (
+                    <option
+                      key={usuario.id}
+                      value={usuario.id}
+                    >
+                      {usuario.nombre}{" "}
+                      {usuario.apellido}
+
+                      {usuario.email
+                        ? ` — ${usuario.email}`
+                        : ""}
+                    </option>
+                  )
+                )}
 
               </select>
 
             </div>
 
           </div>
+
         </div>
 
-        {/* ==============================
+        {/* ==========================================
             MENSAJES
-        ============================== */}
+        ========================================== */}
 
         {mensaje && (
           <div className="nueva-tarea-mensaje">
@@ -609,15 +641,15 @@ function NuevaTarea() {
           </div>
         )}
 
-        {/* ==============================
+        {/* ==========================================
             BOTONES
-        ============================== */}
+        ========================================== */}
 
         <div className="nueva-tarea-actions">
 
           <button
             type="button"
-            className="nueva-tarea-cancelar"
+            className="nueva-tarea-btn nueva-tarea-btn-cancelar"
             onClick={() => navigate("/tareas")}
           >
             Cancelar
@@ -625,7 +657,7 @@ function NuevaTarea() {
 
           <button
             type="submit"
-            className="nueva-tarea-btn"
+            className="nueva-tarea-btn nueva-tarea-btn-guardar"
             disabled={guardando}
           >
             {guardando
@@ -636,8 +668,10 @@ function NuevaTarea() {
         </div>
 
       </form>
+
     </section>
   );
 }
 
 export default NuevaTarea;
+

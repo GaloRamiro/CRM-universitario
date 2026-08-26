@@ -1,14 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../lib/supabase";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { supabase } from "../lib/supabase";
 import "./Reportes.css";
 
 function Reportes() {
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [departamentos, setDepartamentos] = useState([]);
+
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+
+  // =========================================================
+  // FILTRO DE FECHAS
+  // =========================================================
+
+  const hoy = new Date().toISOString().split("T")[0];
+
+  const [fechaDesde, setFechaDesde] = useState(
+    `${new Date().getFullYear()}-${String(
+      new Date().getMonth() + 1
+    ).padStart(2, "0")}-01`
+  );
+
+  const [fechaHasta, setFechaHasta] = useState(hoy);
+
+  // =========================================================
+  // CARGAR DATOS
+  // =========================================================
 
   useEffect(() => {
     cargarDatos();
@@ -19,11 +39,14 @@ function Reportes() {
     setError("");
 
     try {
-      const [tareasResponse, usuariosResponse] = await Promise.all([
+      const [
+        { data: tareasData, error: tareasError },
+        { data: usuariosData, error: usuariosError },
+        { data: departamentosData, error: departamentosError },
+      ] = await Promise.all([
         supabase
           .from("tareas")
-          .select(
-            `
+          .select(`
             id,
             titulo,
             descripcion,
@@ -32,91 +55,504 @@ function Reportes() {
             fecha_fin,
             hora_inicio,
             hora_fin,
-            tiempo_estimado,
             prioridad,
             estado,
             responsable_id,
-            created_at
-          `,
-          )
-          .order("created_at", { ascending: false }),
+            departamento_id,
+            tiempo_estimado
+          `)
+          .order("fecha_inicio", {
+            ascending: true,
+          }),
 
         supabase
           .from("usuarios")
-          .select(
-            `
+          .select(`
             id,
             nombre,
             apellido,
             email,
-            rol,
-            departamentos (
-              nombre
-            )
-          `,
-          )
+            activo
+          `)
+          .order("nombre"),
+
+        supabase
+          .from("departamentos")
+          .select(`
+            id,
+            nombre
+          `)
           .order("nombre"),
       ]);
 
-      if (tareasResponse.error) {
-        throw tareasResponse.error;
+      if (tareasError) {
+        throw new Error("No se pudieron cargar las tareas.");
       }
 
-      if (usuariosResponse.error) {
-        throw usuariosResponse.error;
+      if (usuariosError) {
+        console.error("Error usuarios:", usuariosError);
       }
 
-      setTareas(tareasResponse.data || []);
-      setUsuarios(usuariosResponse.data || []);
+      if (departamentosError) {
+        console.error("Error departamentos:", departamentosError);
+      }
+
+      setTareas(tareasData || []);
+      setUsuarios(usuariosData || []);
+      setDepartamentos(departamentosData || []);
     } catch (err) {
-      console.error("Error cargando reportes:", err);
-      setError("No se pudieron cargar los datos del reporte.");
+      console.error(err);
+      setError(
+        err.message || "No se pudieron cargar los reportes."
+      );
     } finally {
       setCargando(false);
     }
   };
 
-  // ============================================================
-  // MAPA DE USUARIOS
-  // ============================================================
+  // =========================================================
+  // NOMBRES
+  // =========================================================
 
-  const usuariosMap = useMemo(() => {
-    const mapa = {};
+  const obtenerUsuario = (id) => {
+    return usuarios.find((usuario) => usuario.id === id) || null;
+  };
 
-    usuarios.forEach((usuario) => {
-      mapa[usuario.id] = usuario;
-    });
+  const obtenerDepartamento = (id) => {
+    return (
+      departamentos.find(
+        (departamento) => departamento.id === id
+      ) || null
+    );
+  };
 
-    return mapa;
-  }, [usuarios]);
-
-  // ============================================================
-  // FUNCIONES AUXILIARES
-  // ============================================================
-
-  const obtenerNombreResponsable = (responsableId) => {
-    const usuario = usuariosMap[responsableId];
+  const obtenerNombreUsuario = (id) => {
+    const usuario = obtenerUsuario(id);
 
     if (!usuario) {
       return "Sin responsable";
     }
 
-    return `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim();
+    return `${usuario.nombre || ""} ${
+      usuario.apellido || ""
+    }`.trim();
   };
 
-  const obtenerDepartamento = (responsableId) => {
-    const usuario = usuariosMap[responsableId];
+  const obtenerNombreDepartamento = (id) => {
+    const departamento = obtenerDepartamento(id);
 
-    return usuario?.departamentos?.nombre || "Sin departamento";
+    return departamento?.nombre || "Sin departamento";
   };
 
-  const formatearMinutos = (minutos) => {
-    if (!minutos) {
-      return "0 min";
+  // =========================================================
+  // FECHAS
+  // =========================================================
+
+  const convertirFecha = (fecha) => {
+    if (!fecha) return null;
+
+    const fechaObj = new Date(`${fecha}T00:00:00`);
+
+    return Number.isNaN(fechaObj.getTime())
+      ? null
+      : fechaObj;
+  };
+
+  const formatearFecha = (fecha) => {
+    const fechaObj = convertirFecha(fecha);
+
+    if (!fechaObj) {
+      return "Sin fecha";
     }
 
-    const horas = Math.floor(minutos / 60);
-    const minutosRestantes = minutos % 60;
+    return fechaObj.toLocaleDateString("es-EC", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  // =========================================================
+  // FECHA/HORA PARA COMPARACIONES
+  // =========================================================
+
+  const obtenerFechaInicio = (tarea) => {
+    if (!tarea.fecha_inicio) return null;
+
+    const hora = tarea.hora_inicio || "00:00";
+
+    return new Date(
+      `${tarea.fecha_inicio}T${hora}:00`
+    );
+  };
+
+  const obtenerFechaFin = (tarea) => {
+    if (!tarea.fecha_fin) return null;
+
+    const hora = tarea.hora_fin || "23:59";
+
+    return new Date(
+      `${tarea.fecha_fin}T${hora}:00`
+    );
+  };
+
+  // =========================================================
+  // COMPROBAR SI DOS TAREAS SE SUPERPONEN
+  // =========================================================
+
+  const tareasSeSuperponen = (tareaA, tareaB) => {
+    if (
+      !tareaA.fecha_inicio ||
+      !tareaB.fecha_inicio ||
+      !tareaA.fecha_fin ||
+      !tareaB.fecha_fin
+    ) {
+      return false;
+    }
+
+    const inicioA = obtenerFechaInicio(tareaA);
+    const finA = obtenerFechaFin(tareaA);
+
+    const inicioB = obtenerFechaInicio(tareaB);
+    const finB = obtenerFechaFin(tareaB);
+
+    if (!inicioA || !finA || !inicioB || !finB) {
+      return false;
+    }
+
+    return inicioA <= finB && inicioB <= finA;
+  };
+
+  // =========================================================
+  // COMPROBAR SI LA FECHA DE UNA TAREA ESTÁ DENTRO
+  // DE OTRA PLANIFICACIÓN
+  // =========================================================
+
+  const tareaDentroDeOtra = (nuevaTarea, tareaExistente) => {
+    if (
+      !nuevaTarea.fecha_inicio ||
+      !tareaExistente.fecha_inicio ||
+      !tareaExistente.fecha_fin
+    ) {
+      return false;
+    }
+
+    const nuevaInicio = convertirFecha(
+      nuevaTarea.fecha_inicio
+    );
+
+    const existenteInicio = convertirFecha(
+      tareaExistente.fecha_inicio
+    );
+
+    const existenteFin = convertirFecha(
+      tareaExistente.fecha_fin
+    );
+
+    if (
+      !nuevaInicio ||
+      !existenteInicio ||
+      !existenteFin
+    ) {
+      return false;
+    }
+
+    return (
+      nuevaInicio >= existenteInicio &&
+      nuevaInicio <= existenteFin
+    );
+  };
+
+  // =========================================================
+  // TAREAS DENTRO DEL PERÍODO SELECCIONADO
+  // =========================================================
+
+  const tareasPeriodo = useMemo(() => {
+    if (!fechaDesde || !fechaHasta) {
+      return [];
+    }
+
+    const desde = convertirFecha(fechaDesde);
+    const hasta = convertirFecha(fechaHasta);
+
+    if (!desde || !hasta) {
+      return [];
+    }
+
+    hasta.setHours(23, 59, 59, 999);
+
+    return tareas.filter((tarea) => {
+      if (!tarea.fecha_inicio) {
+        return false;
+      }
+
+      const inicio = convertirFecha(
+        tarea.fecha_inicio
+      );
+
+      const fin = convertirFecha(
+        tarea.fecha_fin || tarea.fecha_inicio
+      );
+
+      if (!inicio || !fin) {
+        return false;
+      }
+
+      return inicio <= hasta && fin >= desde;
+    });
+  }, [tareas, fechaDesde, fechaHasta]);
+
+  // =========================================================
+  // DETECTAR TRABAJO INCORPORADO
+  // =========================================================
+
+  const actividadesIncorporadas = useMemo(() => {
+    const resultado = [];
+
+    tareasPeriodo.forEach((tarea) => {
+      if (!tarea.responsable_id) {
+        return;
+      }
+
+      const posiblesAnteriores = tareas
+        .filter((otra) => {
+          if (otra.id === tarea.id) {
+            return false;
+          }
+
+          if (
+            otra.responsable_id !==
+            tarea.responsable_id
+          ) {
+            return false;
+          }
+
+          if (
+            !otra.fecha_inicio ||
+            !otra.fecha_fin
+          ) {
+            return false;
+          }
+
+          return (
+            otra.fecha_inicio <= tarea.fecha_inicio
+          );
+        })
+        .sort((a, b) => {
+          const fechaA = convertirFecha(
+            a.fecha_inicio
+          );
+
+          const fechaB = convertirFecha(
+            b.fecha_inicio
+          );
+
+          return (
+            (fechaB?.getTime() || 0) -
+            (fechaA?.getTime() || 0)
+          );
+        });
+
+      const planificacionExistente =
+        posiblesAnteriores.find((otra) =>
+          tareaDentroDeOtra(tarea, otra)
+        );
+
+      if (!planificacionExistente) {
+        return;
+      }
+
+      const superpuesta = tareasSeSuperponen(
+        tarea,
+        planificacionExistente
+      );
+
+      resultado.push({
+        nueva: tarea,
+        existente: planificacionExistente,
+        superpuesta,
+      });
+    });
+
+    return resultado;
+  }, [tareas, tareasPeriodo]);
+
+  // =========================================================
+  // MÉTRICAS
+  // =========================================================
+
+  const metricas = useMemo(() => {
+    const total = tareasPeriodo.length;
+
+    const completadas = tareasPeriodo.filter(
+      (tarea) => tarea.estado === "completada"
+    ).length;
+
+    const pendientes = tareasPeriodo.filter(
+      (tarea) => tarea.estado === "pendiente"
+    ).length;
+
+    const enProceso = tareasPeriodo.filter(
+      (tarea) => tarea.estado === "en_proceso"
+    ).length;
+
+    const tiempo = tareasPeriodo.reduce(
+      (total, tarea) =>
+        total +
+        Number(tarea.tiempo_estimado || 0),
+      0
+    );
+
+    const personas = new Set(
+      tareasPeriodo
+        .map((tarea) => tarea.responsable_id)
+        .filter(Boolean)
+    ).size;
+
+    const departamentos = new Set(
+      tareasPeriodo
+        .map((tarea) => tarea.departamento_id)
+        .filter(Boolean)
+    ).size;
+
+    const superpuestas =
+      actividadesIncorporadas.filter(
+        (actividad) => actividad.superpuesta
+      ).length;
+
+    return {
+      total,
+      completadas,
+      pendientes,
+      enProceso,
+      tiempo,
+      personas,
+      departamentos,
+      incorporadas:
+        actividadesIncorporadas.length,
+      superpuestas,
+    };
+  }, [tareasPeriodo, actividadesIncorporadas]);
+
+  // =========================================================
+  // RENDIMIENTO POR PERSONA
+  // =========================================================
+
+  const rendimientoPersonas = useMemo(() => {
+    return usuarios
+      .map((usuario) => {
+        const tareasPersona =
+          tareasPeriodo.filter(
+            (tarea) =>
+              tarea.responsable_id === usuario.id
+          );
+
+        const incorporadas =
+          actividadesIncorporadas.filter(
+            (actividad) =>
+              actividad.nueva.responsable_id ===
+              usuario.id
+          ).length;
+
+        const tiempo = tareasPersona.reduce(
+          (total, tarea) =>
+            total +
+            Number(tarea.tiempo_estimado || 0),
+          0
+        );
+
+        return {
+          id: usuario.id,
+          nombre:
+            `${usuario.nombre || ""} ${
+              usuario.apellido || ""
+            }`.trim(),
+          total: tareasPersona.length,
+          completadas: tareasPersona.filter(
+            (tarea) =>
+              tarea.estado === "completada"
+          ).length,
+          enProceso: tareasPersona.filter(
+            (tarea) =>
+              tarea.estado === "en_proceso"
+          ).length,
+          pendientes: tareasPersona.filter(
+            (tarea) =>
+              tarea.estado === "pendiente"
+          ).length,
+          incorporadas,
+          tiempo,
+        };
+      })
+      .filter((persona) => persona.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [
+    usuarios,
+    tareasPeriodo,
+    actividadesIncorporadas,
+  ]);
+
+  // =========================================================
+  // RENDIMIENTO POR DEPARTAMENTO
+  // =========================================================
+
+  const rendimientoDepartamentos =
+    useMemo(() => {
+      return departamentos
+        .map((departamento) => {
+          const tareasDepartamento =
+            tareasPeriodo.filter(
+              (tarea) =>
+                tarea.departamento_id ===
+                departamento.id
+            );
+
+          const incorporadas =
+            actividadesIncorporadas.filter(
+              (actividad) =>
+                actividad.nueva.departamento_id ===
+                departamento.id
+            ).length;
+
+          const tiempo =
+            tareasDepartamento.reduce(
+              (total, tarea) =>
+                total +
+                Number(
+                  tarea.tiempo_estimado || 0
+                ),
+              0
+            );
+
+          return {
+            id: departamento.id,
+            nombre: departamento.nombre,
+            total: tareasDepartamento.length,
+            incorporadas,
+            tiempo,
+          };
+        })
+        .filter(
+          (departamento) =>
+            departamento.total > 0
+        )
+        .sort((a, b) => b.total - a.total);
+    }, [
+      departamentos,
+      tareasPeriodo,
+      actividadesIncorporadas,
+    ]);
+
+  // =========================================================
+  // FORMATEAR TIEMPO
+  // =========================================================
+
+  const formatearMinutos = (minutos) => {
+    const valor = Number(minutos) || 0;
+
+    const horas = Math.floor(valor / 60);
+
+    const minutosRestantes = valor % 60;
 
     if (horas === 0) {
       return `${minutosRestantes} min`;
@@ -129,441 +565,553 @@ function Reportes() {
     return `${horas} h ${minutosRestantes} min`;
   };
 
-  const porcentaje = (cantidad, total) => {
-    if (!total) {
-      return 0;
+  // =========================================================
+  // FORMATO HORA
+  // =========================================================
+
+  const formatearHora = (hora) => {
+    if (!hora) {
+      return "Sin hora";
     }
 
-    return Math.round((cantidad / total) * 100);
+    return hora.substring(0, 5);
   };
 
-  // ============================================================
-  // ESTADÍSTICAS GENERALES
-  // ============================================================
+  // =========================================================
+  // EXPORTAR PDF
+  // =========================================================
 
-  const estadisticas = useMemo(() => {
-    const total = tareas.length;
+  const descargarPDF = () => {
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
 
-    const pendientes = tareas.filter(
-      (tarea) => tarea.estado === "pendiente",
-    ).length;
+    const azul = [7, 74, 123];
+    const oscuro = [23, 32, 51];
+    const gris = [100, 110, 125];
 
-    const enProceso = tareas.filter(
-      (tarea) =>
-        tarea.estado === "en_proceso" || tarea.estado === "en_progreso",
-    ).length;
+    let y = 18;
 
-    const completadas = tareas.filter(
-      (tarea) => tarea.estado === "completada",
-    ).length;
+    // -------------------------------------------------------
+    // ENCABEZADO
+    // -------------------------------------------------------
 
-    const altaPrioridad = tareas.filter(
-      (tarea) => tarea.prioridad === "alta",
-    ).length;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(...azul);
 
-    const tiempoTotal = tareas.reduce(
-      (total, tarea) => total + Number(tarea.tiempo_estimado || 0),
-      0,
+    doc.text(
+      "INFORME DE GESTIÓN DE ACTIVIDADES",
+      14,
+      y
     );
 
-    const promedio = total > 0 ? Math.round(tiempoTotal / total) : 0;
+    y += 8;
 
-    return {
-      total,
-      pendientes,
-      enProceso,
-      completadas,
-      altaPrioridad,
-      tiempoTotal,
-      promedio,
-    };
-  }, [tareas]);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...gris);
 
-  // ============================================================
-  // TAREAS SOLICITADAS CON POCA ANTICIPACIÓN
-  // ============================================================
+    doc.text(
+      `Período analizado: ${formatearFecha(
+        fechaDesde
+      )} - ${formatearFecha(fechaHasta)}`,
+      14,
+      y
+    );
 
-  const tareasUltimaHora = useMemo(() => {
-    return tareas
-      .map((tarea) => {
-        if (!tarea.created_at || !tarea.fecha_inicio) {
-          return null;
-        }
+    y += 5;
 
-        const creada = new Date(tarea.created_at);
+    doc.text(
+      `Fecha de generación: ${formatearFecha(
+        hoy
+      )}`,
+      14,
+      y
+    );
 
-        // --------------------------------------------------------
-        // CONVERTIR FECHA DE INICIO
-        // --------------------------------------------------------
+    y += 10;
 
-        let fecha = tarea.fecha_inicio;
-
-        // Si viene como YYYY-MM-DD
-        if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-          // Se mantiene ese formato
-        }
-
-        // Si viene como MM/DD/YYYY
-        else if (/^\d{2}\/\d{2}\/\d{4}$/.test(fecha)) {
-          const [mes, dia, anio] = fecha.split("/");
-
-          fecha = `${anio}-${mes}-${dia}`;
-        }
-
-        // --------------------------------------------------------
-        // CONVERTIR HORA
-        // --------------------------------------------------------
-
-        let hora = tarea.hora_inicio || "00:00";
-
-        // Si viene como 04:30 PM
-        const hora12 = hora.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-
-        if (hora12) {
-          let horas = Number(hora12[1]);
-          const minutos = hora12[2];
-          const periodo = hora12[3].toUpperCase();
-
-          if (periodo === "PM" && horas !== 12) {
-            horas += 12;
-          }
-
-          if (periodo === "AM" && horas === 12) {
-            horas = 0;
-          }
-
-          hora = `${String(horas).padStart(2, "0")}:${minutos}`;
-        }
-
-        // --------------------------------------------------------
-        // CREAR FECHA COMPLETA
-        // --------------------------------------------------------
-
-        const horaInicio = tarea.hora_inicio
-          ? String(tarea.hora_inicio).slice(0, 8)
-          : "00:00:00";
-
-        const fechaInicio = new Date(`${tarea.fecha_inicio}T${horaInicio}`);
-
-        // --------------------------------------------------------
-        // DEBUG
-        // --------------------------------------------------------
-
-        console.log("=================================");
-        console.log("TAREA:", tarea.titulo);
-        console.log("Fecha guardada:", tarea.fecha_inicio);
-        console.log("Hora guardada:", tarea.hora_inicio);
-        console.log("Creada:", creada);
-        console.log("Inicio:", fechaInicio);
-
-        // Si la fecha sigue siendo inválida, ignoramos la tarea
-        if (isNaN(fechaInicio.getTime())) {
-          console.warn("❌ No se pudo convertir la fecha de inicio:", tarea);
-
-          return null;
-        }
-
-        // --------------------------------------------------------
-        // CALCULAR ANTICIPACIÓN
-        // --------------------------------------------------------
-
-        const diferencia = (fechaInicio.getTime() - creada.getTime()) / 60000;
-
-        console.log("Anticipación:", diferencia, "minutos");
-
-        return {
-          ...tarea,
-          minutosAnticipacion: diferencia,
-        };
-      })
-
-      .filter(
-        (tarea) =>
-          tarea &&
-          tarea.minutosAnticipacion >= 0 &&
-          tarea.minutosAnticipacion <= 120,
-      )
-
-      .sort((a, b) => a.minutosAnticipacion - b.minutosAnticipacion);
-  }, [tareas]);
-
-  // ============================================================
-  // DEPARTAMENTOS
-  // ============================================================
-
-  const departamentos = useMemo(() => {
-    const conteo = {};
-
-    tareas.forEach((tarea) => {
-      const departamento = obtenerDepartamento(tarea.responsable_id);
-
-      if (!conteo[departamento]) {
-        conteo[departamento] = 0;
-      }
-
-      conteo[departamento]++;
-    });
-
-    return Object.entries(conteo)
-      .map(([nombre, cantidad]) => ({
-        nombre,
-        cantidad,
-      }))
-      .sort((a, b) => b.cantidad - a.cantidad);
-  }, [tareas, usuariosMap]);
-
-  // ============================================================
-  // RESPONSABLES
-  // ============================================================
-
-  const responsables = useMemo(() => {
-    const conteo = {};
-
-    tareas.forEach((tarea) => {
-      if (!tarea.responsable_id) {
-        return;
-      }
-
-      const usuario = usuariosMap[tarea.responsable_id];
-
-      if (!usuario) {
-        return;
-      }
-
-      const nombre = `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim();
-
-      if (!conteo[usuario.id]) {
-        conteo[usuario.id] = {
-          nombre: nombre || "Usuario",
-          cantidad: 0,
-        };
-      }
-
-      conteo[usuario.id].cantidad++;
-    });
-
-    return Object.values(conteo).sort((a, b) => b.cantidad - a.cantidad);
-  }, [tareas, usuariosMap]);
-
-  // ============================================================
-  // ESTADOS
-  // ============================================================
-
-  const estados = useMemo(() => {
-    return [
-      {
-        nombre: "Pendientes",
-        cantidad: estadisticas.pendientes,
-        clase: "pendiente",
-      },
-      {
-        nombre: "En proceso",
-        cantidad: estadisticas.enProceso,
-        clase: "proceso",
-      },
-      {
-        nombre: "Completadas",
-        cantidad: estadisticas.completadas,
-        clase: "completada",
-      },
-    ];
-  }, [estadisticas]);
-
-  // ============================================================
-  // TIEMPO POR DEPARTAMENTO
-  // ============================================================
-
-  const tiempoPorDepartamento = useMemo(() => {
-    const conteo = {};
-
-    tareas.forEach((tarea) => {
-      const departamento = obtenerDepartamento(tarea.responsable_id);
-
-      if (!conteo[departamento]) {
-        conteo[departamento] = 0;
-      }
-
-      conteo[departamento] += Number(tarea.tiempo_estimado || 0);
-    });
-
-    return Object.entries(conteo)
-      .map(([nombre, minutos]) => ({
-        nombre,
-        minutos,
-      }))
-      .sort((a, b) => b.minutos - a.minutos);
-  }, [tareas, usuariosMap]);
-
-  // ============================================================
-  // GENERAR PDF
-  // ============================================================
-
-  const generarPDF = () => {
-    const doc = new jsPDF();
-
-    const fechaReporte = new Date().toLocaleString("es-EC");
-
-    // ENCABEZADO
-
-    doc.setFontSize(22);
-    doc.setTextColor(7, 74, 123);
-    doc.text("CRM Gestión de Requerimientos", 14, 20);
-
-    doc.setFontSize(16);
-    doc.setTextColor(40, 40, 40);
-    doc.text("Reporte global de gestión", 14, 30);
-
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generado: ${fechaReporte}`, 14, 37);
-
+    // -------------------------------------------------------
     // RESUMEN
+    // -------------------------------------------------------
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...oscuro);
+
+    doc.text("1. Resumen del período", 14, y);
+
+    y += 5;
 
     autoTable(doc, {
-      startY: 45,
-      head: [["Indicador", "Resultado"]],
+      startY: y,
+      head: [
+        [
+          "Tareas",
+          "Personas",
+          "Departamentos",
+          "Tiempo estimado",
+          "Incorporadas",
+          "Superpuestas",
+        ],
+      ],
       body: [
-        ["Total de tareas", estadisticas.total],
-        ["Pendientes", estadisticas.pendientes],
-        ["En proceso", estadisticas.enProceso],
-        ["Completadas", estadisticas.completadas],
-        ["Alta prioridad", estadisticas.altaPrioridad],
-        ["Tiempo estimado total", formatearMinutos(estadisticas.tiempoTotal)],
-        ["Tiempo promedio por tarea", formatearMinutos(estadisticas.promedio)],
-        ["Solicitudes con <= 2 horas", tareasUltimaHora.length],
+        [
+          metricas.total,
+          metricas.personas,
+          metricas.departamentos,
+          formatearMinutos(metricas.tiempo),
+          metricas.incorporadas,
+          metricas.superpuestas,
+        ],
       ],
       theme: "grid",
       headStyles: {
-        fillColor: [7, 74, 123],
+        fillColor: azul,
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 4,
       },
     });
 
+    y = doc.lastAutoTable.finalY + 12;
+
+    // -------------------------------------------------------
+    // ESTADOS
+    // -------------------------------------------------------
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...oscuro);
+
+    doc.text("2. Estado de las actividades", 14, y);
+
+    y += 5;
+
+    autoTable(doc, {
+      startY: y,
+      head: [
+        [
+          "Completadas",
+          "En proceso",
+          "Pendientes",
+        ],
+      ],
+      body: [
+        [
+          metricas.completadas,
+          metricas.enProceso,
+          metricas.pendientes,
+        ],
+      ],
+      theme: "grid",
+      headStyles: {
+        fillColor: azul,
+        textColor: 255,
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 4,
+      },
+    });
+
+    y = doc.lastAutoTable.finalY + 12;
+
+    // -------------------------------------------------------
+    // ACTIVIDADES INCORPORADAS
+    // -------------------------------------------------------
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...oscuro);
+
+    doc.text(
+      "3. Actividades incorporadas sobre planificación existente",
+      14,
+      y
+    );
+
+    y += 5;
+
+    if (actividadesIncorporadas.length === 0) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...gris);
+
+      doc.text(
+        "No se detectaron actividades incorporadas sobre una planificación existente.",
+        14,
+        y + 5
+      );
+
+      y += 15;
+    } else {
+      const filas =
+        actividadesIncorporadas.map(
+          (actividad) => {
+            const nueva = actividad.nueva;
+            const existente =
+              actividad.existente;
+
+            return [
+              formatearFecha(
+                nueva.fecha_inicio
+              ),
+              obtenerNombreUsuario(
+                nueva.responsable_id
+              ),
+              obtenerNombreDepartamento(
+                nueva.departamento_id
+              ),
+              nueva.titulo || "Sin título",
+              existente.titulo ||
+                "Sin título",
+              actividad.superpuesta
+                ? "Coincidencia horaria"
+                : "Dentro de planificación",
+            ];
+          }
+        );
+
+      autoTable(doc, {
+        startY: y,
+        head: [
+          [
+            "Fecha",
+            "Responsable",
+            "Departamento",
+            "Nueva actividad",
+            "Planificación existente",
+            "Resultado",
+          ],
+        ],
+        body: filas,
+        theme: "grid",
+        headStyles: {
+          fillColor: azul,
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+      });
+
+      y = doc.lastAutoTable.finalY + 12;
+    }
+
+    // -------------------------------------------------------
+    // PERSONAS
+    // -------------------------------------------------------
+
+    if (y > 170) {
+      doc.addPage();
+      y = 18;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...oscuro);
+
+    doc.text("4. Carga de trabajo por persona", 14, y);
+
+    y += 5;
+
+    autoTable(doc, {
+      startY: y,
+      head: [
+        [
+          "Responsable",
+          "Tareas",
+          "Completadas",
+          "En proceso",
+          "Pendientes",
+          "Incorporadas",
+          "Tiempo",
+        ],
+      ],
+      body: rendimientoPersonas.map(
+        (persona) => [
+          persona.nombre,
+          persona.total,
+          persona.completadas,
+          persona.enProceso,
+          persona.pendientes,
+          persona.incorporadas,
+          formatearMinutos(persona.tiempo),
+        ]
+      ),
+      theme: "grid",
+      headStyles: {
+        fillColor: azul,
+        textColor: 255,
+      },
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+      },
+    });
+
+    y = doc.lastAutoTable.finalY + 12;
+
+    // -------------------------------------------------------
     // DEPARTAMENTOS
+    // -------------------------------------------------------
 
-    let posicion = doc.lastAutoTable.finalY + 15;
-
-    doc.setFontSize(14);
-    doc.setTextColor(7, 74, 123);
-
-    doc.text("Departamentos con mayor cantidad de tareas", 14, posicion);
-
-    autoTable(doc, {
-      startY: posicion + 5,
-      head: [["Posición", "Departamento", "Tareas"]],
-      body: departamentos.map((departamento, index) => [
-        index + 1,
-        departamento.nombre,
-        departamento.cantidad,
-      ]),
-      theme: "grid",
-      headStyles: {
-        fillColor: [7, 74, 123],
-      },
-    });
-
-    // RESPONSABLES
-
-    posicion = doc.lastAutoTable.finalY + 15;
-
-    if (posicion > 250) {
+    if (y > 170) {
       doc.addPage();
-      posicion = 20;
+      y = 18;
     }
 
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("Carga por responsable", 14, posicion);
+    doc.setTextColor(...oscuro);
+
+    doc.text(
+      "5. Solicitudes por departamento",
+      14,
+      y
+    );
+
+    y += 5;
 
     autoTable(doc, {
-      startY: posicion + 5,
-      head: [["Posición", "Responsable", "Tareas"]],
-      body: responsables.map((responsable, index) => [
-        index + 1,
-        responsable.nombre,
-        responsable.cantidad,
-      ]),
+      startY: y,
+      head: [
+        [
+          "Departamento",
+          "Solicitudes",
+          "Incorporadas",
+          "Tiempo estimado",
+        ],
+      ],
+      body: rendimientoDepartamentos.map(
+        (departamento) => [
+          departamento.nombre,
+          departamento.total,
+          departamento.incorporadas,
+          formatearMinutos(
+            departamento.tiempo
+          ),
+        ]
+      ),
       theme: "grid",
       headStyles: {
-        fillColor: [7, 74, 123],
+        fillColor: azul,
+        textColor: 255,
+      },
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
       },
     });
 
-    // TAREAS DE ÚLTIMA HORA
+    y = doc.lastAutoTable.finalY + 12;
 
-    posicion = doc.lastAutoTable.finalY + 15;
+    // -------------------------------------------------------
+    // DETALLE
+    // -------------------------------------------------------
 
-    if (posicion > 240) {
-      doc.addPage();
-      posicion = 20;
-    }
+    doc.addPage();
+    y = 18;
 
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
+    doc.setTextColor(...oscuro);
 
-    doc.text("Solicitudes con poca anticipación", 14, posicion);
+    doc.text(
+      "6. Detalle de actividades del período",
+      14,
+      y
+    );
+
+    y += 5;
 
     autoTable(doc, {
-      startY: posicion + 5,
-      head: [["Tarea", "Departamento", "Responsable", "Anticipación"]],
-      body: tareasUltimaHora.map((tarea) => [
-        tarea.titulo,
-        obtenerDepartamento(tarea.responsable_id),
-        obtenerNombreResponsable(tarea.responsable_id),
-        `${Math.round(tarea.minutosAnticipacion)} min`,
+      startY: y,
+      head: [
+        [
+          "Actividad",
+          "Responsable",
+          "Departamento",
+          "Inicio",
+          "Fin",
+          "Estado",
+          "Tiempo",
+        ],
+      ],
+      body: tareasPeriodo.map((tarea) => [
+        tarea.titulo || "Sin título",
+        obtenerNombreUsuario(
+          tarea.responsable_id
+        ),
+        obtenerNombreDepartamento(
+          tarea.departamento_id
+        ),
+        `${formatearFecha(
+          tarea.fecha_inicio
+        )} ${formatearHora(
+          tarea.hora_inicio
+        )}`,
+        `${formatearFecha(
+          tarea.fecha_fin
+        )} ${formatearHora(
+          tarea.hora_fin
+        )}`,
+        tarea.estado || "Sin estado",
+        formatearMinutos(
+          tarea.tiempo_estimado
+        ),
       ]),
       theme: "grid",
       headStyles: {
-        fillColor: [7, 74, 123],
+        fillColor: azul,
+        textColor: 255,
+      },
+      styles: {
+        fontSize: 7,
+        cellPadding: 2.5,
       },
     });
 
-    // PIE DE PÁGINA
+    // -------------------------------------------------------
+    // CONCLUSIÓN
+    // -------------------------------------------------------
 
-    const totalPaginas = doc.internal.getNumberOfPages();
+    doc.addPage();
+    y = 20;
 
-    for (let pagina = 1; pagina <= totalPaginas; pagina++) {
-      doc.setPage(pagina);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(...azul);
 
+    doc.text(
+      "7. Conclusión del período",
+      14,
+      y
+    );
+
+    y += 10;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...oscuro);
+
+    const porcentaje =
+      metricas.total > 0
+        ? (
+            (metricas.incorporadas /
+              metricas.total) *
+            100
+          ).toFixed(1)
+        : "0.0";
+
+    const texto = `Durante el período comprendido entre ${formatearFecha(
+      fechaDesde
+    )} y ${formatearFecha(
+      fechaHasta
+    )}, se registraron ${
+      metricas.total
+    } actividades correspondientes a ${
+      metricas.personas
+    } personas y ${
+      metricas.departamentos
+    } departamentos.
+
+Del total analizado, ${
+      metricas.incorporadas
+    } actividades fueron identificadas como incorporadas sobre una planificación existente, lo que representa el ${porcentaje}% de las actividades del período.
+
+Se identificaron ${
+      metricas.superpuestas
+    } actividades con coincidencia horaria respecto de otra actividad previamente planificada para el mismo responsable.
+
+El objetivo de esta medición es identificar la carga adicional que se incorpora sobre trabajos que ya habían sido planificados, permitiendo observar cómo se distribuye el trabajo y qué solicitudes generan mayor presión sobre la planificación existente.`;
+
+    const lineas = doc.splitTextToSize(
+      texto,
+      260
+    );
+
+    doc.text(lineas, 14, y);
+
+    // -------------------------------------------------------
+    // PIE
+    // -------------------------------------------------------
+
+    const paginas =
+      doc.internal.getNumberOfPages();
+
+    for (let i = 1; i <= paginas; i++) {
+      doc.setPage(i);
+
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
 
       doc.text(
-        `CRM Gestión de Requerimientos · Página ${pagina} de ${totalPaginas}`,
+        `Informe de gestión | Página ${i} de ${paginas}`,
         14,
-        290,
+        200
       );
     }
 
-    doc.save("reporte-global-crm.pdf");
+    doc.save(
+      `informe-gestion-${fechaDesde}-${fechaHasta}.pdf`
+    );
   };
 
-  // ============================================================
-  // CARGANDO
-  // ============================================================
+  // =========================================================
+  // LOADING
+  // =========================================================
 
   if (cargando) {
     return (
       <section className="reportes-page">
-        <div className="reportes-loading">
-          Cargando información del reporte...
+        <div className="reporte-cargando">
+          <span className="loader" />
+          <p>Generando reporte...</p>
         </div>
       </section>
     );
   }
 
-  // ============================================================
+  // =========================================================
   // ERROR
-  // ============================================================
+  // =========================================================
 
   if (error) {
     return (
       <section className="reportes-page">
-        <div className="reportes-error">{error}</div>
+        <div className="reporte-error">
+          <strong>
+            No se pudo generar el reporte
+          </strong>
+
+          <p>{error}</p>
+
+          <button
+            type="button"
+            className="reportes-btn reportes-btn-principal"
+            onClick={cargarDatos}
+          >
+            Reintentar
+          </button>
+        </div>
       </section>
     );
   }
 
-  // ============================================================
-  // INTERFAZ
-  // ============================================================
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   return (
     <section className="reportes-page">
@@ -571,325 +1119,562 @@ function Reportes() {
 
       <div className="reportes-header">
         <div>
-          <span className="eyebrow">ANÁLISIS</span>
+          <span className="reportes-eyebrow">
+            ANÁLISIS DE GESTIÓN
+          </span>
 
-          <h1>Reportes</h1>
+          <h1>Reporte de trabajo</h1>
 
           <p>
-            Analiza la carga de trabajo, prioridades y solicitudes realizadas
-            por los departamentos.
+            Analiza la carga de trabajo,
+            planificación y actividades
+            incorporadas durante un período
+            específico.
           </p>
         </div>
 
-        <button type="button" className="reportes-btn" onClick={generarPDF}>
-          Descargar PDF
-        </button>
+        <div className="reportes-header-acciones">
+          <button
+            type="button"
+            className="reportes-btn reportes-btn-secundario"
+            onClick={cargarDatos}
+          >
+            Actualizar
+          </button>
+
+          <button
+            type="button"
+            className="reportes-btn reportes-btn-principal"
+            onClick={descargarPDF}
+          >
+            Descargar informe
+          </button>
+        </div>
+      </div>
+
+      {/* FILTROS */}
+
+      <div className="reportes-filtros">
+        <div className="reporte-filtro">
+          <label>Fecha desde</label>
+
+          <input
+            type="date"
+            value={fechaDesde}
+            onChange={(e) =>
+              setFechaDesde(e.target.value)
+            }
+          />
+        </div>
+
+        <div className="reporte-filtro">
+          <label>Fecha hasta</label>
+
+          <input
+            type="date"
+            value={fechaHasta}
+            onChange={(e) =>
+              setFechaHasta(e.target.value)
+            }
+          />
+        </div>
+
+        <div className="reporte-filtro-info">
+          <span>Período seleccionado</span>
+
+          <strong>
+            {formatearFecha(fechaDesde)} -{" "}
+            {formatearFecha(fechaHasta)}
+          </strong>
+        </div>
+
+        <div className="reporte-filtro-info">
+          <span>Actividades analizadas</span>
+
+          <strong>{metricas.total}</strong>
+        </div>
       </div>
 
       {/* RESUMEN */}
 
       <div className="reportes-resumen">
-        <div className="reporte-card">
-          <span>Total de tareas</span>
-          <strong>{estadisticas.total}</strong>
-          <small>Registradas en el sistema</small>
-        </div>
+        <article className="reporte-metrica">
+          <span>Tareas</span>
+          <strong>{metricas.total}</strong>
+          <small>
+            Actividades del período
+          </small>
+        </article>
 
-        <div className="reporte-card">
-          <span>Pendientes</span>
-          <strong>{estadisticas.pendientes}</strong>
-          <small>Esperando atención</small>
-        </div>
+        <article className="reporte-metrica">
+          <span>Personas</span>
+          <strong>{metricas.personas}</strong>
+          <small>
+            Integrantes con actividades
+          </small>
+        </article>
 
-        <div className="reporte-card">
-          <span>En proceso</span>
-          <strong>{estadisticas.enProceso}</strong>
-          <small>Actualmente trabajando</small>
-        </div>
+        <article className="reporte-metrica">
+          <span>Tiempo estimado</span>
+          <strong>
+            {formatearMinutos(
+              metricas.tiempo
+            )}
+          </strong>
+          <small>
+            Carga registrada
+          </small>
+        </article>
 
-        <div className="reporte-card">
-          <span>Completadas</span>
-          <strong>{estadisticas.completadas}</strong>
-          <small>Tareas finalizadas</small>
-        </div>
-
-        <div className="reporte-card">
-          <span>Alta prioridad</span>
-          <strong>{estadisticas.altaPrioridad}</strong>
-          <small>Requieren atención</small>
-        </div>
-
-        <div className="reporte-card">
-          <span>Última hora</span>
-          <strong>{tareasUltimaHora.length}</strong>
-          <small>Solicitudes con ≤ 2 horas</small>
-        </div>
+        <article className="reporte-metrica reporte-metrica-alerta">
+          <span>Incorporadas</span>
+          <strong>
+            {metricas.incorporadas}
+          </strong>
+          <small>
+            Sobre planificación existente
+          </small>
+        </article>
       </div>
 
-      {/* GRÁFICOS */}
+      {/* ALERTA PRINCIPAL */}
 
-      <div className="reportes-graficos">
-        {/* ESTADOS */}
+      <section className="reporte-destacado">
+        <div>
+          <span>DETECCIÓN DE CARGA ADICIONAL</span>
 
-        <div className="reporte-panel grafico-panel">
-          <div className="reporte-panel-header">
-            <div>
-              <h2>Estado de las tareas</h2>
+          <h2>
+            Actividades incorporadas sobre
+            planificación existente
+          </h2>
 
-              <p>Distribución general de las actividades.</p>
-            </div>
-          </div>
-
-          <div className="estado-grafico">
-            {estados.map((estado) => {
-              const porcentajeEstado = porcentaje(
-                estado.cantidad,
-                estadisticas.total,
-              );
-
-              return (
-                <div className="estado-item" key={estado.nombre}>
-                  <div className="estado-item-header">
-                    <span>{estado.nombre}</span>
-
-                    <strong>
-                      {estado.cantidad} · {porcentajeEstado}%
-                    </strong>
-                  </div>
-
-                  <div className="estado-barra">
-                    <span
-                      className={`estado-barra-fill ${estado.clase}`}
-                      style={{
-                        width: `${porcentajeEstado}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <p>
+            Se detectan cuando una persona
+            recibe una nueva actividad cuya
+            fecha se encuentra dentro del
+            período de otra actividad que ya
+            tenía planificada.
+          </p>
         </div>
 
-        {/* DEPARTAMENTOS */}
+        <div className="reporte-destacado-numero">
+          <strong>
+            {metricas.incorporadas}
+          </strong>
 
-        <div className="reporte-panel grafico-panel">
-          <div className="reporte-panel-header">
-            <div>
-              <h2>Solicitudes por departamento</h2>
-
-              <p>Volumen de requerimientos recibidos.</p>
-            </div>
-          </div>
-
-          <div className="departamentos-grafico">
-            {departamentos.slice(0, 6).map((departamento) => {
-              const porcentajeDepartamento = porcentaje(
-                departamento.cantidad,
-                departamentos[0]?.cantidad || 0,
-              );
-
-              return (
-                <div
-                  className="departamento-grafico-item"
-                  key={departamento.nombre}
-                >
-                  <div className="departamento-grafico-label">
-                    <span>{departamento.nombre}</span>
-
-                    <strong>{departamento.cantidad}</strong>
-                  </div>
-
-                  <div className="departamento-grafico-barra">
-                    <span
-                      style={{
-                        width: `${porcentajeDepartamento}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <span>detectadas</span>
         </div>
-      </div>
+      </section>
 
-      {/* RANKINGS */}
+      {/* DETALLE INCORPORADAS */}
 
-      <div className="reportes-grid">
-        {/* DEPARTAMENTOS */}
-
-        <div className="reporte-panel">
-          <div className="reporte-panel-header">
-            <div>
-              <h2>Departamentos</h2>
-
-              <p>Departamentos que generan más requerimientos.</p>
-            </div>
-          </div>
-
-          {departamentos.length === 0 ? (
-            <p className="reporte-vacio">Todavía no existen datos.</p>
-          ) : (
-            <div className="ranking-list">
-              {departamentos.map((departamento, index) => (
-                <div className="ranking-item" key={departamento.nombre}>
-                  <span className="ranking-position">{index + 1}</span>
-
-                  <div className="ranking-info">
-                    <strong>{departamento.nombre}</strong>
-
-                    <div className="ranking-bar">
-                      <span
-                        style={{
-                          width: `${
-                            departamentos[0]
-                              ? (departamento.cantidad /
-                                  departamentos[0].cantidad) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <strong>{departamento.cantidad}</strong>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* RESPONSABLES */}
-
-        <div className="reporte-panel">
-          <div className="reporte-panel-header">
-            <div>
-              <h2>Responsables</h2>
-
-              <p>Personas con mayor carga de tareas.</p>
-            </div>
-          </div>
-
-          {responsables.length === 0 ? (
-            <p className="reporte-vacio">Todavía no existen datos.</p>
-          ) : (
-            <div className="ranking-list">
-              {responsables.slice(0, 5).map((responsable, index) => (
-                <div className="ranking-item" key={responsable.nombre}>
-                  <span className="ranking-position">{index + 1}</span>
-
-                  <div className="ranking-info">
-                    <strong>{responsable.nombre}</strong>
-
-                    <small>{responsable.cantidad} tareas</small>
-                  </div>
-
-                  <strong>{responsable.cantidad}</strong>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ÚLTIMA HORA */}
-
-      <div className="reporte-panel reporte-panel-full">
-        <div className="reporte-panel-header">
+      <section className="reporte-card">
+        <div className="reporte-card-header">
           <div>
-            <h2>Solicitudes de última hora</h2>
+            <span className="reporte-eyebrow">
+              ÚLTIMA HORA
+            </span>
 
-            <p>Tareas creadas con dos horas o menos de anticipación.</p>
+            <h2>
+              Actividades incorporadas
+            </h2>
+
+            <p>
+              Trabajos que fueron registrados
+              dentro de una planificación que
+              ya existía para el mismo responsable.
+            </p>
           </div>
-
-          <span className="reporte-alerta">
-            {tareasUltimaHora.length} detectadas
-          </span>
         </div>
 
-        {tareasUltimaHora.length === 0 ? (
+        {actividadesIncorporadas.length ===
+        0 ? (
           <div className="reporte-vacio">
-            No se detectaron solicitudes de última hora.
+            <strong>
+              No se detectaron actividades
+              incorporadas.
+            </strong>
+
+            <span>
+              En este período no existen
+              actividades nuevas dentro de
+              otra planificación.
+            </span>
           </div>
         ) : (
-          <div className="reportes-table-container">
-            <table className="reportes-table">
+          <div className="tabla-contenedor">
+            <table className="reporte-tabla">
               <thead>
                 <tr>
-                  <th>Tarea</th>
-                  <th>Departamento</th>
+                  <th>Nueva actividad</th>
                   <th>Responsable</th>
-                  <th>Fecha inicio</th>
-                  <th>Anticipación</th>
-                  <th>Prioridad</th>
+                  <th>Departamento</th>
+                  <th>Planificación existente</th>
+                  <th>Fecha</th>
+                  <th>Resultado</th>
                 </tr>
               </thead>
 
               <tbody>
-                {tareasUltimaHora.map((tarea) => (
-                  <tr key={tarea.id}>
-                    <td>
-                      <strong>{tarea.titulo}</strong>
-                    </td>
+                {actividadesIncorporadas.map(
+                  (actividad, index) => (
+                    <tr
+                      key={`${actividad.nueva.id}-${index}`}
+                    >
+                      <td>
+                        <strong>
+                          {
+                            actividad.nueva
+                              .titulo
+                          }
+                        </strong>
+                      </td>
 
-                    <td>{obtenerDepartamento(tarea.responsable_id)}</td>
+                      <td>
+                        {obtenerNombreUsuario(
+                          actividad.nueva
+                            .responsable_id
+                        )}
+                      </td>
 
-                    <td>{obtenerNombreResponsable(tarea.responsable_id)}</td>
+                      <td>
+                        {obtenerNombreDepartamento(
+                          actividad.nueva
+                            .departamento_id
+                        )}
+                      </td>
 
-                    <td>
-                      {tarea.fecha_inicio}
+                      <td>
+                        {
+                          actividad.existente
+                            .titulo
+                        }
+                      </td>
 
-                      {tarea.hora_inicio ? ` · ${tarea.hora_inicio}` : ""}
-                    </td>
+                      <td>
+                        {formatearFecha(
+                          actividad.nueva
+                            .fecha_inicio
+                        )}
+                      </td>
 
-                    <td>
-                      <span className="urgente-badge">
-                        {Math.round(tarea.minutosAnticipacion)} min
-                      </span>
-                    </td>
-
-                    <td>{tarea.prioridad}</td>
-                  </tr>
-                ))}
+                      <td>
+                        <span
+                          className={
+                            actividad.superpuesta
+                              ? "reporte-badge reporte-badge-imprevisto"
+                              : "reporte-badge reporte-badge-planificado"
+                          }
+                        >
+                          {actividad.superpuesta
+                            ? "Coincidencia horaria"
+                            : "Sobre planificación"}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* TIEMPO DE TRABAJO */}
+      {/* PERSONAS */}
 
-      <div className="reporte-panel reporte-panel-full">
-        <div className="reporte-panel-header">
+      <section className="reporte-card">
+        <div className="reporte-card-header">
           <div>
-            <h2>Tiempo de trabajo</h2>
+            <span className="reporte-eyebrow">
+              EQUIPO
+            </span>
 
-            <p>Resumen del tiempo estimado de las tareas.</p>
+            <h2>
+              Carga de trabajo por persona
+            </h2>
+
+            <p>
+              Permite identificar qué personas
+              recibieron mayor cantidad de
+              actividades adicionales.
+            </p>
           </div>
         </div>
 
-        <div className="tiempo-resumen">
+        <div className="tabla-contenedor">
+          <table className="reporte-tabla">
+            <thead>
+              <tr>
+                <th>Responsable</th>
+                <th>Tareas</th>
+                <th>Completadas</th>
+                <th>En proceso</th>
+                <th>Pendientes</th>
+                <th>Incorporadas</th>
+                <th>Tiempo</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {rendimientoPersonas.map(
+                (persona) => (
+                  <tr key={persona.id}>
+                    <td>
+                      <strong>
+                        {persona.nombre}
+                      </strong>
+                    </td>
+
+                    <td>{persona.total}</td>
+
+                    <td>
+                      <span className="estado estado-completado">
+                        {persona.completadas}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span className="estado estado-proceso">
+                        {persona.enProceso}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span className="estado estado-pendiente">
+                        {persona.pendientes}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span
+                        className={
+                          persona.incorporadas > 0
+                            ? "reporte-badge reporte-badge-imprevisto"
+                            : "reporte-badge reporte-badge-planificado"
+                        }
+                      >
+                        {persona.incorporadas}
+                      </span>
+                    </td>
+
+                    <td>
+                      {formatearMinutos(
+                        persona.tiempo
+                      )}
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* DEPARTAMENTOS */}
+
+      <section className="reporte-card">
+        <div className="reporte-card-header">
           <div>
-            <span>Tiempo estimado total</span>
+            <span className="reporte-eyebrow">
+              DEPARTAMENTOS
+            </span>
 
-            <strong>{formatearMinutos(estadisticas.tiempoTotal)}</strong>
-          </div>
+            <h2>
+              Solicitudes por departamento
+            </h2>
 
-          <div>
-            <span>Promedio por tarea</span>
-
-            <strong>{formatearMinutos(estadisticas.promedio)}</strong>
-          </div>
-
-          <div>
-            <span>Tareas alta prioridad</span>
-
-            <strong>{estadisticas.altaPrioridad}</strong>
+            <p>
+              Identifica qué departamentos
+              generan más trabajo y cuántas de
+              sus solicitudes se incorporan sobre
+              actividades existentes.
+            </p>
           </div>
         </div>
-      </div>
+
+        <div className="tabla-contenedor">
+          <table className="reporte-tabla">
+            <thead>
+              <tr>
+                <th>Departamento</th>
+                <th>Solicitudes</th>
+                <th>Incorporadas</th>
+                <th>Tiempo estimado</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {rendimientoDepartamentos.map(
+                (departamento) => (
+                  <tr key={departamento.id}>
+                    <td>
+                      <strong>
+                        {departamento.nombre}
+                      </strong>
+                    </td>
+
+                    <td>
+                      {departamento.total}
+                    </td>
+
+                    <td>
+                      <span
+                        className={
+                          departamento.incorporadas >
+                          0
+                            ? "reporte-badge reporte-badge-imprevisto"
+                            : "reporte-badge reporte-badge-planificado"
+                        }
+                      >
+                        {
+                          departamento.incorporadas
+                        }
+                      </span>
+                    </td>
+
+                    <td>
+                      {formatearMinutos(
+                        departamento.tiempo
+                      )}
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* TODAS LAS TAREAS */}
+
+      <section className="reporte-card">
+        <div className="reporte-card-header">
+          <div>
+            <span className="reporte-eyebrow">
+              DETALLE
+            </span>
+
+            <h2>
+              Actividades del período
+            </h2>
+
+            <p>
+              Detalle completo de las actividades
+              incluidas en el período seleccionado.
+            </p>
+          </div>
+        </div>
+
+        <div className="tabla-contenedor">
+          <table className="reporte-tabla">
+            <thead>
+              <tr>
+                <th>Actividad</th>
+                <th>Responsable</th>
+                <th>Departamento</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Estado</th>
+                <th>Tiempo</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {tareasPeriodo.map((tarea) => (
+                <tr key={tarea.id}>
+                  <td>
+                    <strong>
+                      {tarea.titulo ||
+                        "Sin título"}
+                    </strong>
+                  </td>
+
+                  <td>
+                    {obtenerNombreUsuario(
+                      tarea.responsable_id
+                    )}
+                  </td>
+
+                  <td>
+                    {obtenerNombreDepartamento(
+                      tarea.departamento_id
+                    )}
+                  </td>
+
+                  <td>
+                    {formatearFecha(
+                      tarea.fecha_inicio
+                    )}
+
+                    <small className="hora">
+                      {formatearHora(
+                        tarea.hora_inicio
+                      )}
+                    </small>
+                  </td>
+
+                  <td>
+                    {formatearFecha(
+                      tarea.fecha_fin
+                    )}
+
+                    <small className="hora">
+                      {formatearHora(
+                        tarea.hora_fin
+                      )}
+                    </small>
+                  </td>
+
+                  <td>
+                    <span className="estado">
+                      {tarea.estado ||
+                        "Sin estado"}
+                    </span>
+                  </td>
+
+                  <td>
+                    {formatearMinutos(
+                      tarea.tiempo_estimado
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* METODOLOGÍA */}
+
+      <section className="reporte-nota">
+        <strong>
+          ¿Cómo se detectan las actividades
+          incorporadas?
+        </strong>
+
+        <p>
+          El sistema compara las actividades
+          asignadas a una misma persona. Cuando
+          una actividad nueva comienza dentro
+          del período de una actividad que ya
+          estaba planificada, se identifica como
+          una actividad incorporada sobre una
+          planificación existente.
+        </p>
+
+        <p>
+          Si además existen horas registradas,
+          el sistema comprueba si existe una
+          coincidencia horaria entre ambas
+          actividades.
+        </p>
+
+        <p>
+          Esta medición se realiza únicamente
+          en el reporte y no modifica los datos
+          almacenados en Supabase.
+        </p>
+      </section>
     </section>
   );
 }
