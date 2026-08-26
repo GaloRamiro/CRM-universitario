@@ -29,6 +29,7 @@ function NuevaTarea() {
     useState(true);
 
   const [guardando, setGuardando] = useState(false);
+
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
 
@@ -73,8 +74,14 @@ function NuevaTarea() {
         .order("nombre");
 
       if (error) {
-        console.error("Error cargando departamentos:", error);
-        setError("No se pudieron cargar los departamentos.");
+        console.error(
+          "Error cargando departamentos:",
+          error
+        );
+
+        setError(
+          "No se pudieron cargar los departamentos."
+        );
       } else {
         setDepartamentos(data || []);
       }
@@ -141,10 +148,6 @@ function NuevaTarea() {
         );
       }
 
-      // ==========================================
-      // VALIDAR HORAS
-      // ==========================================
-
       if (
         formulario.hora_inicio &&
         formulario.hora_fin &&
@@ -177,16 +180,12 @@ function NuevaTarea() {
             fecha_fin:
               formulario.fecha_fin,
 
-            // El calendario utiliza este campo
             fecha:
               formulario.fecha_inicio,
 
-            // Por defecto comienza a las 08:00
             hora_inicio:
               formulario.hora_inicio || "08:00",
 
-            // Puede quedar vacío si no existe
-            // una hora límite específica
             hora_fin:
               formulario.hora_fin || null,
 
@@ -217,7 +216,55 @@ function NuevaTarea() {
         );
       }
 
-      console.log("Tarea creada:", data);
+      console.log(
+        "Tarea creada:",
+        data
+      );
+
+      // ==========================================
+      // CREAR NOTIFICACIÓN
+      // ==========================================
+
+      if (formulario.responsable_id) {
+        const {
+          error: notificacionError,
+        } = await supabase
+          .from("notificaciones")
+          .insert({
+            usuario_id:
+              formulario.responsable_id,
+
+            tarea_id:
+              data.id,
+
+            tipo:
+              "nueva_tarea",
+
+            titulo:
+              "Nueva tarea asignada",
+
+            mensaje:
+              `Se te ha asignado la tarea: "${formulario.titulo.trim()}".`,
+
+            leida:
+              false,
+          });
+
+        if (notificacionError) {
+          console.error(
+            "Error creando notificación:",
+            notificacionError
+          );
+        } else {
+          console.log(
+            "Notificación creada correctamente."
+          );
+        }
+      }
+
+      // ==========================================
+      // MENSAJE
+      // ==========================================
 
       setMensaje(
         "Tarea creada correctamente."
@@ -247,6 +294,7 @@ function NuevaTarea() {
       setTimeout(() => {
         navigate("/tareas");
       }, 1000);
+
     } catch (err) {
       console.error(err);
 
@@ -262,9 +310,7 @@ function NuevaTarea() {
   return (
     <section className="nueva-tarea-page">
 
-      {/* ==========================================
-          ENCABEZADO
-      ========================================== */}
+      {/* ENCABEZADO */}
 
       <div className="nueva-tarea-header">
 
@@ -278,8 +324,7 @@ function NuevaTarea() {
           </h1>
 
           <p>
-            Registra una nueva actividad para
-            el equipo.
+            Registra una nueva actividad para el equipo.
           </p>
         </div>
 
@@ -293,18 +338,14 @@ function NuevaTarea() {
 
       </div>
 
-      {/* ==========================================
-          FORMULARIO
-      ========================================== */}
+      {/* FORMULARIO */}
 
       <form
         className="nueva-tarea-card"
         onSubmit={handleSubmit}
       >
 
-        {/* ==========================================
-            INFORMACIÓN
-        ========================================== */}
+        {/* INFORMACIÓN */}
 
         <div className="nueva-tarea-section">
 
@@ -313,13 +354,10 @@ function NuevaTarea() {
           </h2>
 
           <p>
-            Define el título y los detalles
-            principales de la actividad.
+            Define el título y los detalles principales de la actividad.
           </p>
 
           <div className="nueva-tarea-grid">
-
-            {/* TÍTULO */}
 
             <div className="nueva-tarea-group">
 
@@ -338,8 +376,6 @@ function NuevaTarea() {
               />
 
             </div>
-
-            {/* DESCRIPCIÓN */}
 
             <div className="nueva-tarea-group">
 
@@ -362,9 +398,7 @@ function NuevaTarea() {
 
         </div>
 
-        {/* ==========================================
-            FECHAS Y HORARIOS
-        ========================================== */}
+        {/* FECHAS */}
 
         <div className="nueva-tarea-section">
 
@@ -373,13 +407,10 @@ function NuevaTarea() {
           </h2>
 
           <p>
-            Define la ventana disponible para
-            realizar la tarea.
+            Define la ventana disponible para realizar la tarea.
           </p>
 
           <div className="nueva-tarea-grid">
-
-            {/* FECHA INICIO */}
 
             <div className="nueva-tarea-group">
 
@@ -398,8 +429,6 @@ function NuevaTarea() {
 
             </div>
 
-            {/* FECHA FIN */}
-
             <div className="nueva-tarea-group">
 
               <label htmlFor="fecha_fin">
@@ -417,8 +446,6 @@ function NuevaTarea() {
 
             </div>
 
-            {/* HORA INICIO */}
-
             <div className="nueva-tarea-group">
 
               <label htmlFor="hora_inicio">
@@ -434,13 +461,10 @@ function NuevaTarea() {
               />
 
               <small className="nueva-tarea-help">
-                Por defecto, la jornada comienza
-                a las 08:00.
+                Por defecto, la jornada comienza a las 08:00.
               </small>
 
             </div>
-
-            {/* HORA FIN */}
 
             <div className="nueva-tarea-group">
 
@@ -457,8 +481,7 @@ function NuevaTarea() {
               />
 
               <small className="nueva-tarea-help">
-                Opcional. Úsala cuando exista
-                una hora límite específica.
+                Opcional. Úsala cuando exista una hora límite específica.
               </small>
 
             </div>
@@ -467,9 +490,7 @@ function NuevaTarea() {
 
         </div>
 
-        {/* ==========================================
-            ASIGNACIÓN
-        ========================================== */}
+        {/* ASIGNACIÓN */}
 
         <div className="nueva-tarea-section">
 
@@ -478,13 +499,10 @@ function NuevaTarea() {
           </h2>
 
           <p>
-            Define prioridad, estado,
-            departamento y responsable.
+            Define prioridad, estado, departamento y responsable.
           </p>
 
           <div className="nueva-tarea-grid">
-
-            {/* PRIORIDAD */}
 
             <div className="nueva-tarea-group">
 
@@ -498,7 +516,6 @@ function NuevaTarea() {
                 value={formulario.prioridad}
                 onChange={handleChange}
               >
-
                 <option value="baja">
                   Baja
                 </option>
@@ -510,12 +527,9 @@ function NuevaTarea() {
                 <option value="alta">
                   Alta
                 </option>
-
               </select>
 
             </div>
-
-            {/* ESTADO */}
 
             <div className="nueva-tarea-group">
 
@@ -529,7 +543,6 @@ function NuevaTarea() {
                 value={formulario.estado}
                 onChange={handleChange}
               >
-
                 <option value="pendiente">
                   Pendiente
                 </option>
@@ -541,12 +554,9 @@ function NuevaTarea() {
                 <option value="completada">
                   Completada
                 </option>
-
               </select>
 
             </div>
-
-            {/* DEPARTAMENTO */}
 
             <div className="nueva-tarea-group">
 
@@ -581,8 +591,6 @@ function NuevaTarea() {
 
             </div>
 
-            {/* RESPONSABLE */}
-
             <div className="nueva-tarea-group">
 
               <label htmlFor="responsable_id">
@@ -609,7 +617,6 @@ function NuevaTarea() {
                     >
                       {usuario.nombre}{" "}
                       {usuario.apellido}
-
                       {usuario.email
                         ? ` — ${usuario.email}`
                         : ""}
@@ -625,9 +632,7 @@ function NuevaTarea() {
 
         </div>
 
-        {/* ==========================================
-            MENSAJES
-        ========================================== */}
+        {/* MENSAJES */}
 
         {mensaje && (
           <div className="nueva-tarea-mensaje">
@@ -641,9 +646,7 @@ function NuevaTarea() {
           </div>
         )}
 
-        {/* ==========================================
-            BOTONES
-        ========================================== */}
+        {/* BOTONES */}
 
         <div className="nueva-tarea-actions">
 
@@ -674,4 +677,3 @@ function NuevaTarea() {
 }
 
 export default NuevaTarea;
-
