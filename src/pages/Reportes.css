@@ -1,11 +1,13 @@
 /* =========================================================
-   REPORTES
+   REPORTES - CRM UNIVERSITARIO
 ========================================================= */
 
 .reportes-page {
-  padding: 32px;
+  width: 100%;
   max-width: 1600px;
   margin: 0 auto;
+  padding: 32px;
+  box-sizing: border-box;
   color: #172033;
 }
 
@@ -15,8 +17,8 @@
 
 .reportes-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 32px;
   margin-bottom: 28px;
 }
@@ -28,32 +30,32 @@
 .reportes-eyebrow {
   display: inline-block;
   margin-bottom: 8px;
+  color: #074a7b;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: #074a7b;
 }
 
 .reportes-header h1 {
   margin: 0;
+  color: #172033;
   font-size: 34px;
   line-height: 1.15;
-  color: #172033;
   font-weight: 800;
 }
 
 .reportes-header p {
+  max-width: 760px;
   margin: 10px 0 0;
   color: #667085;
   font-size: 15px;
   line-height: 1.65;
-  max-width: 760px;
 }
 
 .reportes-header-acciones {
   display: flex;
-  gap: 10px;
   align-items: center;
+  gap: 10px;
 }
 
 /* =========================================================
@@ -63,15 +65,17 @@
 .reportes-btn {
   min-height: 44px;
   padding: 0 18px;
-  border-radius: 12px;
   border: 1px solid transparent;
+  border-radius: 12px;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
-    background 0.2s ease;
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .reportes-btn:hover {
@@ -81,7 +85,9 @@
 .reportes-btn-principal {
   background: #074a7b;
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(7, 74, 123, 0.14);
+  box-shadow:
+    0 8px 20px
+    rgba(7, 74, 123, 0.14);
 }
 
 .reportes-btn-principal:hover {
@@ -96,6 +102,47 @@
 
 .reportes-btn-secundario:hover {
   background: #f7f9fb;
+}
+
+/* =========================================================
+   BOTÓN PDF
+========================================================= */
+
+.reportes-btn-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 20px;
+  background: #074a7b;
+  border-color: #074a7b;
+  color: #ffffff;
+  box-shadow:
+    0 8px 22px
+    rgba(7, 74, 123, 0.18);
+}
+
+.reportes-btn-pdf:hover {
+  background: #063e68;
+  border-color: #063e68;
+  box-shadow:
+    0 10px 26px
+    rgba(7, 74, 123, 0.22);
+}
+
+.reportes-pdf-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 25px;
+  padding: 0 5px;
+  border: 1px solid
+    rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
 }
 
 /* =========================================================
@@ -118,35 +165,41 @@
 .reporte-filtro-info {
   min-height: 82px;
   padding: 16px;
+  box-sizing: border-box;
   background: #ffffff;
   border: 1px solid #e3e7ec;
   border-radius: 18px;
-  box-shadow: 0 5px 18px rgba(23, 32, 51, 0.04);
+  box-shadow:
+    0 5px 18px
+    rgba(23, 32, 51, 0.04);
 }
 
 .reporte-filtro label {
   display: block;
   margin-bottom: 8px;
+  color: #667085;
   font-size: 12px;
   font-weight: 700;
-  color: #667085;
 }
 
 .reporte-filtro input {
   width: 100%;
-  box-sizing: border-box;
   height: 40px;
+  box-sizing: border-box;
   padding: 0 12px;
   border: 1px solid #dfe4ea;
   border-radius: 10px;
+  outline: none;
   background: #ffffff;
   color: #172033;
-  outline: none;
+  font-family: inherit;
 }
 
 .reporte-filtro input:focus {
   border-color: #074a7b;
-  box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.08);
+  box-shadow:
+    0 0 0 3px
+    rgba(7, 74, 123, 0.08);
 }
 
 .reporte-filtro-info {
@@ -157,18 +210,18 @@
 
 .reporte-filtro-info span {
   margin-bottom: 6px;
-  font-size: 11px;
   color: #7a8493;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .reporte-filtro-info strong {
-  font-size: 14px;
   color: #172033;
+  font-size: 14px;
 }
 
 /* =========================================================
-   RESUMEN
+   RESUMEN / KPIs
 ========================================================= */
 
 .reportes-resumen {
@@ -182,26 +235,29 @@
 .reporte-metrica {
   min-height: 135px;
   padding: 20px;
+  box-sizing: border-box;
   background: #ffffff;
   border: 1px solid #e3e7ec;
   border-radius: 20px;
-  box-shadow: 0 7px 22px rgba(23, 32, 51, 0.05);
+  box-shadow:
+    0 7px 22px
+    rgba(23, 32, 51, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
 .reporte-metrica span {
+  color: #667085;
   font-size: 12px;
   font-weight: 700;
-  color: #667085;
 }
 
 .reporte-metrica strong {
   margin-top: 8px;
+  color: #074a7b;
   font-size: 28px;
   line-height: 1;
-  color: #074a7b;
 }
 
 .reporte-metrica small {
@@ -211,8 +267,8 @@
 }
 
 .reporte-metrica-alerta {
-  border-color: #d9e1e8;
   background: #f8fafc;
+  border-color: #d9e1e8;
 }
 
 .reporte-metrica-alerta strong {
@@ -229,21 +285,23 @@
   background: #ffffff;
   border: 1px solid #e3e7ec;
   border-radius: 24px;
-  box-shadow: 0 8px 28px rgba(23, 32, 51, 0.05);
+  box-shadow:
+    0 8px 28px
+    rgba(23, 32, 51, 0.05);
 }
 
 .reporte-card-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 20px;
 }
 
 .reporte-card-header h2 {
   margin: 0;
+  color: #172033;
   font-size: 21px;
   line-height: 1.3;
-  color: #172033;
 }
 
 .reporte-card-header p {
@@ -274,6 +332,10 @@
   line-height: 1.75;
 }
 
+.reporte-resumen-texto p:last-child {
+  margin-bottom: 0;
+}
+
 .reporte-resumen-texto strong {
   color: #074a7b;
 }
@@ -291,7 +353,7 @@
 
 .reporte-tabla {
   width: 100%;
-  min-width: 900px;
+  min-width: 1050px;
   border-collapse: collapse;
   background: #ffffff;
 }
@@ -335,7 +397,7 @@
 }
 
 /* =========================================================
-   ESTADOS
+   ESTADO
 ========================================================= */
 
 .estado {
@@ -348,6 +410,7 @@
   color: #4f5b6a;
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 /* =========================================================
@@ -381,35 +444,115 @@
   color: #074a7b;
 }
 
+.reporte-badge-normal {
+  background: #eef3f6;
+  color: #536071;
+}
+
+/* =========================================================
+   FUENTE DEL CÁLCULO
+========================================================= */
+
+.reporte-fuente {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 0 9px;
+  border: 1px solid #e1e6eb;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #5e6875;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reporte-departamento {
+  display: inline-block;
+  max-width: 180px;
+  color: #5e6875;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 /* =========================================================
    METODOLOGÍA
 ========================================================= */
 
-.reporte-metodologia {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
-  padding: 15px 16px;
-  border: 1px solid #e1e6eb;
-  border-radius: 14px;
+.reporte-nota {
+  margin-top: 22px;
+  padding: 24px;
   background: #f8fafc;
+  border: 1px solid #dfe6ec;
+  border-radius: 20px;
 }
 
-.reporte-metodologia strong {
-  width: 100%;
+.reporte-nota-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.reporte-nota-header strong {
+  display: block;
+  margin-top: 2px;
   color: #172033;
-  font-size: 12px;
+  font-size: 17px;
 }
 
-.reporte-metodologia span {
-  padding: 7px 11px;
-  border-radius: 9px;
+.reporte-nota-capacidad {
+  padding: 8px 12px;
+  border: 1px solid #dce4ea;
+  border-radius: 10px;
   background: #ffffff;
-  border: 1px solid #e1e6eb;
+  color: #074a7b;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.reporte-nota p {
+  margin: 0 0 10px;
   color: #667085;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.reporte-nota p:last-of-type {
+  margin-bottom: 18px;
+}
+
+.reporte-nota p strong {
+  color: #172033;
+}
+
+.reporte-metodologia-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reporte-metodologia-grid > div {
+  padding: 13px;
+  border: 1px solid #e1e6eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.reporte-metodologia-grid span {
+  display: block;
+  margin-bottom: 5px;
+  color: #7a8493;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.reporte-metodologia-grid strong {
+  color: #172033;
+  font-size: 13px;
 }
 
 /* =========================================================
@@ -470,33 +613,415 @@
 }
 
 /* =========================================================
-   NOTA / METODOLOGÍA
+   FILA PERSONA
 ========================================================= */
 
-.reporte-nota {
-  margin-top: 22px;
-  padding: 22px 24px;
-  background: #f8fafc;
-  border: 1px solid #e1e6eb;
-  border-radius: 20px;
+.reporte-fila-persona {
+  cursor: pointer;
 }
 
-.reporte-nota strong {
+.reporte-fila-persona:hover {
+  background: #f8fafc !important;
+}
+
+.reporte-btn-detalle {
+  min-height: 35px;
+  padding: 0 13px;
+  border: 1px solid #d8e0e7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #074a7b;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.reporte-btn-detalle:hover {
+  background: #f2f6f9;
+  border-color: #074a7b;
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   PAGINACIÓN
+========================================================= */
+
+.reporte-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 4px 0;
+}
+
+.reporte-paginacion-btn {
+  min-width: 100px;
+  min-height: 38px;
+  padding: 0 15px;
+  border: 1px solid #dfe5eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #074a7b;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.reporte-paginacion-btn:hover:not(:disabled) {
+  border-color: #074a7b;
+  background: #f5f9fc;
+  transform: translateY(-1px);
+}
+
+.reporte-paginacion-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.reporte-paginacion-info {
+  min-width: 120px;
+  color: #667085;
+  font-size: 12px;
+  text-align: center;
+}
+
+.reporte-paginacion-info strong {
+  color: #172033;
+}
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.reporte-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(23, 32, 51, 0.48);
+  backdrop-filter: blur(3px);
+}
+
+.reporte-modal {
+  width: min(1400px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e3e7ec;
+  border-radius: 24px;
+  box-shadow:
+    0 24px 70px
+    rgba(23, 32, 51, 0.22);
+}
+
+.reporte-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.reporte-modal-header h2 {
+  margin: 5px 0 0;
+  color: #172033;
+  font-size: 26px;
+  line-height: 1.25;
+}
+
+.reporte-modal-header p {
+  margin: 7px 0 0;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.reporte-modal-cerrar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid #dfe4ea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #536071;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reporte-modal-cerrar:hover {
+  background: #f7f9fb;
+  color: #172033;
+}
+
+/* =========================================================
+   MÉTRICAS MODAL
+========================================================= */
+
+.reporte-modal-metricas {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 26px;
+}
+
+.reporte-modal-metricas article {
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e1e6eb;
+  border-radius: 16px;
+}
+
+.reporte-modal-metricas span {
   display: block;
-  margin-bottom: 10px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.reporte-modal-metricas strong {
+  display: block;
+  margin-top: 7px;
+  color: #074a7b;
+  font-size: 22px;
+}
+
+/* =========================================================
+   SECCIONES MODAL
+========================================================= */
+
+.reporte-modal-seccion {
+  margin-top: 24px;
+}
+
+.reporte-modal-seccion-header {
+  margin-bottom: 12px;
+}
+
+.reporte-modal-seccion-header h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+}
+
+.reporte-modal-seccion-header p {
+  margin: 5px 0 0;
+  color: #667085;
+  font-size: 12px;
+}
+
+/* =========================================================
+   TABLA MODAL
+========================================================= */
+
+.reporte-modal-tabla-contenedor {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e7eaee;
+  border-radius: 14px;
+}
+
+.reporte-tabla-modal {
+  min-width: 1450px;
+}
+
+.reporte-tabla-modal th {
+  font-size: 10px;
+}
+
+.reporte-tabla-modal td {
+  padding: 11px 12px;
+  font-size: 11px;
+}
+
+/* =========================================================
+   JORNADAS SOBRECARGADAS
+========================================================= */
+
+.reporte-modal-jornadas {
+  display: grid;
+  gap: 12px;
+}
+
+.reporte-modal-jornada {
+  padding: 17px;
+  border: 1px solid #eadedb;
+  border-radius: 16px;
+  background: #fcf9f8;
+}
+
+.reporte-modal-jornada-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.reporte-modal-jornada-top span:first-child {
+  display: block;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.reporte-modal-jornada-top strong {
+  display: block;
+  margin-top: 4px;
   color: #172033;
   font-size: 14px;
 }
 
-.reporte-nota p {
-  margin: 0 0 9px;
-  color: #667085;
-  font-size: 13px;
-  line-height: 1.7;
+.reporte-modal-jornada-metricas {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
 }
 
-.reporte-nota p:last-child {
+.reporte-modal-jornada-metricas div {
+  padding: 11px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 11px;
+}
+
+.reporte-modal-jornada-metricas span {
+  display: block;
+  color: #7a8493;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.reporte-modal-jornada-metricas strong {
+  display: block;
+  margin-top: 4px;
+  color: #172033;
+  font-size: 14px;
+}
+
+/* =========================================================
+   ACTIVIDADES DENTRO DE SOBRECARGA
+========================================================= */
+
+.reporte-modal-actividades-sobrecarga {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #eadedb;
+}
+
+.reporte-modal-actividades-sobrecarga > span {
+  display: block;
+  margin-bottom: 8px;
+  color: #536071;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.reporte-modal-actividades-sobrecarga ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reporte-modal-actividades-sobrecarga li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.reporte-modal-actividades-sobrecarga li > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reporte-modal-actividades-sobrecarga li strong {
+  color: #172033;
+  font-size: 11px;
+}
+
+.reporte-modal-actividades-sobrecarga li small {
+  color: #7a8493;
+  font-size: 10px;
+}
+
+/* =========================================================
+   METODOLOGÍA MODAL
+========================================================= */
+
+.reporte-modal-metodologia {
+  margin-top: 24px;
+  padding: 17px;
+  border: 1px solid #dfe6ec;
+  border-radius: 15px;
+  background: #f8fafc;
+}
+
+.reporte-modal-metodologia strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #172033;
+  font-size: 13px;
+}
+
+.reporte-modal-metodologia p {
+  margin: 0 0 7px;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.reporte-modal-metodologia p:last-child {
   margin-bottom: 0;
+}
+
+/* =========================================================
+   FOOTER MODAL
+========================================================= */
+
+.reporte-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #edf0f3;
+}
+
+.reporte-modal-footer span {
+  color: #667085;
+  font-size: 11px;
+}
+
+.reporte-modal-footer strong {
+  color: #172033;
 }
 
 /* =========================================================
@@ -519,7 +1044,9 @@
   border: 3px solid #dfe5eb;
   border-top-color: #074a7b;
   border-radius: 50%;
-  animation: reporte-spin 0.8s linear infinite;
+  animation:
+    reporte-spin
+    0.8s linear infinite;
 }
 
 @keyframes reporte-spin {
@@ -537,7 +1064,9 @@
   background: #ffffff;
   border: 1px solid #e3e7ec;
   border-radius: 20px;
-  box-shadow: 0 8px 25px rgba(23, 32, 51, 0.05);
+  box-shadow:
+    0 8px 25px
+    rgba(23, 32, 51, 0.05);
 }
 
 .reporte-error strong {
@@ -555,7 +1084,7 @@
    RESPONSIVE
 ========================================================= */
 
-@media (max-width: 1200px) {
+@media (max-width: 1250px) {
   .reportes-resumen {
     grid-template-columns:
       repeat(3, minmax(0, 1fr));
@@ -567,7 +1096,7 @@
   }
 }
 
-@media (max-width: 850px) {
+@media (max-width: 900px) {
   .reportes-page {
     padding: 22px;
   }
@@ -596,9 +1125,17 @@
   .reportes-estados {
     grid-template-columns: 1fr;
   }
+
+  .reporte-metodologia-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reporte-modal {
+    max-height: 94vh;
+  }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 650px) {
   .reportes-page {
     padding: 16px;
   }
@@ -623,5 +1160,60 @@
 
   .reporte-card-header h2 {
     font-size: 18px;
+  }
+
+  .reporte-nota-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reporte-paginacion {
+    gap: 7px;
+  }
+
+  .reporte-paginacion-btn {
+    min-width: 82px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .reporte-paginacion-info {
+    min-width: 95px;
+    font-size: 11px;
+  }
+
+  .reporte-modal {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .reporte-modal-metricas {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .reporte-modal-jornada-metricas {
+    grid-template-columns: 1fr;
+  }
+
+  .reporte-modal-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 450px) {
+  .reporte-modal-metricas {
+    grid-template-columns: 1fr;
+  }
+
+  .reporte-modal-jornada-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reporte-modal-actividades-sobrecarga li {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
