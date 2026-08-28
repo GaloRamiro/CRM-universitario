@@ -203,7 +203,7 @@ function Sidebar({ mobileOpen, onClose }) {
       {/* FOOTER */}
       <div className="sidebar-footer">
         <span>CRM interno</span>
-        <small>v1.1</small>
+        <small>v2.0</small>
       </div>
     </aside>
   );
