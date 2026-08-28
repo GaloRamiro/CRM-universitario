@@ -13,7 +13,6 @@ function TareaOlvidada() {
     hora_inicio: "",
     hora_fin: "",
     prioridad: "media",
-    estado: "completada",
     responsable_id: "",
     departamento_id: "",
   });
@@ -21,7 +20,9 @@ function TareaOlvidada() {
   const [usuarios, setUsuarios] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
 
-  const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
+  const [cargandoUsuarios, setCargandoUsuarios] =
+    useState(true);
+
   const [cargandoDepartamentos, setCargandoDepartamentos] =
     useState(true);
 
@@ -44,8 +45,14 @@ function TareaOlvidada() {
         .order("nombre");
 
       if (error) {
-        console.error("Error cargando usuarios:", error);
-        setError("No se pudieron cargar los usuarios.");
+        console.error(
+          "Error cargando usuarios:",
+          error
+        );
+
+        setError(
+          "No se pudieron cargar los usuarios."
+        );
       } else {
         setUsuarios(data || []);
       }
@@ -70,8 +77,14 @@ function TareaOlvidada() {
         .order("nombre");
 
       if (error) {
-        console.error("Error cargando departamentos:", error);
-        setError("No se pudieron cargar los departamentos.");
+        console.error(
+          "Error cargando departamentos:",
+          error
+        );
+
+        setError(
+          "No se pudieron cargar los departamentos."
+        );
       } else {
         setDepartamentos(data || []);
       }
@@ -100,18 +113,28 @@ function TareaOlvidada() {
   // =========================================================
 
   const calcularMinutos = () => {
-    if (!formulario.hora_inicio || !formulario.hora_fin) {
+    if (
+      !formulario.hora_inicio ||
+      !formulario.hora_fin
+    ) {
       return 0;
     }
 
     const [horaInicio, minutoInicio] =
-      formulario.hora_inicio.split(":").map(Number);
+      formulario.hora_inicio
+        .split(":")
+        .map(Number);
 
     const [horaFin, minutoFin] =
-      formulario.hora_fin.split(":").map(Number);
+      formulario.hora_fin
+        .split(":")
+        .map(Number);
 
-    const inicio = horaInicio * 60 + minutoInicio;
-    const fin = horaFin * 60 + minutoFin;
+    const inicio =
+      horaInicio * 60 + minutoInicio;
+
+    const fin =
+      horaFin * 60 + minutoFin;
 
     return fin - inicio;
   };
@@ -128,7 +151,9 @@ function TareaOlvidada() {
     }
 
     const horas = Math.floor(minutos / 60);
-    const minutosRestantes = minutos % 60;
+
+    const minutosRestantes =
+      minutos % 60;
 
     if (horas === 0) {
       return `${minutosRestantes} minutos`;
@@ -157,9 +182,9 @@ function TareaOlvidada() {
     setGuardando(true);
 
     try {
-      // -------------------------------------------------------
+      // =======================================================
       // VALIDACIONES
-      // -------------------------------------------------------
+      // =======================================================
 
       if (!formulario.titulo.trim()) {
         throw new Error(
@@ -191,9 +216,9 @@ function TareaOlvidada() {
         );
       }
 
-      // -------------------------------------------------------
-      // CREAR FECHAS REALES
-      // -------------------------------------------------------
+      // =======================================================
+      // FECHAS Y HORAS REALES
+      // =======================================================
 
       const inicioReal =
         `${formulario.fecha}T${formulario.hora_inicio}:00`;
@@ -201,56 +226,91 @@ function TareaOlvidada() {
       const finReal =
         `${formulario.fecha}T${formulario.hora_fin}:00`;
 
-      // -------------------------------------------------------
+      // =======================================================
       // CREAR TAREA
-      // -------------------------------------------------------
+      // =======================================================
 
       const { data, error: insertError } =
         await supabase
           .from("tareas")
           .insert({
-            titulo: formulario.titulo.trim(),
+            // -------------------------------------------------
+            // INFORMACIÓN
+            // -------------------------------------------------
+
+            titulo:
+              formulario.titulo.trim(),
 
             descripcion:
-              formulario.descripcion.trim() || null,
+              formulario.descripcion.trim() ||
+              null,
 
-            // Fecha original de la actividad
-            fecha: formulario.fecha,
+            // -------------------------------------------------
+            // FECHA
+            // -------------------------------------------------
 
-            fecha_inicio: formulario.fecha,
+            // La fecha ingresada por el usuario
+            // es la fecha real de la actividad.
 
-            // Como ya conocemos cuándo terminó,
-            // dejamos registrada la fecha de finalización.
-            fecha_fin: formulario.fecha,
+            fecha:
+              formulario.fecha,
 
-            // Horas registradas
-            hora_inicio: formulario.hora_inicio,
-            hora_fin: formulario.hora_fin,
+            fecha_inicio:
+              formulario.fecha,
 
-            prioridad: formulario.prioridad,
+            fecha_fin:
+              formulario.fecha,
 
-            estado: "completada",
+            // -------------------------------------------------
+            // HORARIO
+            // -------------------------------------------------
+
+            hora_inicio:
+              formulario.hora_inicio,
+
+            hora_fin:
+              formulario.hora_fin,
+
+            // -------------------------------------------------
+            // ASIGNACIÓN
+            // -------------------------------------------------
+
+            prioridad:
+              formulario.prioridad,
+
+            estado:
+              "completada",
 
             responsable_id:
-              formulario.responsable_id || null,
+              formulario.responsable_id ||
+              null,
 
             departamento_id:
-              formulario.departamento_id || null,
+              formulario.departamento_id ||
+              null,
 
-            // ================================================
+            // =================================================
             // CONTROL DE EJECUCIÓN
-            // ================================================
+            // =================================================
 
-            inicio_real: inicioReal,
+            inicio_real:
+              inicioReal,
 
-            fin_real: finReal,
+            fin_real:
+              finReal,
 
-            tiempo_trabajado_min: minutosTrabajados,
+            tiempo_trabajado_min:
+              minutosTrabajados,
 
-            estado_ejecucion: "finalizada",
+            estado_ejecucion:
+              "finalizada",
           })
           .select()
           .single();
+
+      // =======================================================
+      // ERROR DE INSERCIÓN
+      // =======================================================
 
       if (insertError) {
         console.error(
@@ -269,9 +329,9 @@ function TareaOlvidada() {
         data
       );
 
-      // -------------------------------------------------------
+      // =======================================================
       // NOTIFICACIÓN
-      // -------------------------------------------------------
+      // =======================================================
 
       if (formulario.responsable_id) {
         const {
@@ -282,16 +342,20 @@ function TareaOlvidada() {
             usuario_id:
               formulario.responsable_id,
 
-            tarea_id: data.id,
+            tarea_id:
+              data.id,
 
-            tipo: "tarea_olvidada",
+            tipo:
+              "tarea_olvidada",
 
-            titulo: "Tarea registrada anteriormente",
+            titulo:
+              "Tarea registrada anteriormente",
 
             mensaje:
               `Se registró una tarea realizada el ${formulario.fecha}: "${formulario.titulo.trim()}".`,
 
-            leida: false,
+            leida:
+              false,
           });
 
         if (notificacionError) {
@@ -302,9 +366,9 @@ function TareaOlvidada() {
         }
       }
 
-      // -------------------------------------------------------
+      // =======================================================
       // MENSAJE
-      // -------------------------------------------------------
+      // =======================================================
 
       setMensaje(
         `Tarea registrada correctamente. Tiempo contabilizado: ${formatearDuracion(
@@ -312,9 +376,9 @@ function TareaOlvidada() {
         )}.`
       );
 
-      // -------------------------------------------------------
-      // LIMPIAR
-      // -------------------------------------------------------
+      // =======================================================
+      // LIMPIAR FORMULARIO
+      // =======================================================
 
       setFormulario({
         titulo: "",
@@ -323,14 +387,13 @@ function TareaOlvidada() {
         hora_inicio: "",
         hora_fin: "",
         prioridad: "media",
-        estado: "completada",
         responsable_id: "",
         departamento_id: "",
       });
 
-      // -------------------------------------------------------
-      // VOLVER
-      // -------------------------------------------------------
+      // =======================================================
+      // VOLVER A TAREAS
+      // =======================================================
 
       setTimeout(() => {
         navigate("/tareas");
@@ -354,7 +417,9 @@ function TareaOlvidada() {
   return (
     <section className="tarea-olvidada-page">
 
-      {/* ENCABEZADO */}
+      {/* =====================================================
+          ENCABEZADO
+      ===================================================== */}
 
       <div className="tarea-olvidada-header">
         <div>
@@ -362,58 +427,76 @@ function TareaOlvidada() {
             REGISTRO RETROACTIVO
           </span>
 
-          <h1>Tarea olvidada</h1>
+          <h1>
+            Tarea olvidada
+          </h1>
 
           <p>
-            Registra una tarea realizada anteriormente
-            que no fue cargada en su momento.
+            Registra una actividad realizada
+            anteriormente que no fue cargada
+            en su momento.
           </p>
         </div>
 
         <button
           type="button"
           className="tarea-olvidada-btn tarea-olvidada-btn-cancelar"
-          onClick={() => navigate("/tareas")}
+          onClick={() =>
+            navigate("/tareas")
+          }
         >
           Cancelar
         </button>
       </div>
 
-      {/* AVISO */}
+      {/* =====================================================
+          AVISO
+      ===================================================== */}
 
       <div className="tarea-olvidada-aviso">
+
         <strong>
           Registro de horas anteriores
         </strong>
 
         <span>
-          Esta opción permite registrar actividades
-          realizadas en días anteriores. Las horas
-          ingresadas se sumarán al tiempo trabajado
-          de la tarea y aparecerán en los reportes.
+          Utiliza esta opción si realizaste una
+          actividad en una fecha anterior y no
+          pudiste registrarla en ese momento.
+          Las horas ingresadas se contabilizarán
+          en la carga de trabajo y en los reportes.
         </span>
+
       </div>
 
-      {/* FORMULARIO */}
+      {/* =====================================================
+          FORMULARIO
+      ===================================================== */}
 
       <form
         className="tarea-olvidada-card"
         onSubmit={handleSubmit}
       >
 
-        {/* INFORMACIÓN */}
+        {/* ===================================================
+            INFORMACIÓN
+        =================================================== */}
 
         <div className="tarea-olvidada-section">
-          <h2>Información de la tarea</h2>
+
+          <h2>
+            Información de la tarea
+          </h2>
 
           <p>
-            Ingresa los datos de la actividad que
-            olvidaste registrar.
+            Ingresa los datos de la actividad
+            que olvidaste registrar.
           </p>
 
           <div className="tarea-olvidada-grid">
 
             <div className="tarea-olvidada-group">
+
               <label htmlFor="titulo">
                 Título de la tarea
               </label>
@@ -427,9 +510,11 @@ function TareaOlvidada() {
                 placeholder="Ej. Actualizar página web"
                 required
               />
+
             </div>
 
             <div className="tarea-olvidada-group">
+
               <label htmlFor="descripcion">
                 Descripción
               </label>
@@ -442,25 +527,32 @@ function TareaOlvidada() {
                 placeholder="Describe qué se realizó..."
                 rows="5"
               />
+
             </div>
 
           </div>
+
         </div>
 
-        {/* FECHA Y HORAS */}
+        {/* ===================================================
+            FECHA Y HORAS
+        =================================================== */}
 
         <div className="tarea-olvidada-section">
 
-          <h2>Fecha y horas trabajadas</h2>
+          <h2>
+            Fecha y horas trabajadas
+          </h2>
 
           <p>
-            Indica la fecha real y el horario en el
-            que realizaste la actividad.
+            Indica la fecha real y el horario
+            en el que realizaste la actividad.
           </p>
 
           <div className="tarea-olvidada-grid">
 
             <div className="tarea-olvidada-group">
+
               <label htmlFor="fecha">
                 Fecha de la tarea
               </label>
@@ -473,9 +565,16 @@ function TareaOlvidada() {
                 onChange={handleChange}
                 required
               />
+
+              <small>
+                Puedes seleccionar una fecha
+                anterior.
+              </small>
+
             </div>
 
             <div className="tarea-olvidada-group">
+
               <label htmlFor="hora_inicio">
                 Hora de inicio real
               </label>
@@ -488,9 +587,11 @@ function TareaOlvidada() {
                 onChange={handleChange}
                 required
               />
+
             </div>
 
             <div className="tarea-olvidada-group">
+
               <label htmlFor="hora_fin">
                 Hora de finalización real
               </label>
@@ -503,38 +604,52 @@ function TareaOlvidada() {
                 onChange={handleChange}
                 required
               />
+
             </div>
 
           </div>
 
-          {/* RESUMEN DE TIEMPO */}
+          {/* =================================================
+              RESUMEN DE TIEMPO
+          ================================================= */}
 
           <div className="tarea-olvidada-tiempo">
-            <span>Tiempo que se contabilizará</span>
+
+            <span>
+              Tiempo que se contabilizará
+            </span>
 
             <strong>
               {formatearDuracion(
                 minutosTrabajados
               )}
             </strong>
+
           </div>
 
         </div>
 
-        {/* ASIGNACIÓN */}
+        {/* ===================================================
+            ASIGNACIÓN
+        =================================================== */}
 
         <div className="tarea-olvidada-section">
 
-          <h2>Asignación</h2>
+          <h2>
+            Asignación
+          </h2>
 
           <p>
-            Define quién realizó la actividad y a qué
-            departamento corresponde.
+            Define quién realizó la actividad
+            y a qué departamento corresponde.
           </p>
 
           <div className="tarea-olvidada-grid">
 
+            {/* PRIORIDAD */}
+
             <div className="tarea-olvidada-group">
+
               <label htmlFor="prioridad">
                 Prioridad
               </label>
@@ -557,9 +672,13 @@ function TareaOlvidada() {
                   Alta
                 </option>
               </select>
+
             </div>
 
+            {/* DEPARTAMENTO */}
+
             <div className="tarea-olvidada-group">
+
               <label htmlFor="departamento_id">
                 Departamento
               </label>
@@ -569,8 +688,11 @@ function TareaOlvidada() {
                 name="departamento_id"
                 value={formulario.departamento_id}
                 onChange={handleChange}
-                disabled={cargandoDepartamentos}
+                disabled={
+                  cargandoDepartamentos
+                }
               >
+
                 <option value="">
                   Sin departamento
                 </option>
@@ -585,10 +707,15 @@ function TareaOlvidada() {
                     </option>
                   )
                 )}
+
               </select>
+
             </div>
 
+            {/* RESPONSABLE */}
+
             <div className="tarea-olvidada-group">
+
               <label htmlFor="responsable_id">
                 Responsable
               </label>
@@ -598,8 +725,11 @@ function TareaOlvidada() {
                 name="responsable_id"
                 value={formulario.responsable_id}
                 onChange={handleChange}
-                disabled={cargandoUsuarios}
+                disabled={
+                  cargandoUsuarios
+                }
               >
+
                 <option value="">
                   Sin responsable
                 </option>
@@ -618,13 +748,18 @@ function TareaOlvidada() {
                     </option>
                   )
                 )}
+
               </select>
+
             </div>
 
           </div>
+
         </div>
 
-        {/* MENSAJES */}
+        {/* ===================================================
+            MENSAJES
+        =================================================== */}
 
         {mensaje && (
           <div className="tarea-olvidada-mensaje">
@@ -638,14 +773,18 @@ function TareaOlvidada() {
           </div>
         )}
 
-        {/* BOTONES */}
+        {/* ===================================================
+            BOTONES
+        =================================================== */}
 
         <div className="tarea-olvidada-actions">
 
           <button
             type="button"
             className="tarea-olvidada-btn tarea-olvidada-btn-cancelar"
-            onClick={() => navigate("/tareas")}
+            onClick={() =>
+              navigate("/tareas")
+            }
           >
             Cancelar
           </button>
@@ -668,3 +807,4 @@ function TareaOlvidada() {
 }
 
 export default TareaOlvidada;
+
