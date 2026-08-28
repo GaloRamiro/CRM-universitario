@@ -9,11 +9,9 @@ function Tareas() {
   const [vista, setVista] = useState("semana");
   const [fechaActual, setFechaActual] = useState(new Date());
   const [filtroEstado, setFiltroEstado] = useState("todas");
-
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
-
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -260,20 +258,19 @@ function Tareas() {
   /*
    * IMPORTANTE:
    *
-   * Las tareas completadas NO se muestran en esta pantalla.
+   * Las tareas completadas SE MUESTRAN en esta pantalla.
    *
    * Permanecen guardadas en Supabase con:
    *
    * estado = "completada"
    *
-   * La pantalla "Tareas completadas" podrá consultarlas
-   * posteriormente.
+   * Ahora pueden visualizarse:
+   * - En todas las tareas.
+   * - Mediante el filtro "Completadas".
    */
 
   const tareasActivas = useMemo(() => {
-    return tareas.filter(
-      (tarea) => tarea.estado !== "completada"
-    );
+    return tareas;
   }, [tareas]);
 
   const tareasFiltradas = useMemo(() => {
@@ -790,6 +787,7 @@ function Tareas() {
               <div className="anio-mes-header">
                 <div>
                   <span>MES</span>
+
                   <h3>{mes}</h3>
                 </div>
 
@@ -880,7 +878,6 @@ function Tareas() {
         {/* TOOLBAR */}
 
         <div className="tareas-toolbar">
-
           <div className="tareas-vistas">
             {[
               ["anio", "Año"],
@@ -915,7 +912,7 @@ function Tareas() {
               }
             >
               <option value="todas">
-                Todas las tareas activas
+                Todas las tareas
               </option>
 
               <option value="pendiente">
@@ -924,6 +921,10 @@ function Tareas() {
 
               <option value="en_proceso">
                 En proceso
+              </option>
+
+              <option value="completada">
+                Completadas
               </option>
             </select>
           </div>
@@ -972,6 +973,7 @@ function Tareas() {
           <div className="tareas-contenido">
             <div className="estado-cargando">
               <span className="loader" />
+
               <p>
                 Cargando tareas...
               </p>
@@ -1000,7 +1002,6 @@ function Tareas() {
 
         {!cargando && !error && (
           <div className="tareas-contenido">
-
             {vista === "dia" &&
               renderDia()}
 
@@ -1012,10 +1013,8 @@ function Tareas() {
 
             {vista === "anio" &&
               renderAnio()}
-
           </div>
         )}
-
       </div>
     </section>
   );
