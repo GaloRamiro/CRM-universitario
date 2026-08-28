@@ -1,66 +1,106 @@
+/* =========================================================
+   CARGA DEL EQUIPO
+   ========================================================= */
+
 .carga-equipo-page {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   padding: 32px;
   background: #f5f7fb;
+  color: #172033;
+  box-sizing: border-box;
 }
 
 /* =========================================================
    HEADER
-========================================================= */
+   ========================================================= */
 
 .carga-equipo-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-end;
+  justify-content: space-between;
   gap: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 26px;
+}
+
+.carga-equipo-header > div {
+  min-width: 0;
+}
+
+.carga-equipo-header .eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #074a7b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
 .carga-equipo-header h1 {
-  margin: 6px 0;
+  margin: 0;
   color: #172033;
+  font-size: 34px;
+  line-height: 1.15;
+  font-weight: 800;
 }
 
 .carga-equipo-header p {
-  margin: 0;
+  margin: 9px 0 0;
   color: #687386;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
+/* =========================================================
+   BOTÓN ACTUALIZAR
+   ========================================================= */
+
 .carga-equipo-recargar {
-  border: none;
-  border-radius: 14px;
-  padding: 12px 18px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #074a7b;
+  border-radius: 12px;
   background: #074a7b;
-  color: white;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  font-weight: 600;
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .carga-equipo-recargar:hover {
   background: #063d65;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(7, 74, 123, 0.16);
 }
 
 /* =========================================================
    FILTRO DE FECHA
-========================================================= */
+   ========================================================= */
 
 .carga-equipo-filtro {
-  background: white;
-  border: 1px solid #e7ebf0;
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 20px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid #e5e9ef;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 5px 18px rgba(23, 32, 51, 0.035);
 }
 
 .carga-fecha-consulta label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 600;
   color: #172033;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .carga-fecha-controles {
@@ -70,87 +110,116 @@
 }
 
 .carga-fecha-controles input {
-  border: 1px solid #d9dfe7;
-  border-radius: 12px;
-  padding: 11px 14px;
-  font: inherit;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #dce2e9;
+  border-radius: 11px;
+  background: #ffffff;
   color: #172033;
-  background: white;
+  font: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.carga-fecha-controles input:focus {
+  border-color: #074a7b;
+  box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.08);
 }
 
 .carga-fecha-btn,
 .carga-fecha-hoy {
-  height: 42px;
-  border: 1px solid #d9dfe7;
-  background: white;
-  color: #172033;
-  cursor: pointer;
+  min-height: 42px;
+  border: 1px solid #dce2e9;
   border-radius: 10px;
-  font-weight: 600;
+  background: #ffffff;
+  color: #172033;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .carga-fecha-btn {
   width: 42px;
   font-size: 22px;
+  line-height: 1;
 }
 
 .carga-fecha-hoy {
   padding: 0 15px;
+  font-size: 13px;
 }
 
 .carga-fecha-btn:hover,
 .carga-fecha-hoy:hover {
   border-color: #074a7b;
   color: #074a7b;
+  background: #f7fafc;
 }
 
 .carga-equipo-fecha {
+  padding-bottom: 11px;
   color: #687386;
+  font-size: 14px;
   font-weight: 600;
   text-transform: capitalize;
 }
 
 /* =========================================================
    RESUMEN
-========================================================= */
+   ========================================================= */
 
 .carga-equipo-resumen {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
   margin-bottom: 18px;
 }
 
 .carga-resumen-card {
-  background: white;
-  border: 1px solid #e7ebf0;
-  border-radius: 20px;
-  padding: 22px;
+  min-width: 0;
+  padding: 19px 20px;
+  border: 1px solid #e5e9ef;
+  border-radius: 18px;
+  background: #ffffff;
   box-shadow: 0 5px 18px rgba(23, 32, 51, 0.035);
 }
 
 .carga-resumen-card span {
   display: block;
+  margin-bottom: 7px;
   color: #687386;
-  font-size: 14px;
-  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .carga-resumen-card strong {
-  font-size: 28px;
+  display: block;
   color: #172033;
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.carga-resumen-card small {
+  display: block;
+  margin-top: 7px;
+  color: #8993a4;
+  font-size: 11px;
 }
 
 /* =========================================================
-   BARRA GENERAL DEL EQUIPO
-========================================================= */
+   PROGRESO GENERAL
+   ========================================================= */
 
 .carga-equipo-progreso {
-  background: white;
-  border: 1px solid #e7ebf0;
-  border-radius: 20px;
-  padding: 20px 22px;
   margin-bottom: 20px;
+  padding: 20px 22px;
+  border: 1px solid #e5e9ef;
+  border-radius: 20px;
+  background: #ffffff;
   box-shadow: 0 5px 18px rgba(23, 32, 51, 0.035);
 }
 
@@ -168,14 +237,15 @@
   gap: 4px;
 }
 
-.carga-equipo-progreso-header strong {
+.carga-equipo-progreso-header div strong {
   color: #172033;
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 800;
 }
 
-.carga-equipo-progreso-header span {
+.carga-equipo-progreso-header div span {
   color: #687386;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .carga-equipo-progreso-header > strong {
@@ -185,101 +255,160 @@
 
 .carga-equipo-progreso-barra {
   width: 100%;
-  height: 10px;
-  background: #edf0f4;
-  border-radius: 999px;
+  height: 9px;
   overflow: hidden;
+  border-radius: 999px;
+  background: #edf0f4;
 }
 
 .carga-equipo-progreso-fill {
   height: 100%;
-  background: #074a7b;
   border-radius: 999px;
+  background: #074a7b;
   transition: width 0.35s ease;
 }
 
 /* =========================================================
-   ALERTA
-========================================================= */
+   ALERTAS
+   ========================================================= */
 
-.alerta-sobrecarga {
+.alerta-sobrecarga,
+.alerta-operativa {
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: #faf8f3;
-  border: 1px solid #e6dfd0;
-  border-radius: 18px;
-  padding: 18px 20px;
-  margin-bottom: 20px;
+  gap: 13px;
+  margin-bottom: 18px;
+  padding: 15px 18px;
+  border-radius: 16px;
 }
 
-.alerta-icono {
-  width: 32px;
-  height: 32px;
+.alerta-sobrecarga {
+  border: 1px solid #e7ded0;
+  background: #faf8f3;
+}
+
+.alerta-operativa {
+  border: 1px solid #e1e7ec;
+  background: #f7f9fa;
+}
+
+.alerta-icono,
+.alerta-operativa-icono {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.alerta-icono {
   background: #f1eadc;
   color: #756548;
-  font-weight: 700;
 }
 
-.alerta-sobrecarga strong {
-  color: #4d4639;
+.alerta-operativa-icono {
+  background: #edf4f8;
+  color: #074a7b;
 }
 
-.alerta-sobrecarga p {
+.alerta-sobrecarga strong,
+.alerta-operativa strong {
+  display: block;
+  color: #172033;
+  font-size: 13px;
+}
+
+.alerta-sobrecarga p,
+.alerta-operativa p {
   margin: 4px 0 0;
-  color: #756f64;
+  color: #687386;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 /* =========================================================
    CARD GENERAL
-========================================================= */
+   ========================================================= */
 
 .carga-equipo-card {
-  background: white;
-  border: 1px solid #e7ebf0;
-  border-radius: 24px;
-  padding: 24px;
   margin-bottom: 20px;
-  box-shadow: 0 8px 25px rgba(23, 32, 51, 0.05);
+  padding: 24px;
+  border: 1px solid #e5e9ef;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 8px 25px rgba(23, 32, 51, 0.045);
 }
 
 .carga-equipo-card-header {
-  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.carga-equipo-card-header > div:first-child {
+  min-width: 0;
+}
+
+.carga-card-eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #074a7b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
 }
 
 .carga-equipo-card-header h2 {
   margin: 0 0 6px;
   color: #172033;
+  font-size: 21px;
+  line-height: 1.2;
+  font-weight: 800;
 }
 
 .carga-equipo-card-header p {
   margin: 0;
   color: #687386;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.carga-equipo-card-indicador {
+  flex-shrink: 0;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #f2f6f8;
+  color: #074a7b;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 /* =========================================================
    GRID PERSONAS
-========================================================= */
+   ========================================================= */
 
 .carga-personas-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 17px;
 }
 
 /* =========================================================
    TARJETA PERSONA
-========================================================= */
+   ========================================================= */
 
 .persona-carga-card {
-  background: #ffffff;
-  border: 1px solid #e4e8ed;
-  border-radius: 20px;
+  min-width: 0;
   padding: 20px;
+  border: 1px solid #dfe5eb;
+  border-radius: 20px;
+  background: #ffffff;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -288,65 +417,70 @@
 
 .persona-carga-card:hover {
   transform: translateY(-2px);
-  border-color: #d5dce4;
-  box-shadow: 0 8px 22px rgba(23, 32, 51, 0.07);
+  border-color: #d4dce4;
+  box-shadow: 0 9px 24px rgba(23, 32, 51, 0.065);
 }
 
 /* =========================================================
    IDENTIDAD
-========================================================= */
+   ========================================================= */
 
 .persona-carga-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 19px;
 }
 
 .persona-carga-identidad {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   min-width: 0;
 }
 
 .persona-carga-avatar {
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  border-radius: 50%;
-  background: #edf4f8;
-  color: #074a7b;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #edf4f8;
+  color: #074a7b;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .persona-carga-identidad strong {
   display: block;
+  overflow: hidden;
   color: #172033;
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 800;
+  text-overflow: ellipsis;
 }
 
 .persona-carga-identidad span {
   display: block;
   margin-top: 4px;
   color: #8993a4;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 /* =========================================================
    ESTADO
-========================================================= */
+   ========================================================= */
 
 .persona-estado {
+  flex-shrink: 0;
   padding: 6px 9px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   white-space: nowrap;
 }
 
@@ -356,98 +490,196 @@
 }
 
 .persona-estado-alta {
-  background: #f5f2eb;
+  background: #f6f3eb;
   color: #76694f;
 }
 
 .persona-estado-sobrecargado {
-  background: #f5eeee;
+  background: #f6eeee;
   color: #775858;
 }
 
 /* =========================================================
    RESUMEN PERSONA
-========================================================= */
+   ========================================================= */
 
 .persona-carga-resumen {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 16px;
 }
 
 .persona-carga-resumen > div {
-  padding: 12px;
-  background: #f8f9fb;
+  min-width: 0;
+  padding: 12px 11px;
   border-radius: 12px;
+  background: #f8f9fb;
 }
 
 .persona-carga-resumen span {
   display: block;
-  color: #8993a4;
-  font-size: 11px;
   margin-bottom: 5px;
+  color: #8993a4;
+  font-size: 10px;
+  line-height: 1.3;
 }
 
 .persona-carga-resumen strong {
+  display: block;
   color: #172033;
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+/* =========================================================
+   ACTIVIDAD ACTUAL
+   ========================================================= */
+
+.persona-actividad-actual {
+  margin-bottom: 14px;
+  padding: 12px 13px;
+  border: 1px solid #dce8ef;
+  border-radius: 12px;
+  background: #f7fafc;
+}
+
+.persona-actividad-actual-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.persona-actividad-actual-top span {
+  color: #074a7b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.persona-actividad-actual-top strong {
+  color: #074a7b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.persona-actividad-actual p {
+  margin: 0;
+  color: #172033;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.persona-actividad-actual small {
+  display: block;
+  margin-top: 5px;
+  color: #687386;
+  font-size: 10px;
+}
+
+/* =========================================================
+   PAUSAS
+   ========================================================= */
+
+.persona-pausas-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: #faf8f3;
+  border: 1px solid #ece5d8;
+}
+
+.persona-pausas-info span {
+  color: #756548;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.persona-pausas-info strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #f1eadc;
+  color: #756548;
+  font-size: 11px;
 }
 
 /* =========================================================
    BARRA PERSONA
-========================================================= */
+   ========================================================= */
 
 .persona-carga-barra {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .persona-carga-barra-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 7px;
 }
 
 .persona-carga-barra-top span {
   color: #687386;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .persona-carga-barra-top strong {
   color: #172033;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .barra-carga {
   width: 100%;
   height: 8px;
-  background: #edf0f4;
-  border-radius: 999px;
   overflow: hidden;
+  border-radius: 999px;
+  background: #edf0f4;
 }
 
 .barra-carga-progreso {
   height: 100%;
-  background: #074a7b;
   border-radius: 999px;
+  background: #074a7b;
   transition: width 0.3s ease;
+}
+
+.barra-carga-progreso.nivel-alta {
+  background: #8a7a59;
+}
+
+.barra-carga-progreso.nivel-sobrecargado {
+  background: #806060;
 }
 
 /* =========================================================
    INFORME
-========================================================= */
+   ========================================================= */
 
 .persona-carga-informe {
   min-height: 42px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .persona-carga-informe p {
   margin: 0;
   padding: 9px 11px;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -466,296 +698,389 @@
   color: #765858;
 }
 
-.informe-interferencia {
-  margin-top: 7px !important;
-  background: #f4f6f8;
-  color: #5e6875;
-}
-
 /* =========================================================
    BOTÓN VER CARGA
-========================================================= */
+   ========================================================= */
 
 .persona-carga-boton {
   width: 100%;
-  border: 1px solid #d8e0e7;
-  background: white;
-  color: #074a7b;
-  padding: 10px 14px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #d5dfe7;
   border-radius: 12px;
+  background: #ffffff;
+  color: #074a7b;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  font-weight: 600;
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .persona-carga-boton:hover {
-  background: #f2f6f9;
   border-color: #074a7b;
+  background: #f4f8fb;
+  transform: translateY(-1px);
 }
 
 /* =========================================================
-   LISTA DE TAREAS
-========================================================= */
+   PLANIFICACIÓN DEL DÍA
+   ========================================================= */
 
-.lista-tareas-carga {
+.planificacion-dia-lista {
   display: flex;
   flex-direction: column;
 }
 
-.tarea-carga-item {
+.planificacion-dia-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
   padding: 16px 0;
-  border-bottom: 1px solid #eef1f4;
+  border-bottom: 1px solid #edf0f3;
 }
 
-.tarea-carga-item:last-child {
+.planificacion-dia-item:last-child {
   border-bottom: none;
 }
 
-.tarea-carga-item strong {
-  display: block;
-  color: #172033;
+.planificacion-dia-contenido {
+  min-width: 0;
 }
 
-.tarea-carga-item span {
+.planificacion-dia-contenido strong {
+  display: block;
+  color: #172033;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.planificacion-dia-contenido span {
   display: block;
   margin-top: 5px;
   color: #687386;
-  font-size: 14px;
+  font-size: 12px;
 }
 
-.tarea-carga-tiempo {
-  font-weight: 700;
+.planificacion-dia-contenido small {
+  display: block;
+  margin-top: 4px;
+  color: #8993a4;
+  font-size: 11px;
+}
+
+.planificacion-dia-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.planificacion-dia-meta > strong {
   color: #074a7b;
+  font-size: 15px;
+  font-weight: 800;
   white-space: nowrap;
 }
 
-/* =========================================================
-   VACÍO
-========================================================= */
-
-.carga-equipo-vacio {
-  padding: 30px;
-  text-align: center;
-  color: #8993a4;
+.planificacion-estado {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 23px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-/* =========================================================
-   ERROR
-========================================================= */
+.planificacion-estado.estado-pendiente {
+  background: #f6f4ef;
+  color: #716b5d;
+}
 
-.carga-equipo-error {
-  background: #f6f1f1;
-  border: 1px solid #e4d4d4;
-  color: #765858;
-  padding: 15px 18px;
-  border-radius: 14px;
-  margin-bottom: 20px;
+.planificacion-estado.estado-en_proceso {
+  background: #edf4f8;
+  color: #074a7b;
+}
+
+.planificacion-estado.estado-completada {
+  background: #f1f5f3;
+  color: #50685b;
 }
 
 /* =========================================================
    MODAL
-========================================================= */
+   ========================================================= */
 
 .carga-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(23, 32, 51, 0.45);
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  z-index: 1000;
+  background: rgba(23, 32, 51, 0.46);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 .carga-modal {
   width: min(900px, 100%);
   max-height: 90vh;
   overflow-y: auto;
-  background: white;
-  border-radius: 24px;
   padding: 28px;
-  box-shadow: 0 25px 70px rgba(23, 32, 51, 0.18);
+  border: 1px solid #e4e8ed;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow:
+    0 25px 70px rgba(23, 32, 51, 0.18),
+    0 8px 25px rgba(23, 32, 51, 0.1);
+  animation: cargaModalEntrada 0.2s ease-out;
 }
+
+@keyframes cargaModalEntrada {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================================================
+   HEADER MODAL
+   ========================================================= */
 
 .carga-modal-header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .carga-modal-eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
   color: #074a7b;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
 }
 
 .carga-modal-header h2 {
-  margin: 6px 0;
+  margin: 0 0 6px;
   color: #172033;
+  font-size: 23px;
+  line-height: 1.2;
+  font-weight: 800;
 }
 
 .carga-modal-header p {
   margin: 0;
   color: #687386;
+  font-size: 13px;
 }
 
 .carga-modal-cerrar {
-  width: 38px;
-  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
   border: none;
-  background: #f3f5f7;
+  border-radius: 10px;
+  background: #f1f3f6;
   color: #687386;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .carga-modal-cerrar:hover {
-  background: #e9edf1;
+  background: #e7ebef;
   color: #172033;
 }
 
 /* =========================================================
    RESUMEN MODAL
-========================================================= */
+   ========================================================= */
 
 .carga-modal-resumen {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
   margin-bottom: 18px;
 }
 
 .carga-modal-resumen > div {
-  background: #f8f9fb;
+  padding: 14px;
   border: 1px solid #edf0f3;
   border-radius: 14px;
-  padding: 14px;
+  background: #f8f9fb;
 }
 
 .carga-modal-resumen span {
   display: block;
+  margin-bottom: 5px;
   color: #8993a4;
-  font-size: 12px;
-  margin-bottom: 6px;
+  font-size: 10px;
 }
 
 .carga-modal-resumen strong {
   color: #172033;
   font-size: 18px;
+  font-weight: 800;
 }
 
 /* =========================================================
-   PROGRESO MODAL
-========================================================= */
+   ACTIVIDAD ACTUAL MODAL
+   ========================================================= */
 
-.carga-modal-progreso {
-  margin-bottom: 20px;
+.carga-modal-actual {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid #dce8ef;
+  border-radius: 14px;
+  background: #f7fafc;
 }
 
-.carga-modal-progreso-header {
+.carga-modal-actual > div {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 15px;
   margin-bottom: 7px;
 }
 
-.carga-modal-progreso-header span {
-  color: #687386;
-  font-size: 13px;
-}
-
-.carga-modal-progreso-header strong {
+.carga-modal-actual span {
   color: #074a7b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.carga-modal-actual strong {
+  color: #074a7b;
+  font-size: 11px;
+}
+
+.carga-modal-actual p {
+  margin: 0;
+  color: #172033;
   font-size: 13px;
+  font-weight: 700;
 }
 
-.carga-modal-progreso-barra {
-  width: 100%;
-  height: 9px;
-  background: #edf0f4;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.carga-modal-progreso-fill {
-  height: 100%;
-  background: #074a7b;
-  border-radius: 999px;
+.carga-modal-actual small {
+  display: block;
+  margin-top: 5px;
+  color: #687386;
+  font-size: 11px;
 }
 
 /* =========================================================
-   ALERTA MODAL
-========================================================= */
+   PAUSAS MODAL
+   ========================================================= */
 
-.carga-modal-alerta {
+.carga-modal-pausas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid #ece5d8;
   border-radius: 14px;
-  padding: 15px 17px;
-  margin-bottom: 22px;
+  background: #faf8f3;
 }
 
-.carga-modal-alerta-roja {
-  background: #f6f1f1;
-  border: 1px solid #e4d4d4;
-  color: #765858;
+.carga-modal-pausas > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.carga-modal-alerta strong {
-  display: block;
+.carga-modal-pausas span {
+  color: #756548;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 
-.carga-modal-alerta p {
-  margin: 5px 0 0;
+.carga-modal-pausas strong {
+  color: #4d4639;
+  font-size: 18px;
+}
+
+.carga-modal-pausas p {
+  max-width: 430px;
+  margin: 0;
+  color: #756f64;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 /* =========================================================
    SECCIONES MODAL
-========================================================= */
+   ========================================================= */
 
 .carga-modal-seccion {
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .carga-modal-seccion-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 11px;
 }
 
 .carga-modal-seccion-header h3 {
   margin: 0;
   color: #172033;
   font-size: 16px;
+  font-weight: 800;
 }
 
 .carga-modal-seccion-header > span {
-  min-width: 28px;
-  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 27px;
+  height: 27px;
+  padding: 0 7px;
+  border-radius: 50%;
   background: #edf4f8;
   color: #074a7b;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 /* =========================================================
    TAREAS MODAL
-========================================================= */
+   ========================================================= */
 
 .carga-modal-tareas {
-  border: 1px solid #e7ebf0;
-  border-radius: 16px;
   overflow: hidden;
+  border: 1px solid #e7ebf0;
+  border-radius: 15px;
 }
 
 .carga-modal-tarea {
@@ -771,148 +1096,159 @@
   border-bottom: none;
 }
 
+.carga-modal-tarea > div:first-child {
+  min-width: 0;
+}
+
 .carga-modal-tarea strong {
   display: block;
   color: #172033;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 800;
 }
 
 .carga-modal-tarea span {
   display: block;
   margin-top: 4px;
   color: #687386;
-  font-size: 13px;
+  font-size: 11px;
 }
 
-.carga-modal-tarea-tiempo {
-  color: #074a7b !important;
+.carga-modal-tarea small {
+  display: block;
+  margin-top: 4px;
+  color: #8993a4;
+  font-size: 10px;
+}
+
+.carga-modal-tarea-derecha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.carga-modal-tarea-derecha > strong {
+  color: #074a7b;
+  font-size: 14px;
   white-space: nowrap;
 }
 
 /* =========================================================
-   INTERFERENCIAS
-========================================================= */
+   VACÍOS
+   ========================================================= */
 
-.carga-interferencias {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.carga-interferencia {
-  border: 1px solid #e4e8ed;
-  border-radius: 16px;
-  padding: 16px;
-  background: #fafbfc;
-}
-
-.interferencia-titulo {
-  color: #172033;
-  font-weight: 700;
-  font-size: 13px;
-  margin-bottom: 12px;
-}
-
-.interferencia-tareas {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.interferencia-tareas > div {
-  background: white;
-  border: 1px solid #e7ebf0;
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.interferencia-tareas strong {
-  display: block;
-  color: #172033;
-  font-size: 13px;
-}
-
-.interferencia-tareas span {
-  display: block;
-  margin-top: 5px;
-  color: #687386;
-  font-size: 12px;
-}
-
-.interferencia-detalle {
-  display: flex;
-  justify-content: space-between;
-  gap: 15px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e7ebf0;
-}
-
-.interferencia-detalle strong {
-  color: #5e6875;
-  font-size: 12px;
-}
-
-.interferencia-detalle span {
-  color: #8993a4;
-  font-size: 12px;
-}
-
-/* =========================================================
-   MODAL VACÍO
-========================================================= */
-
+.carga-equipo-vacio,
 .carga-modal-vacio {
-  padding: 20px;
-  background: #f8f9fb;
+  padding: 28px;
   border-radius: 14px;
+  background: #f8f9fb;
   color: #8993a4;
   text-align: center;
+  font-size: 13px;
 }
 
 /* =========================================================
    FOOTER MODAL
-========================================================= */
+   ========================================================= */
 
 .carga-modal-footer {
   display: flex;
   justify-content: flex-end;
-  margin-top: 24px;
-  padding-top: 20px;
+  margin-top: 22px;
+  padding-top: 18px;
   border-top: 1px solid #eef1f4;
 }
 
 .carga-modal-boton {
-  border: 1px solid #d8e0e7;
-  background: white;
+  min-height: 40px;
+  padding: 0 17px;
+  border: 1px solid #d5dfe7;
+  border-radius: 11px;
+  background: #ffffff;
   color: #074a7b;
-  border-radius: 12px;
-  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  font-weight: 600;
 }
 
 .carga-modal-boton:hover {
-  background: #f2f6f9;
   border-color: #074a7b;
+  background: #f4f8fb;
 }
 
 /* =========================================================
-   RESPONSIVE
-========================================================= */
+   LOADING
+   ========================================================= */
 
-@media (max-width: 1100px) {
-  .carga-personas-grid {
-    grid-template-columns: repeat(2, 1fr);
+.carga-equipo-loading {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 13px;
+  color: #687386;
+}
+
+.carga-equipo-loading p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.carga-equipo-loader {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #e3e8ee;
+  border-top-color: #074a7b;
+  border-radius: 50%;
+  animation: cargaEquipoGiro 0.8s linear infinite;
+}
+
+@keyframes cargaEquipoGiro {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-@media (max-width: 900px) {
-  .carga-equipo-page {
-    padding: 20px;
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.carga-equipo-error {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid #e4d4d4;
+  border-radius: 13px;
+  background: #f6f1f1;
+  color: #765858;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   RESPONSIVE 1100
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .carga-personas-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .carga-equipo-resumen {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =========================================================
+   RESPONSIVE 900
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .carga-equipo-page {
+    padding: 24px;
   }
 
   .carga-equipo-header {
@@ -920,29 +1256,88 @@
     flex-direction: column;
   }
 
+  .carga-equipo-header .carga-equipo-recargar {
+    width: 100%;
+  }
+
   .carga-equipo-filtro {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .carga-equipo-fecha {
+    padding-bottom: 0;
+  }
+
+  .carga-modal-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
+
+/* =========================================================
+   RESPONSIVE 700
+   ========================================================= */
 
 @media (max-width: 700px) {
   .carga-personas-grid {
     grid-template-columns: 1fr;
   }
 
-  .carga-modal-resumen {
-    grid-template-columns: repeat(2, 1fr);
+  .carga-equipo-card-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .interferencia-tareas {
-    grid-template-columns: 1fr;
+  .carga-equipo-card-indicador {
+    align-self: flex-start;
+  }
+
+  .planificacion-dia-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .planificacion-dia-meta {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .carga-modal {
+    padding: 21px;
+    border-radius: 20px;
+  }
+
+  .carga-modal-pausas {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .carga-modal-pausas p {
+    max-width: none;
   }
 }
 
+/* =========================================================
+   RESPONSIVE 600
+   ========================================================= */
+
 @media (max-width: 600px) {
-  .carga-equipo-resumen {
-    grid-template-columns: 1fr;
+  .carga-equipo-page {
+    padding: 18px 14px;
+  }
+
+  .carga-equipo-header h1 {
+    font-size: 28px;
+  }
+
+  .carga-equipo-header p {
+    font-size: 14px;
+  }
+
+  .carga-equipo-filtro {
+    padding: 17px;
+    border-radius: 17px;
   }
 
   .carga-fecha-controles {
@@ -953,25 +1348,76 @@
     width: 100%;
   }
 
+  .carga-equipo-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .carga-equipo-card {
+    padding: 19px;
+    border-radius: 20px;
+  }
+
+  .persona-carga-card {
+    padding: 18px;
+  }
+
   .persona-carga-header {
     align-items: flex-start;
   }
 
   .persona-carga-resumen {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .carga-modal-overlay {
+    padding: 12px;
   }
 
   .carga-modal {
-    padding: 20px;
-    border-radius: 20px;
+    max-height: 92vh;
+    padding: 18px;
+  }
+
+  .carga-modal-header h2 {
+    font-size: 20px;
   }
 
   .carga-modal-resumen {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .interferencia-detalle {
+  .carga-modal-tarea {
+    align-items: flex-start;
+  }
+
+  .carga-modal-tarea-derecha {
+    align-items: flex-end;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE 430
+   ========================================================= */
+
+@media (max-width: 430px) {
+  .persona-carga-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .persona-carga-header {
     flex-direction: column;
-    gap: 5px;
+  }
+
+  .persona-estado {
+    align-self: flex-start;
+  }
+
+  .carga-fecha-controles input {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .carga-modal-resumen {
+    grid-template-columns: 1fr;
   }
 }

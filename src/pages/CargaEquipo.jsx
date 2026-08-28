@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+
 import { supabase } from "../lib/supabase";
+
 import "./CargaEquipo.css";
+
+const MINUTOS_JORNADA = 480;
 
 function CargaEquipo() {
   const [tareas, setTareas] = useState([]);
@@ -13,12 +17,7 @@ function CargaEquipo() {
   );
 
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
-
-  // =========================================================
-  // CONSTANTES
-  // =========================================================
-
-  const MINUTOS_JORNADA = 480;
+  const [pausasRegistradas, setPausasRegistradas] = useState([]);
 
   // =========================================================
   // CARGAR DATOS
@@ -58,15 +57,12 @@ function CargaEquipo() {
               tiempo_estimado,
               estado,
               prioridad,
-              responsable_id
+              responsable_id,
+              departamento_id,
+              created_at
             `,
           )
-          .order("fecha_inicio", {
-            ascending: true,
-          })
-          .order("hora_inicio", {
-            ascending: true,
-          }),
+          .order("fecha_inicio", { ascending: true }),
       ]);
 
       if (usuariosError) {
@@ -79,12 +75,13 @@ function CargaEquipo() {
 
       setUsuarios(usuariosData || []);
       setTareas(tareasData || []);
+
+      cargarPausasLocalStorage();
     } catch (err) {
       console.error("Error cargando carga del equipo:", err);
 
       setError(
-        err.message ||
-          "No se pudo cargar la información del equipo.",
+        err.message || "No se pudo cargar la información del equipo.",
       );
     } finally {
       setCargando(false);
@@ -92,51 +89,87 @@ function CargaEquipo() {
   };
 
   // =========================================================
-  // UTILIDADES DE FECHA
+  // PAUSAS TEMPORALES
   // =========================================================
 
-  const convertirFecha = (fecha) => {
-    if (!fecha) return null;
+  const cargarPausasLocalStorage = () => {
+    const pausas = [];
 
-    const [anio, mes, dia] = fecha.split("-");
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
 
-    return new Date(
-      Number(anio),
-      Number(mes) - 1,
-      Number(dia),
+        if (!key || !key.startsWith("tarea_pausa_")) {
+          continue;
+        }
+
+        const valor = localStorage.getItem(key);
+
+        if (!valor) {
+          continue;
+        }
+
+        try {
+          const pausa = JSON.parse(valor);
+
+          if (pausa && pausa.tarea_id) {
+            pausas.push(pausa);
+          }
+        } catch (parseError) {
+          console.warn(
+            "No se pudo interpretar una pausa:",
+            parseError,
+          );
+        }
+      }
+    } catch (storageError) {
+      console.warn(
+        "No se pudieron leer las pausas:",
+        storageError,
+      );
+    }
+
+    setPausasRegistradas(pausas);
+  };
+
+  // =========================================================
+  // CAMBIAR FECHA
+  // =========================================================
+
+  const cambiarFecha = (cantidad) => {
+    const fecha = new Date(
+      `${fechaSeleccionada}T12:00:00`,
+    );
+
+    fecha.setDate(fecha.getDate() + cantidad);
+
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+    const dia = String(fecha.getDate()).padStart(2, "0");
+
+    setFechaSeleccionada(`${año}-${mes}-${dia}`);
+  };
+
+  const irAHoy = () => {
+    setFechaSeleccionada(
+      new Date().toISOString().split("T")[0],
     );
   };
 
-  const formatearFechaISO = (fecha) => {
-    if (!fecha) return "";
-
-    return `${fecha.getFullYear()}-${String(
-      fecha.getMonth() + 1,
-    ).padStart(2, "0")}-${String(
-      fecha.getDate(),
-    ).padStart(2, "0")}`;
-  };
-
   // =========================================================
-  // SABER SI UNA TAREA ESTÁ ACTIVA EN UNA FECHA
+  // DETERMINAR SI UNA TAREA OCUPA UNA FECHA
   // =========================================================
 
   const tareaOcupaFecha = (tarea, fecha) => {
-    const inicio =
-      tarea.fecha_inicio ||
-      tarea.fecha;
+    const inicio = tarea.fecha_inicio || tarea.fecha;
 
-    const fin =
-      tarea.fecha_fin ||
-      tarea.fecha_inicio ||
-      tarea.fecha;
+    if (!inicio) {
+      return false;
+    }
 
-    if (!inicio) return false;
+    const fin = tarea.fecha_fin || inicio;
 
-    return (
-      fecha >= inicio &&
-      fecha <= fin
-    );
+    return fecha >= inicio && fecha <= fin;
   };
 
   // =========================================================
@@ -145,230 +178,105 @@ function CargaEquipo() {
 
   const tareasDelDia = useMemo(() => {
     return tareas.filter((tarea) =>
-      tareaOcupaFecha(
-        tarea,
-        fechaSeleccionada,
-      ),
+      tareaOcupaFecha(tarea, fechaSeleccionada),
     );
   }, [tareas, fechaSeleccionada]);
 
   // =========================================================
-  // CONVERTIR HORA A MINUTOS
+  // CONVERTIR HORA A SEGUNDOS
   // =========================================================
 
-  const convertirHoraAMinutos = (hora) => {
-    if (!hora) return null;
+  const convertirHoraASegundos = (hora) => {
+    if (!hora) {
+      return null;
+    }
 
-    const [horas, minutos] =
-      hora.split(":").map(Number);
+    const partes = String(hora).split(":");
+
+    const horas = Number(partes[0] || 0);
+    const minutos = Number(partes[1] || 0);
+    const segundos = Number(partes[2] || 0);
 
     if (
-      !Number.isFinite(horas) ||
-      !Number.isFinite(minutos)
+      Number.isNaN(horas) ||
+      Number.isNaN(minutos) ||
+      Number.isNaN(segundos)
     ) {
       return null;
     }
 
-    return horas * 60 + minutos;
+    return horas * 3600 + minutos * 60 + segundos;
   };
 
   // =========================================================
-  // DURACIÓN HORARIA
+  // CALCULAR MINUTOS DE UNA TAREA PARA LA FECHA
   // =========================================================
 
-  const obtenerDuracionHorario = (tarea) => {
-    const inicio =
-      convertirHoraAMinutos(
-        tarea.hora_inicio,
-      );
+  const calcularMinutosTarea = (tarea, fecha) => {
+    const inicio = tarea.fecha_inicio || tarea.fecha;
+    const fin = tarea.fecha_fin || inicio;
 
-    const fin =
-      convertirHoraAMinutos(
-        tarea.hora_fin,
-      );
-
-    if (
-      inicio === null ||
-      fin === null ||
-      fin <= inicio
-    ) {
-      return null;
+    if (!inicio) {
+      return 0;
     }
 
-    return fin - inicio;
-  };
+    // -------------------------------------------------------
+    // TAREA DE VARIOS DÍAS
+    // -------------------------------------------------------
 
-  // =========================================================
-  // MINUTOS PLANIFICADOS
-  // =========================================================
-
-  const obtenerMinutosPlanificados = (tarea) => {
-    const inicio =
-      tarea.fecha_inicio ||
-      tarea.fecha;
-
-    const fin =
-      tarea.fecha_fin ||
-      tarea.fecha_inicio ||
-      tarea.fecha;
-
-    const esMultidia =
-      inicio &&
-      fin &&
-      inicio !== fin;
-
-    /*
-     * Una tarea de varios días ocupa
-     * una jornada completa de 8 horas
-     * en cada día del rango.
-     */
-    if (esMultidia) {
+    if (inicio !== fin) {
       return MINUTOS_JORNADA;
     }
 
-    const duracionHorario =
-      obtenerDuracionHorario(tarea);
-
-    if (duracionHorario !== null) {
-      return Math.min(
-        duracionHorario,
-        MINUTOS_JORNADA,
-      );
-    }
-
-    const tiempoEstimado = Number(
-      tarea.tiempo_estimado,
-    );
+    // -------------------------------------------------------
+    // TAREA DE UN SOLO DÍA CON HORARIO
+    // -------------------------------------------------------
 
     if (
-      Number.isFinite(tiempoEstimado) &&
-      tiempoEstimado > 0
+      tarea.hora_inicio != null &&
+      tarea.hora_fin != null &&
+      tarea.hora_inicio !== "" &&
+      tarea.hora_fin !== ""
     ) {
-      return Math.min(
-        tiempoEstimado,
-        MINUTOS_JORNADA,
-      );
-    }
+      const segundosInicio =
+        convertirHoraASegundos(tarea.hora_inicio);
 
-    return MINUTOS_JORNADA;
-  };
+      const segundosFin =
+        convertirHoraASegundos(tarea.hora_fin);
 
-  // =========================================================
-  // DETECTAR INTERFERENCIAS
-  // =========================================================
-
-  const detectarInterferencias = (
-    tareasUsuario,
-  ) => {
-    const interferencias = [];
-
-    for (
-      let i = 0;
-      i < tareasUsuario.length;
-      i++
-    ) {
-      for (
-        let j = i + 1;
-        j < tareasUsuario.length;
-        j++
+      if (
+        segundosInicio !== null &&
+        segundosFin !== null
       ) {
-        const tareaA =
-          tareasUsuario[i];
+        let diferenciaSegundos =
+          segundosFin - segundosInicio;
 
-        const tareaB =
-          tareasUsuario[j];
-
-        const inicioA =
-          convertirHoraAMinutos(
-            tareaA.hora_inicio,
-          );
-
-        const finA =
-          convertirHoraAMinutos(
-            tareaA.hora_fin,
-          );
-
-        const inicioB =
-          convertirHoraAMinutos(
-            tareaB.hora_inicio,
-          );
-
-        const finB =
-          convertirHoraAMinutos(
-            tareaB.hora_fin,
-          );
-
-        if (
-          inicioA === null ||
-          finA === null ||
-          inicioB === null ||
-          finB === null
-        ) {
-          continue;
+        // Cruce de medianoche
+        if (diferenciaSegundos < 0) {
+          diferenciaSegundos += 24 * 60 * 60;
         }
 
-        const hayCruce =
-          inicioA < finB &&
-          inicioB < finA;
-
-        if (!hayCruce) {
-          continue;
-        }
-
-        const inicioCruce =
-          Math.max(
-            inicioA,
-            inicioB,
-          );
-
-        const finCruce =
-          Math.min(
-            finA,
-            finB,
-          );
-
-        const minutosCruce =
-          finCruce -
-          inicioCruce;
-
-        interferencias.push({
-          tareaA,
-          tareaB,
-          inicioCruce,
-          finCruce,
-          minutosCruce,
-        });
+        return diferenciaSegundos / 60;
       }
     }
 
-    return interferencias;
-  };
+    // -------------------------------------------------------
+    // TIEMPO ESTIMADO
+    // -------------------------------------------------------
 
-  // =========================================================
-  // FORMATEAR HORARIO
-  // =========================================================
-
-  const formatearHora = (minutos) => {
-    if (
-      minutos === null ||
-      minutos === undefined
-    ) {
-      return "--:--";
-    }
-
-    const horas = Math.floor(
-      minutos / 60,
+    const estimado = Number(
+      tarea.tiempo_estimado || 0,
     );
 
-    const minutosRestantes =
-      minutos % 60;
+    if (estimado > 0) {
+      return estimado;
+    }
 
-    return `${String(horas).padStart(
-      2,
-      "0",
-    )}:${String(
-      minutosRestantes,
-    ).padStart(2, "0")}`;
+    // -------------------------------------------------------
+    // VALOR POR DEFECTO
+    // -------------------------------------------------------
+
+    return MINUTOS_JORNADA;
   };
 
   // =========================================================
@@ -377,86 +285,135 @@ function CargaEquipo() {
 
   const cargaUsuarios = useMemo(() => {
     return usuarios.map((usuario) => {
-      const tareasUsuario =
-        tareasDelDia.filter(
-          (tarea) =>
-            tarea.responsable_id ===
-            usuario.id,
-        );
+      const tareasUsuario = tareasDelDia.filter(
+        (tarea) =>
+          tarea.responsable_id === usuario.id,
+      );
 
-      const minutos =
-        tareasUsuario.reduce(
-          (total, tarea) =>
+      const minutos = tareasUsuario.reduce(
+        (total, tarea) => {
+          return (
             total +
-            obtenerMinutosPlanificados(
+            calcularMinutosTarea(
               tarea,
-            ),
-          0,
-        );
-
-      const horas = minutos / 60;
-
-      const exceso = Math.max(
-        minutos -
-          MINUTOS_JORNADA,
+              fechaSeleccionada,
+            )
+          );
+        },
         0,
       );
 
-      const interferencias =
-        detectarInterferencias(
-          tareasUsuario,
-        );
+      const horas = minutos / 60;
 
       let nivel = "normal";
 
-      if (
-        minutos >
-        MINUTOS_JORNADA
-      ) {
+      if (minutos > MINUTOS_JORNADA) {
         nivel = "sobrecargado";
-      } else if (
-        minutos >= 360
-      ) {
+      } else if (minutos >= 360) {
         nivel = "alta";
+      }
+
+      // -----------------------------------------------------
+      // TAREA ACTUAL
+      // -----------------------------------------------------
+
+      const tareaActual =
+        tareasUsuario.find(
+          (tarea) =>
+            tarea.estado === "en_proceso",
+        ) || null;
+
+      // -----------------------------------------------------
+      // PAUSAS PARA OTRA TAREA
+      // -----------------------------------------------------
+
+      const pausasOtraTarea =
+        pausasRegistradas.filter((pausa) => {
+          if (pausa.motivo !== "otra_tarea") {
+            return false;
+          }
+
+          return tareasUsuario.some(
+            (tarea) =>
+              String(tarea.id) ===
+              String(pausa.tarea_id),
+          );
+        });
+
+      // -----------------------------------------------------
+      // PAUSAS TOTALES
+      // -----------------------------------------------------
+
+      const pausasTotales =
+        pausasRegistradas.filter((pausa) =>
+          tareasUsuario.some(
+            (tarea) =>
+              String(tarea.id) ===
+              String(pausa.tarea_id),
+          ),
+        );
+
+      // -----------------------------------------------------
+      // DISPONIBILIDAD
+      // -----------------------------------------------------
+
+      let disponibilidad = "Disponible";
+
+      if (tareaActual) {
+        disponibilidad = "En actividad";
+      } else if (nivel === "sobrecargado") {
+        disponibilidad = "Sobrecargado";
+      } else if (nivel === "alta") {
+        disponibilidad = "Carga alta";
       }
 
       return {
         ...usuario,
         tareas: tareasUsuario,
-        cantidadTareas:
-          tareasUsuario.length,
+        cantidadTareas: tareasUsuario.length,
         minutos,
         horas,
-        exceso,
-        interferencias,
-        cantidadInterferencias:
-          interferencias.length,
         nivel,
+        tareaActual,
+        pausasOtraTarea:
+          pausasOtraTarea.length,
+        pausasTotales:
+          pausasTotales.length,
+        disponibilidad,
       };
     });
-  }, [usuarios, tareasDelDia]);
+  }, [
+    usuarios,
+    tareasDelDia,
+    fechaSeleccionada,
+    pausasRegistradas,
+  ]);
 
   // =========================================================
   // RESUMEN GENERAL
   // =========================================================
 
   const totalMinutos = useMemo(() => {
-    return tareasDelDia.reduce(
-      (total, tarea) =>
-        total +
-        obtenerMinutosPlanificados(
-          tarea,
-        ),
+    return cargaUsuarios.reduce(
+      (total, usuario) =>
+        total + usuario.minutos,
       0,
     );
-  }, [tareasDelDia]);
+  }, [cargaUsuarios]);
 
-  const usuariosSobrecargados =
+  const totalTareas = tareasDelDia.length;
+
+  const usuariosConTrabajo =
     cargaUsuarios.filter(
       (usuario) =>
-        usuario.nivel ===
-        "sobrecargado",
-    );
+        usuario.cantidadTareas > 0,
+    ).length;
+
+  const usuariosDisponibles =
+    cargaUsuarios.filter(
+      (usuario) =>
+        usuario.cantidadTareas === 0,
+    ).length;
 
   const usuariosCargaAlta =
     cargaUsuarios.filter(
@@ -464,28 +421,36 @@ function CargaEquipo() {
         usuario.nivel === "alta",
     );
 
-  const totalInterferencias =
+  const usuariosSobrecargados =
+    cargaUsuarios.filter(
+      (usuario) =>
+        usuario.nivel === "sobrecargado",
+    );
+
+  const tareasEnProceso =
+    tareasDelDia.filter(
+      (tarea) =>
+        tarea.estado === "en_proceso",
+    );
+
+  const totalPausasOtraTarea =
     cargaUsuarios.reduce(
       (total, usuario) =>
-        total +
-        usuario.cantidadInterferencias,
+        total + usuario.pausasOtraTarea,
       0,
     );
 
   // =========================================================
-  // BARRA GENERAL DEL EQUIPO
+  // PORCENTAJE GENERAL
   // =========================================================
 
-  const capacidadTotalEquipo =
-    usuarios.length *
-    MINUTOS_JORNADA;
+  const capacidadTotal =
+    usuarios.length * MINUTOS_JORNADA;
 
-  const porcentajeCargaEquipo =
-    capacidadTotalEquipo > 0
+  const porcentajeGeneral =
+    capacidadTotal > 0
       ? Math.min(
-          (totalMinutos /
-            capacidadTotalEquipo) *
-            100,
+          (totalMinutos / capacidadTotal) * 100,
           100,
         )
       : 0;
@@ -495,16 +460,17 @@ function CargaEquipo() {
   // =========================================================
 
   const formatearHoras = (minutos) => {
-    if (!minutos) {
-      return "0 h";
-    }
+    const minutosNumero = Math.max(
+      0,
+      Math.round(Number(minutos) || 0),
+    );
 
     const horas = Math.floor(
-      minutos / 60,
+      minutosNumero / 60,
     );
 
     const minutosRestantes =
-      minutos % 60;
+      minutosNumero % 60;
 
     if (horas === 0) {
       return `${minutosRestantes} min`;
@@ -518,14 +484,68 @@ function CargaEquipo() {
   };
 
   // =========================================================
+  // FORMATEAR DURACIÓN CON SEGUNDOS
+  // =========================================================
+
+  const formatearDuracion = (minutos) => {
+    const segundosTotales = Math.max(
+      0,
+      Math.round(
+        (Number(minutos) || 0) * 60,
+      ),
+    );
+
+    if (segundosTotales < 60) {
+      return `${segundosTotales} s`;
+    }
+
+    const horas = Math.floor(
+      segundosTotales / 3600,
+    );
+
+    const minutosRestantes =
+      Math.floor(
+        (segundosTotales % 3600) / 60,
+      );
+
+    const segundosRestantes =
+      segundosTotales % 60;
+
+    if (horas > 0) {
+      if (minutosRestantes === 0) {
+        return `${horas} h`;
+      }
+
+      return `${horas} h ${minutosRestantes} min`;
+    }
+
+    if (segundosRestantes === 0) {
+      return `${minutosRestantes} min`;
+    }
+
+    return `${minutosRestantes} min ${segundosRestantes} s`;
+  };
+
+  // =========================================================
   // FORMATEAR FECHA
   // =========================================================
 
   const formatearFecha = (fecha) => {
-    if (!fecha) return "";
+    if (!fecha) {
+      return "";
+    }
 
-    const fechaLocal =
-      convertirFecha(fecha);
+    const [
+      anio,
+      mes,
+      dia,
+    ] = fecha.split("-");
+
+    const fechaLocal = new Date(
+      Number(anio),
+      Number(mes) - 1,
+      Number(dia),
+    );
 
     return fechaLocal.toLocaleDateString(
       "es-EC",
@@ -539,58 +559,112 @@ function CargaEquipo() {
   };
 
   // =========================================================
-  // CAMBIAR FECHA
+  // FORMATEAR RANGO DE TAREA
   // =========================================================
 
-  const cambiarFecha = (dias) => {
-    const fecha =
-      convertirFecha(
-        fechaSeleccionada,
-      );
+  const formatearRangoTarea = (tarea) => {
+    const inicio =
+      tarea.fecha_inicio ||
+      tarea.fecha;
 
-    fecha.setDate(
-      fecha.getDate() + dias,
-    );
+    const fin =
+      tarea.fecha_fin ||
+      inicio;
 
-    setFechaSeleccionada(
-      formatearFechaISO(fecha),
-    );
+    if (!inicio) {
+      return "Sin fecha";
+    }
+
+    if (inicio === fin) {
+      return formatearFecha(inicio);
+    }
+
+    return `${formatearFecha(
+      inicio,
+    )} → ${formatearFecha(fin)}`;
   };
 
   // =========================================================
-  // IR A HOY
+  // ESTADO HUMANO
   // =========================================================
 
-  const irHoy = () => {
-    const hoy = new Date();
+  const obtenerTextoEstado = (estado) => {
+    if (estado === "en_proceso") {
+      return "En proceso";
+    }
 
-    setFechaSeleccionada(
-      formatearFechaISO(hoy),
-    );
+    if (estado === "completada") {
+      return "Completada";
+    }
+
+    return "Pendiente";
   };
 
   // =========================================================
-  // MODAL
+  // ABRIR MODAL
   // =========================================================
 
-  const abrirDetalleUsuario = (
-    usuario,
-  ) => {
+  const abrirDetalle = (usuario) => {
     setUsuarioSeleccionado(usuario);
   };
 
-  const cerrarDetalleUsuario = () => {
+  const cerrarDetalle = () => {
     setUsuarioSeleccionado(null);
   };
 
   // =========================================================
-  // RENDER CARGANDO
+  // CARGA REAL DEL DETALLE
+  // =========================================================
+  //
+  // IMPORTANTE:
+  // El modal NO toma usuarioSeleccionado.minutos.
+  //
+  // Recalcula la carga desde las mismas actividades
+  // que aparecen visualmente en el modal.
+  //
+  // Esto evita que el resumen muestre, por ejemplo,
+  // 1 h 2 min cuando las actividades visibles suman 2 min.
+  //
+  // =========================================================
+
+  const minutosDetalle = useMemo(() => {
+    if (!usuarioSeleccionado) {
+      return 0;
+    }
+
+    return usuarioSeleccionado.tareas.reduce(
+      (total, tarea) => {
+        return (
+          total +
+          calcularMinutosTarea(
+            tarea,
+            fechaSeleccionada,
+          )
+        );
+      },
+      0,
+    );
+  }, [
+    usuarioSeleccionado,
+    fechaSeleccionada,
+  ]);
+
+  const porcentajeDetalle =
+    Math.min(
+      (minutosDetalle / MINUTOS_JORNADA) * 100,
+      100,
+    );
+
+  // =========================================================
+  // CARGANDO
   // =========================================================
 
   if (cargando) {
     return (
       <section className="carga-equipo-page">
-        <div className="carga-equipo-card">
+        <div className="carga-equipo-loading">
+          <span className="carga-equipo-loader" />
+
           <p>
             Cargando carga del equipo...
           </p>
@@ -606,7 +680,9 @@ function CargaEquipo() {
   return (
     <section className="carga-equipo-page">
 
-      {/* ENCABEZADO */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <div className="carga-equipo-header">
         <div>
@@ -619,8 +695,9 @@ function CargaEquipo() {
           </h1>
 
           <p>
-            Controla la planificación y
-            distribución de trabajo del equipo.
+            Consulta la planificación diaria,
+            disponibilidad y distribución de trabajo
+            del equipo.
           </p>
         </div>
 
@@ -633,7 +710,9 @@ function CargaEquipo() {
         </button>
       </div>
 
-      {/* ERROR */}
+      {/* =====================================================
+          ERROR
+      ===================================================== */}
 
       {error && (
         <div className="carga-equipo-error">
@@ -641,12 +720,13 @@ function CargaEquipo() {
         </div>
       )}
 
-      {/* CONSULTA DE FECHA */}
+      {/* =====================================================
+          FILTRO DE FECHA
+      ===================================================== */}
 
       <div className="carga-equipo-filtro">
 
         <div className="carga-fecha-consulta">
-
           <label htmlFor="fechaCarga">
             Consultar fecha
           </label>
@@ -664,13 +744,16 @@ function CargaEquipo() {
               ‹
             </button>
 
-            <button
-              type="button"
-              className="carga-fecha-hoy"
-              onClick={irHoy}
-            >
-              Hoy
-            </button>
+            <input
+              id="fechaCarga"
+              type="date"
+              value={fechaSeleccionada}
+              onChange={(e) =>
+                setFechaSeleccionada(
+                  e.target.value,
+                )
+              }
+            />
 
             <button
               type="button"
@@ -683,16 +766,13 @@ function CargaEquipo() {
               ›
             </button>
 
-            <input
-              id="fechaCarga"
-              type="date"
-              value={fechaSeleccionada}
-              onChange={(e) =>
-                setFechaSeleccionada(
-                  e.target.value,
-                )
-              }
-            />
+            <button
+              type="button"
+              className="carga-fecha-hoy"
+              onClick={irAHoy}
+            >
+              Hoy
+            </button>
 
           </div>
         </div>
@@ -705,7 +785,9 @@ function CargaEquipo() {
 
       </div>
 
-      {/* RESUMEN */}
+      {/* =====================================================
+          RESUMEN
+      ===================================================== */}
 
       <div className="carga-equipo-resumen">
 
@@ -715,8 +797,12 @@ function CargaEquipo() {
           </span>
 
           <strong>
-            {tareasDelDia.length}
+            {totalTareas}
           </strong>
+
+          <small>
+            Actividades planificadas
+          </small>
         </div>
 
         <div className="carga-resumen-card">
@@ -729,71 +815,93 @@ function CargaEquipo() {
               totalMinutos,
             )}
           </strong>
+
+          <small>
+            Considerando la jornada diaria
+          </small>
         </div>
 
         <div className="carga-resumen-card">
           <span>
-            Carga alta
+            Personas trabajando
           </span>
 
           <strong>
-            {usuariosCargaAlta.length}
+            {usuariosConTrabajo}
           </strong>
+
+          <small>
+            {usuariosDisponibles} disponibles
+          </small>
         </div>
 
         <div className="carga-resumen-card">
           <span>
-            Sobrecargados
+            Actividades en proceso
           </span>
 
           <strong>
-            {usuariosSobrecargados.length}
+            {tareasEnProceso.length}
           </strong>
+
+          <small>
+            Actualmente activas
+          </small>
         </div>
 
       </div>
 
-      {/* BARRA GENERAL DEL EQUIPO */}
+      {/* =====================================================
+          INDICADOR GENERAL
+      ===================================================== */}
 
       <div className="carga-equipo-progreso">
 
         <div className="carga-equipo-progreso-header">
+
           <div>
             <strong>
-              Carga general del equipo
+              Utilización general del equipo
             </strong>
 
             <span>
-              {formatearHoras(totalMinutos)} de{" "}
               {formatearHoras(
-                capacidadTotalEquipo,
+                totalMinutos,
+              )}{" "}
+              de{" "}
+              {formatearHoras(
+                capacidadTotal,
               )} disponibles
             </span>
           </div>
 
           <strong>
             {Math.round(
-              porcentajeCargaEquipo,
+              porcentajeGeneral,
             )}
             %
           </strong>
+
         </div>
 
         <div className="carga-equipo-progreso-barra">
+
           <div
             className="carga-equipo-progreso-fill"
             style={{
-              width: `${porcentajeCargaEquipo}%`,
+              width: `${porcentajeGeneral}%`,
             }}
           />
+
         </div>
 
       </div>
 
-      {/* ALERTA */}
+      {/* =====================================================
+          ALERTA SOBRECARGA
+      ===================================================== */}
 
-      {(usuariosSobrecargados.length > 0 ||
-        totalInterferencias > 0) && (
+      {usuariosSobrecargados.length > 0 && (
         <div className="alerta-sobrecarga">
 
           <div className="alerta-icono">
@@ -801,304 +909,346 @@ function CargaEquipo() {
           </div>
 
           <div>
+
             <strong>
-              Se detectaron conflictos de
-              planificación
+              Hay personas con sobrecarga
             </strong>
 
             <p>
-              {usuariosSobrecargados.length >
-                0 &&
-                `${usuariosSobrecargados.length} persona${
-                  usuariosSobrecargados.length ===
-                  1
-                    ? ""
-                    : "s"
-                } sobrecargada${
-                  usuariosSobrecargados.length ===
-                  1
-                    ? ""
-                    : "s"
-                }.`}
-
-              {usuariosSobrecargados.length >
-                0 &&
-                totalInterferencias > 0 &&
-                " "}
-
-              {totalInterferencias > 0 &&
-                `${totalInterferencias} interferencia${
-                  totalInterferencias === 1
-                    ? ""
-                    : "s"
-                } detectada${
-                  totalInterferencias === 1
-                    ? ""
-                    : "s"
-                }.`}
+              {usuariosSobrecargados.length}{" "}
+              persona
+              {usuariosSobrecargados.length !== 1
+                ? "s"
+                : ""}{" "}
+              supera la capacidad diaria de
+              8 horas.
             </p>
+
           </div>
 
         </div>
       )}
 
-      {/* PERSONAS */}
+      {/* =====================================================
+          ALERTA DE PAUSAS
+      ===================================================== */}
+
+      {totalPausasOtraTarea > 0 && (
+        <div className="alerta-operativa">
+
+          <div className="alerta-operativa-icono">
+            i
+          </div>
+
+          <div>
+
+            <strong>
+              Actividad interrumpida
+            </strong>
+
+            <p>
+              Se han registrado{" "}
+              {totalPausasOtraTarea}{" "}
+              pausa
+              {totalPausasOtraTarea !== 1
+                ? "s"
+                : ""}{" "}
+              para atender otra tarea.
+            </p>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* =====================================================
+          PERSONAS
+      ===================================================== */}
 
       <div className="carga-equipo-card">
 
         <div className="carga-equipo-card-header">
 
           <div>
+
+            <span className="carga-card-eyebrow">
+              EQUIPO
+            </span>
+
             <h2>
-              Equipo
+              Distribución de trabajo
             </h2>
 
             <p>
-              Selecciona una persona para
-              consultar su planificación.
+              Selecciona una persona para consultar
+              su planificación y disponibilidad.
             </p>
+
+          </div>
+
+          <div className="carga-equipo-card-indicador">
+            {cargaUsuarios.length} personas
           </div>
 
         </div>
 
         {cargaUsuarios.length === 0 ? (
+
           <div className="carga-equipo-vacio">
             No existen usuarios activos.
           </div>
+
         ) : (
+
           <div className="carga-personas-grid">
 
-            {cargaUsuarios.map(
-              (usuario) => {
+            {cargaUsuarios.map((usuario) => {
 
-                const porcentaje = Math.min(
+              const porcentaje =
+                Math.min(
                   (usuario.minutos /
                     MINUTOS_JORNADA) *
                     100,
                   100,
                 );
 
-                return (
-                  <article
-                    className="persona-carga-card"
-                    key={usuario.id}
-                  >
+              const iniciales =
+                `${usuario.nombre?.charAt(0) || ""}${usuario.apellido?.charAt(0) || ""}`.toUpperCase();
 
-                    {/* CABECERA */}
+              return (
 
-                    <div className="persona-carga-header">
+                <article
+                  className="persona-carga-card"
+                  key={usuario.id}
+                >
 
-                      <div className="persona-carga-identidad">
+                  {/* IDENTIDAD */}
 
-                        <div className="persona-carga-avatar">
-                          {(
-                            usuario.nombre?.charAt(
-                              0,
-                            ) || ""
-                          ).toUpperCase()}
+                  <div className="persona-carga-header">
 
-                          {(
-                            usuario.apellido?.charAt(
-                              0,
-                            ) || ""
-                          ).toUpperCase()}
-                        </div>
+                    <div className="persona-carga-identidad">
 
-                        <div>
-                          <strong>
-                            {usuario.nombre}{" "}
-                            {usuario.apellido}
-                          </strong>
+                      <div className="persona-carga-avatar">
+                        {iniciales}
+                      </div>
 
-                          <span>
-                            {usuario.cantidadTareas}{" "}
-                            {usuario.cantidadTareas ===
-                            1
-                              ? "tarea"
-                              : "tareas"}
-                          </span>
-                        </div>
+                      <div>
+
+                        <strong>
+                          {usuario.nombre}{" "}
+                          {usuario.apellido}
+                        </strong>
+
+                        <span>
+                          {usuario.cantidadTareas}{" "}
+                          tarea
+                          {usuario.cantidadTareas !== 1
+                            ? "s"
+                            : ""}
+                        </span>
 
                       </div>
 
-                      <span
-                        className={`persona-estado persona-estado-${usuario.nivel}`}
-                      >
-                        {usuario.nivel ===
-                        "sobrecargado"
-                          ? "Sobrecargado"
-                          : usuario.nivel ===
-                              "alta"
-                            ? "Carga alta"
-                            : "Normal"}
+                    </div>
+
+                    <span
+                      className={`persona-estado persona-estado-${usuario.nivel}`}
+                    >
+                      {usuario.nivel ===
+                      "sobrecargado"
+                        ? "Sobrecargado"
+                        : usuario.nivel ===
+                            "alta"
+                          ? "Carga alta"
+                          : "Normal"}
+                    </span>
+
+                  </div>
+
+                  {/* RESUMEN */}
+
+                  <div className="persona-carga-resumen">
+
+                    <div>
+                      <span>
+                        Planificado
                       </span>
 
+                      <strong>
+                        {formatearHoras(
+                          usuario.minutos,
+                        )}
+                      </strong>
                     </div>
 
-                    {/* RESUMEN */}
+                    <div>
+                      <span>
+                        Capacidad
+                      </span>
 
-                    <div className="persona-carga-resumen">
-
-                      <div>
-                        <span>
-                          Planificado
-                        </span>
-
-                        <strong>
-                          {formatearHoras(
-                            usuario.minutos,
-                          )}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>
-                          Capacidad
-                        </span>
-
-                        <strong>
-                          8 h
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>
-                          Interferencias
-                        </span>
-
-                        <strong>
-                          {
-                            usuario.cantidadInterferencias
-                          }
-                        </strong>
-                      </div>
-
+                      <strong>
+                        8 h
+                      </strong>
                     </div>
 
-                    {/* BARRA */}
+                    <div>
+                      <span>
+                        Interferencias
+                      </span>
 
-                    <div className="persona-carga-barra">
+                      <strong>
+                        {usuario.pausasOtraTarea}
+                      </strong>
+                    </div>
 
-                      <div className="persona-carga-barra-top">
+                  </div>
+
+                  {/* ACTIVIDAD ACTUAL */}
+
+                  {usuario.tareaActual && (
+                    <div className="persona-actividad-actual">
+
+                      <div className="persona-actividad-actual-top">
 
                         <span>
-                          Utilización
+                          ACTIVIDAD ACTUAL
                         </span>
 
                         <strong>
-                          {Math.round(
-                            (usuario.minutos /
-                              MINUTOS_JORNADA) *
-                              100,
-                          )}
-                          %
+                          En proceso
                         </strong>
 
                       </div>
 
-                      <div className="barra-carga">
+                      <p>
+                        {usuario.tareaActual.titulo}
+                      </p>
 
-                        <div
-                          className="barra-carga-progreso"
-                          style={{
-                            width: `${porcentaje}%`,
-                          }}
-                        />
-
-                      </div>
-
-                    </div>
-
-                    {/* INFORME */}
-
-                    <div className="persona-carga-informe">
-
-                      {usuario.nivel ===
-                        "sobrecargado" && (
-                        <p className="informe-rojo">
-                          Supera la capacidad
-                          diaria en{" "}
-                          <strong>
-                            {formatearHoras(
-                              usuario.exceso,
-                            )}
-                          </strong>
-                          .
-                        </p>
-                      )}
-
-                      {usuario.nivel ===
-                        "alta" && (
-                        <p className="informe-amarillo">
-                          La persona está cerca
-                          de su capacidad diaria.
-                        </p>
-                      )}
-
-                      {usuario.nivel ===
-                        "normal" && (
-                        <p className="informe-verde">
-                          La planificación se
-                          encuentra dentro de la
-                          capacidad diaria.
-                        </p>
-                      )}
-
-                      {usuario.cantidadInterferencias >
-                        0 && (
-                        <p className="informe-interferencia">
-                          Hay{" "}
-                          <strong>
-                            {
-                              usuario.cantidadInterferencias
-                            }
-                          </strong>{" "}
-                          interferencia
-                          {usuario.cantidadInterferencias ===
-                          1
-                            ? ""
-                            : "s"}{" "}
-                          horaria
-                          {usuario.cantidadInterferencias ===
-                          1
-                            ? ""
-                            : "s"}.
-                        </p>
+                      {usuario.tareaActual.hora_inicio && (
+                        <small>
+                          Inicio{" "}
+                          {usuario.tareaActual.hora_inicio}
+                        </small>
                       )}
 
                     </div>
+                  )}
 
-                    {/* BOTÓN */}
+                  {/* PAUSAS */}
 
-                    <button
-                      type="button"
-                      className="persona-carga-boton"
-                      onClick={() =>
-                        abrirDetalleUsuario(
-                          usuario,
-                        )
-                      }
-                    >
-                      Ver carga
-                    </button>
+                  {usuario.pausasOtraTarea > 0 && (
+                    <div className="persona-pausas-info">
 
-                  </article>
-                );
-              },
-            )}
+                      <span>
+                        PAUSAS PARA OTRA TAREA
+                      </span>
+
+                      <strong>
+                        {usuario.pausasOtraTarea}
+                      </strong>
+
+                    </div>
+                  )}
+
+                  {/* UTILIZACIÓN */}
+
+                  <div className="persona-carga-barra">
+
+                    <div className="persona-carga-barra-top">
+
+                      <span>
+                        Utilización
+                      </span>
+
+                      <strong>
+                        {Math.round(
+                          porcentaje,
+                        )}
+                        %
+                      </strong>
+
+                    </div>
+
+                    <div className="barra-carga">
+
+                      <div
+                        className={`barra-carga-progreso nivel-${usuario.nivel}`}
+                        style={{
+                          width: `${porcentaje}%`,
+                        }}
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* INFORME */}
+
+                  <div className="persona-carga-informe">
+
+                    {usuario.nivel ===
+                      "normal" && (
+                      <p className="informe-verde">
+                        La planificación se encuentra
+                        dentro de la capacidad diaria.
+                      </p>
+                    )}
+
+                    {usuario.nivel ===
+                      "alta" && (
+                      <p className="informe-amarillo">
+                        La persona se encuentra cerca
+                        de completar su capacidad diaria.
+                      </p>
+                    )}
+
+                    {usuario.nivel ===
+                      "sobrecargado" && (
+                      <p className="informe-rojo">
+                        La planificación supera la
+                        capacidad diaria de 8 horas.
+                      </p>
+                    )}
+
+                  </div>
+
+                  {/* BOTÓN */}
+
+                  <button
+                    type="button"
+                    className="persona-carga-boton"
+                    onClick={() =>
+                      abrirDetalle(usuario)
+                    }
+                  >
+                    Ver carga
+                  </button>
+
+                </article>
+
+              );
+            })}
 
           </div>
+
         )}
 
       </div>
 
-      {/* TAREAS GENERALES */}
+      {/* =====================================================
+          PLANIFICACIÓN DEL DÍA
+      ===================================================== */}
 
       <div className="carga-equipo-card">
 
         <div className="carga-equipo-card-header">
 
           <div>
+
+            <span className="carga-card-eyebrow">
+              PLANIFICACIÓN
+            </span>
+
             <h2>
               Planificación del día
             </h2>
@@ -1107,93 +1257,116 @@ function CargaEquipo() {
               Actividades que ocupan esta fecha,
               incluyendo tareas de varios días.
             </p>
+
+          </div>
+
+          <div className="carga-equipo-card-indicador">
+            {tareasDelDia.length} actividades
           </div>
 
         </div>
 
         {tareasDelDia.length === 0 ? (
+
           <div className="carga-equipo-vacio">
-            No existen tareas para esta fecha.
+            No existen actividades planificadas
+            para esta fecha.
           </div>
+
         ) : (
-          <div className="lista-tareas-carga">
 
-            {tareasDelDia.map(
-              (tarea) => {
+          <div className="planificacion-dia-lista">
 
-                const usuario =
-                  usuarios.find(
-                    (item) =>
-                      item.id ===
-                      tarea.responsable_id,
-                  );
+            {tareasDelDia.map((tarea) => {
 
-                return (
-                  <div
-                    className="tarea-carga-item"
-                    key={tarea.id}
-                  >
+              const usuario =
+                usuarios.find(
+                  (item) =>
+                    item.id ===
+                    tarea.responsable_id,
+                );
 
-                    <div>
+              const minutos =
+                calcularMinutosTarea(
+                  tarea,
+                  fechaSeleccionada,
+                );
 
-                      <strong>
-                        {tarea.titulo}
-                      </strong>
+              return (
 
-                      <span>
-                        {usuario
-                          ? `${usuario.nombre} ${usuario.apellido}`
-                          : "Sin responsable"}
+                <div
+                  className="planificacion-dia-item"
+                  key={tarea.id}
+                >
 
-                        {" · "}
+                  <div className="planificacion-dia-contenido">
 
-                        {tarea.fecha_inicio}
+                    <strong>
+                      {tarea.titulo}
+                    </strong>
 
-                        {tarea.fecha_fin &&
-                          tarea.fecha_fin !==
-                            tarea.fecha_inicio &&
-                          ` → ${tarea.fecha_fin}`}
-                      </span>
-
-                      {tarea.hora_inicio &&
-                        tarea.hora_fin && (
-                          <span>
-                            Horario:{" "}
-                            {tarea.hora_inicio} -{" "}
-                            {tarea.hora_fin}
-                          </span>
-                        )}
-
-                    </div>
-
-                    <div className="tarea-carga-tiempo">
-                      {formatearHoras(
-                        obtenerMinutosPlanificados(
-                          tarea,
-                        ),
+                    <span>
+                      {usuario
+                        ? `${usuario.nombre} ${usuario.apellido}`
+                        : "Sin responsable"}{" "}
+                      ·{" "}
+                      {formatearRangoTarea(
+                        tarea,
                       )}
-                    </div>
+                    </span>
+
+                    {(tarea.hora_inicio ||
+                      tarea.hora_fin) && (
+                      <small>
+                        Horario:{" "}
+                        {tarea.hora_inicio ||
+                          "--:--"}{" "}
+                        -{" "}
+                        {tarea.hora_fin ||
+                          "--:--"}
+                      </small>
+                    )}
 
                   </div>
-                );
-              },
-            )}
+
+                  <div className="planificacion-dia-meta">
+
+                    <strong>
+                      {formatearDuracion(
+                        minutos,
+                      )}
+                    </strong>
+
+                    <span
+                      className={`planificacion-estado estado-${tarea.estado}`}
+                    >
+                      {obtenerTextoEstado(
+                        tarea.estado,
+                      )}
+                    </span>
+
+                  </div>
+
+                </div>
+
+              );
+            })}
 
           </div>
+
         )}
 
       </div>
 
       {/* =====================================================
-          MODAL DE PERSONA
+          MODAL DE DETALLE
       ===================================================== */}
 
       {usuarioSeleccionado && (
+
         <div
           className="carga-modal-overlay"
-          onClick={
-            cerrarDetalleUsuario
-          }
+          onClick={cerrarDetalle}
         >
 
           <div
@@ -1203,7 +1376,7 @@ function CargaEquipo() {
             }
           >
 
-            {/* CABECERA MODAL */}
+            {/* HEADER */}
 
             <div className="carga-modal-header">
 
@@ -1214,16 +1387,13 @@ function CargaEquipo() {
                 </span>
 
                 <h2>
-                  {
-                    usuarioSeleccionado.nombre
-                  }{" "}
-                  {
-                    usuarioSeleccionado.apellido
-                  }
+                  {usuarioSeleccionado.nombre}{" "}
+                  {usuarioSeleccionado.apellido}
                 </h2>
 
                 <p>
-                  Planificación del{" "}
+                  Planificación correspondiente
+                  al{" "}
                   {formatearFecha(
                     fechaSeleccionada,
                   )}
@@ -1234,9 +1404,7 @@ function CargaEquipo() {
               <button
                 type="button"
                 className="carga-modal-cerrar"
-                onClick={
-                  cerrarDetalleUsuario
-                }
+                onClick={cerrarDetalle}
                 aria-label="Cerrar"
               >
                 ×
@@ -1244,30 +1412,34 @@ function CargaEquipo() {
 
             </div>
 
-            {/* RESUMEN MODAL */}
+            {/* =================================================
+                RESUMEN MODAL
+                AHORA USA minutosDetalle
+                ================================================= */}
 
             <div className="carga-modal-resumen">
 
               <div>
                 <span>
-                  Tareas
+                  Actividades
                 </span>
 
                 <strong>
                   {
-                    usuarioSeleccionado.cantidadTareas
+                    usuarioSeleccionado.tareas
+                      .length
                   }
                 </strong>
               </div>
 
               <div>
                 <span>
-                  Planificado
+                  Carga
                 </span>
 
                 <strong>
                   {formatearHoras(
-                    usuarioSeleccionado.minutos,
+                    minutosDetalle,
                   )}
                 </strong>
               </div>
@@ -1284,91 +1456,106 @@ function CargaEquipo() {
 
               <div>
                 <span>
-                  Interferencias
-                </span>
-
-                <strong>
-                  {
-                    usuarioSeleccionado.cantidadInterferencias
-                  }
-                </strong>
-              </div>
-
-            </div>
-
-            {/* BARRA MODAL */}
-
-            <div className="carga-modal-progreso">
-
-              <div className="carga-modal-progreso-header">
-                <span>
-                  Utilización de la jornada
+                  Utilización
                 </span>
 
                 <strong>
                   {Math.round(
-                    (usuarioSeleccionado.minutos /
-                      MINUTOS_JORNADA) *
-                      100,
+                    porcentajeDetalle,
                   )}
                   %
                 </strong>
               </div>
 
-              <div className="carga-modal-progreso-barra">
-                <div
-                  className="carga-modal-progreso-fill"
-                  style={{
-                    width: `${Math.min(
-                      (usuarioSeleccionado.minutos /
-                        MINUTOS_JORNADA) *
-                        100,
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
-
             </div>
 
-            {/* ALERTA */}
+            {/* =================================================
+                ACTIVIDAD ACTUAL
+            ================================================= */}
 
-            {usuarioSeleccionado.nivel ===
-              "sobrecargado" && (
-              <div className="carga-modal-alerta carga-modal-alerta-roja">
+            {usuarioSeleccionado.tareaActual && (
+              <div className="carga-modal-actual">
 
-                <strong>
-                  Persona sobrecargada
-                </strong>
+                <div>
+
+                  <span>
+                    ACTIVIDAD ACTUAL
+                  </span>
+
+                  <strong>
+                    En proceso
+                  </strong>
+
+                </div>
 
                 <p>
-                  La planificación supera la
-                  capacidad diaria de 8 horas
-                  en{" "}
-                  <strong>
-                    {formatearHoras(
-                      usuarioSeleccionado.exceso,
-                    )}
-                  </strong>
-                  .
+                  {
+                    usuarioSeleccionado
+                      .tareaActual.titulo
+                  }
                 </p>
+
+                {usuarioSeleccionado
+                  .tareaActual
+                  .hora_inicio && (
+                  <small>
+                    Iniciada a las{" "}
+                    {
+                      usuarioSeleccionado
+                        .tareaActual
+                        .hora_inicio
+                    }
+                  </small>
+                )}
 
               </div>
             )}
 
-            {/* TAREAS */}
+            {/* =================================================
+                PAUSAS
+            ================================================= */}
+
+            <div className="carga-modal-pausas">
+
+              <div>
+
+                <span>
+                  PAUSAS PARA OTRA TAREA
+                </span>
+
+                <strong>
+                  {
+                    usuarioSeleccionado
+                      .pausasOtraTarea
+                  }
+                </strong>
+
+              </div>
+
+              <p>
+                Registros temporales de
+                interrupciones utilizadas para
+                atender otra actividad.
+              </p>
+
+            </div>
+
+            {/* =================================================
+                LISTA DE TAREAS
+            ================================================= */}
 
             <div className="carga-modal-seccion">
 
               <div className="carga-modal-seccion-header">
 
                 <h3>
-                  Tareas planificadas
+                  Actividades asignadas
                 </h3>
 
                 <span>
                   {
-                    usuarioSeleccionado.cantidadTareas
+                    usuarioSeleccionado.tareas
+                      .length
                   }
                 </span>
 
@@ -1376,22 +1563,27 @@ function CargaEquipo() {
 
               {usuarioSeleccionado.tareas
                 .length === 0 ? (
+
                 <div className="carga-modal-vacio">
-                  Esta persona no tiene tareas
+                  No tiene actividades
                   planificadas para esta fecha.
                 </div>
+
               ) : (
+
                 <div className="carga-modal-tareas">
 
                   {usuarioSeleccionado.tareas.map(
                     (tarea) => {
 
-                      const duracion =
-                        obtenerMinutosPlanificados(
+                      const minutos =
+                        calcularMinutosTarea(
                           tarea,
+                          fechaSeleccionada,
                         );
 
                       return (
+
                         <div
                           className="carga-modal-tarea"
                           key={tarea.id}
@@ -1404,177 +1596,62 @@ function CargaEquipo() {
                             </strong>
 
                             <span>
-                              {tarea.fecha_inicio}
-
-                              {tarea.fecha_fin &&
-                                tarea.fecha_fin !==
-                                  tarea.fecha_inicio &&
-                                ` → ${tarea.fecha_fin}`}
+                              {formatearRangoTarea(
+                                tarea,
+                              )}
                             </span>
 
-                            {tarea.hora_inicio &&
-                              tarea.hora_fin && (
-                                <span>
-                                  {tarea.hora_inicio}{" "}
-                                  -{" "}
-                                  {tarea.hora_fin}
-                                </span>
-                              )}
+                            {(tarea.hora_inicio ||
+                              tarea.hora_fin) && (
+                              <small>
+                                {tarea.hora_inicio ||
+                                  "--:--"}{" "}
+                                -{" "}
+                                {tarea.hora_fin ||
+                                  "--:--"}
+                              </small>
+                            )}
 
                           </div>
 
-                          <strong className="carga-modal-tarea-tiempo">
-                            {formatearHoras(
-                              duracion,
-                            )}
-                          </strong>
+                          <div className="carga-modal-tarea-derecha">
+
+                            <strong>
+                              {formatearDuracion(
+                                minutos,
+                              )}
+                            </strong>
+
+                            <span
+                              className={`planificacion-estado estado-${tarea.estado}`}
+                            >
+                              {obtenerTextoEstado(
+                                tarea.estado,
+                              )}
+                            </span>
+
+                          </div>
 
                         </div>
+
                       );
                     },
                   )}
 
                 </div>
+
               )}
 
             </div>
 
-            {/* INTERFERENCIAS */}
-
-            {usuarioSeleccionado
-              .interferencias
-              .length > 0 && (
-
-              <div className="carga-modal-seccion">
-
-                <div className="carga-modal-seccion-header">
-
-                  <h3>
-                    Interferencias detectadas
-                  </h3>
-
-                  <span className="contador-interferencia">
-                    {
-                      usuarioSeleccionado
-                        .interferencias
-                        .length
-                    }
-                  </span>
-
-                </div>
-
-                <div className="carga-interferencias">
-
-                  {usuarioSeleccionado.interferencias.map(
-                    (
-                      interferencia,
-                      index,
-                    ) => (
-
-                      <div
-                        className="carga-interferencia"
-                        key={`${interferencia.tareaA.id}-${interferencia.tareaB.id}-${index}`}
-                      >
-
-                        <div className="interferencia-titulo">
-                          Interferencia{" "}
-                          {index + 1}
-                        </div>
-
-                        <div className="interferencia-tareas">
-
-                          <div>
-                            <strong>
-                              {
-                                interferencia
-                                  .tareaA
-                                  .titulo
-                              }
-                            </strong>
-
-                            <span>
-                              {
-                                interferencia
-                                  .tareaA
-                                  .hora_inicio
-                              }{" "}
-                              -{" "}
-                              {
-                                interferencia
-                                  .tareaA
-                                  .hora_fin
-                              }
-                            </span>
-                          </div>
-
-                          <div>
-                            <strong>
-                              {
-                                interferencia
-                                  .tareaB
-                                  .titulo
-                              }
-                            </strong>
-
-                            <span>
-                              {
-                                interferencia
-                                  .tareaB
-                                  .hora_inicio
-                              }{" "}
-                              -{" "}
-                              {
-                                interferencia
-                                  .tareaB
-                                  .hora_fin
-                              }
-                            </span>
-                          </div>
-
-                        </div>
-
-                        <div className="interferencia-detalle">
-
-                          <strong>
-                            Se cruzan de{" "}
-                            {formatearHora(
-                              interferencia.inicioCruce,
-                            )}{" "}
-                            a{" "}
-                            {formatearHora(
-                              interferencia.finCruce,
-                            )}
-                          </strong>
-
-                          <span>
-                            Tiempo de interferencia:{" "}
-                            {formatearHoras(
-                              interferencia.minutosCruce,
-                            )}
-                          </span>
-
-                        </div>
-
-                      </div>
-
-                    ),
-                  )}
-
-                </div>
-
-              </div>
-            )}
-
-            {/* CIERRE */}
+            {/* FOOTER */}
 
             <div className="carga-modal-footer">
 
               <button
                 type="button"
                 className="carga-modal-boton"
-                onClick={
-                  cerrarDetalleUsuario
-                }
+                onClick={cerrarDetalle}
               >
                 Cerrar
               </button>
@@ -1584,6 +1661,7 @@ function CargaEquipo() {
           </div>
 
         </div>
+
       )}
 
     </section>
