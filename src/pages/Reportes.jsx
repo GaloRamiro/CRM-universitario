@@ -4,54 +4,25 @@ import autoTable from "jspdf-autotable";
 import { supabase } from "../lib/supabase";
 import "./Reportes.css";
 
-const MINUTOS_JORNADA = 480;
-const ELEMENTOS_POR_PAGINA = 10;
-
-function Paginacion({
-  paginaActual,
-  totalPaginas,
-  onAnterior,
-  onSiguiente,
-}) {
-  if (totalPaginas <= 1) return null;
-
-  return (
-    <div
-      className="reporte-paginacion"
-      aria-label="Paginación de resultados"
-    >
-      <button
-        type="button"
-        className="reporte-paginacion-btn"
-        onClick={onAnterior}
-        disabled={paginaActual === 1}
-      >
-        Anterior
-      </button>
-
-      <span className="reporte-paginacion-info">
-        Página <strong>{paginaActual}</strong> de{" "}
-        <strong>{totalPaginas}</strong>
-      </span>
-
-      <button
-        type="button"
-        className="reporte-paginacion-btn reporte-paginacion-siguiente"
-        onClick={onSiguiente}
-        disabled={paginaActual === totalPaginas}
-      >
-        Siguiente
-      </button>
-    </div>
-  );
-}
-
 function Reportes() {
+  // =========================================================
+  // CONSTANTES
+  // =========================================================
+
+  const MINUTOS_JORNADA = 480;
+  const ELEMENTOS_POR_PAGINA = 5;
+
   const hoy = new Date().toISOString().split("T")[0];
+
+  // =========================================================
+  // ESTADOS
+  // =========================================================
 
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
+
+  const [pausasRegistradas, setPausasRegistradas] = useState([]);
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -64,17 +35,10 @@ function Reportes() {
 
   const [fechaHasta, setFechaHasta] = useState(hoy);
 
+  const [pestanaActiva, setPestanaActiva] = useState("resumen");
+
   const [paginaActividades, setPaginaActividades] = useState(1);
-  const [paginaDepartamentos, setPaginaDepartamentos] = useState(1);
   const [paginaPersonas, setPaginaPersonas] = useState(1);
-  const [paginaDiasCriticos, setPaginaDiasCriticos] = useState(1);
-  const [paginaPrioridades, setPaginaPrioridades] = useState(1);
-
-  const [paginaModalActividades, setPaginaModalActividades] =
-    useState(1);
-
-  const [paginaModalJornadas, setPaginaModalJornadas] =
-    useState(1);
 
   const [personaSeleccionada, setPersonaSeleccionada] =
     useState(null);
@@ -112,7 +76,8 @@ function Reportes() {
             estado,
             responsable_id,
             departamento_id,
-            tiempo_estimado
+            tiempo_estimado,
+            created_at
           `)
           .order("fecha_inicio", {
             ascending: true,
@@ -163,6 +128,59 @@ function Reportes() {
       setTareas(tareasData || []);
       setUsuarios(usuariosData || []);
       setDepartamentos(departamentosData || []);
+
+      // =====================================================
+      // PAUSAS / INTERRUPCIONES
+      // =====================================================
+
+      const pausas = [];
+
+      try {
+        for (
+          let i = 0;
+          i < localStorage.length;
+          i += 1
+        ) {
+          const key = localStorage.key(i);
+
+          if (
+            !key ||
+            !key.startsWith("tarea_pausa_")
+          ) {
+            continue;
+          }
+
+          const valor =
+            localStorage.getItem(key);
+
+          if (!valor) {
+            continue;
+          }
+
+          try {
+            const pausa = JSON.parse(valor);
+
+            if (
+              pausa &&
+              pausa.tarea_id
+            ) {
+              pausas.push(pausa);
+            }
+          } catch (parseError) {
+            console.warn(
+              "No se pudo interpretar una pausa:",
+              parseError,
+            );
+          }
+        }
+      } catch (storageError) {
+        console.warn(
+          "No se pudieron leer las pausas:",
+          storageError,
+        );
+      }
+
+      setPausasRegistradas(pausas);
     } catch (err) {
       console.error(
         "Error cargando reportes:",
@@ -179,39 +197,26 @@ function Reportes() {
   };
 
   // =========================================================
-  // MAPAS
-  // =========================================================
-
-  const usuariosMap = useMemo(() => {
-    const mapa = {};
-
-    usuarios.forEach((usuario) => {
-      mapa[usuario.id] = usuario;
-    });
-
-    return mapa;
-  }, [usuarios]);
-
-  const departamentosMap = useMemo(() => {
-    const mapa = {};
-
-    departamentos.forEach((departamento) => {
-      mapa[departamento.id] = departamento;
-    });
-
-    return mapa;
-  }, [departamentos]);
-
-  // =========================================================
   // NOMBRES
   // =========================================================
 
   const obtenerUsuario = (id) => {
-    return usuariosMap[id] || null;
+    return (
+      usuarios.find(
+        (usuario) =>
+          String(usuario.id) === String(id),
+      ) || null
+    );
   };
 
   const obtenerDepartamento = (id) => {
-    return departamentosMap[id] || null;
+    return (
+      departamentos.find(
+        (departamento) =>
+          String(departamento.id) ===
+          String(id),
+      ) || null
+    );
   };
 
   const obtenerNombreUsuario = (id) => {
@@ -227,7 +232,8 @@ function Reportes() {
   };
 
   const obtenerNombreDepartamento = (id) => {
-    const departamento = obtenerDepartamento(id);
+    const departamento =
+      obtenerDepartamento(id);
 
     return (
       departamento?.nombre ||
@@ -240,9 +246,11 @@ function Reportes() {
   // =========================================================
 
   const convertirFecha = (fecha) => {
-    if (!fecha) return null;
+    if (!fecha) {
+      return null;
+    }
 
-    const partes = fecha.split("-");
+    const partes = String(fecha).split("-");
 
     if (partes.length !== 3) {
       return null;
@@ -254,13 +262,16 @@ function Reportes() {
       Number(partes[2]),
     );
 
-    return Number.isNaN(fechaLocal.getTime())
+    return Number.isNaN(
+      fechaLocal.getTime(),
+    )
       ? null
       : fechaLocal;
   };
 
   const formatearFecha = (fecha) => {
-    const fechaObj = convertirFecha(fecha);
+    const fechaObj =
+      convertirFecha(fecha);
 
     if (!fechaObj) {
       return "Sin fecha";
@@ -277,7 +288,8 @@ function Reportes() {
   };
 
   const formatearFechaLarga = (fecha) => {
-    const fechaObj = convertirFecha(fecha);
+    const fechaObj =
+      convertirFecha(fecha);
 
     if (!fechaObj) {
       return "";
@@ -299,10 +311,16 @@ function Reportes() {
   // =========================================================
 
   const convertirHoraAMinutos = (hora) => {
-    if (!hora) return null;
+    if (!hora) {
+      return null;
+    }
 
-    const [horas, minutos] =
-      hora.split(":").map(Number);
+    const partes = String(hora)
+      .split(":")
+      .map(Number);
+
+    const horas = partes[0];
+    const minutos = partes[1];
 
     if (
       !Number.isFinite(horas) ||
@@ -319,31 +337,16 @@ function Reportes() {
       return "Sin hora";
     }
 
-    return hora.substring(0, 5);
-  };
-
-  const formatearMinutos = (minutos) => {
-    const valor = Number(minutos) || 0;
-
-    const horas = Math.floor(valor / 60);
-    const minutosRestantes = valor % 60;
-
-    if (horas === 0) {
-      return `${minutosRestantes} min`;
-    }
-
-    if (minutosRestantes === 0) {
-      return `${horas} h`;
-    }
-
-    return `${horas} h ${minutosRestantes} min`;
+    return String(hora).substring(0, 5);
   };
 
   // =========================================================
-  // DURACIÓN DE HORARIO
+  // DURACIÓN
   // =========================================================
 
-  const obtenerDuracionHorario = (tarea) => {
+  const obtenerDuracionHorario = (
+    tarea,
+  ) => {
     const inicio =
       convertirHoraAMinutos(
         tarea.hora_inicio,
@@ -367,11 +370,12 @@ function Reportes() {
 
   // =========================================================
   // MINUTOS PLANIFICADOS
-  //
-  // NO CAMBIAR ESTA LÓGICA
+  // MISMA LÓGICA DE CARGA
   // =========================================================
 
-  const obtenerMinutosPlanificados = (tarea) => {
+  const obtenerMinutosPlanificados = (
+    tarea,
+  ) => {
     const inicio =
       tarea.fecha_inicio ||
       tarea.fecha;
@@ -386,28 +390,36 @@ function Reportes() {
       fin &&
       inicio !== fin;
 
-    // 1. ACTIVIDAD DE VARIOS DÍAS
+    // Tarea de varios días
     if (esMultidia) {
       return MINUTOS_JORNADA;
     }
 
-    // 2. ACTIVIDAD DE UN DÍA CON HORARIO
+    // Horario real
     const duracionHorario =
-      obtenerDuracionHorario(tarea);
+      obtenerDuracionHorario(
+        tarea,
+      );
 
-    if (duracionHorario !== null) {
+    if (
+      duracionHorario !== null
+    ) {
       return Math.min(
         duracionHorario,
         MINUTOS_JORNADA,
       );
     }
 
-    // 3. SIN HORARIO: TIEMPO ESTIMADO
+    // Tiempo estimado
     const tiempoEstimado =
-      Number(tarea.tiempo_estimado);
+      Number(
+        tarea.tiempo_estimado,
+      );
 
     if (
-      Number.isFinite(tiempoEstimado) &&
+      Number.isFinite(
+        tiempoEstimado,
+      ) &&
       tiempoEstimado > 0
     ) {
       return Math.min(
@@ -416,75 +428,12 @@ function Reportes() {
       );
     }
 
-    // 4. SIN INFORMACIÓN: JORNADA COMPLETA
+    // Sin información
     return MINUTOS_JORNADA;
   };
 
   // =========================================================
-  // ORIGEN DEL CÁLCULO
-  // =========================================================
-
-  const obtenerFuenteCalculo = (tarea) => {
-    const inicio =
-      tarea.fecha_inicio ||
-      tarea.fecha;
-
-    const fin =
-      tarea.fecha_fin ||
-      tarea.fecha_inicio ||
-      tarea.fecha;
-
-    const esMultidia =
-      inicio &&
-      fin &&
-      inicio !== fin;
-
-    if (esMultidia) {
-      return {
-        corto: "Rango de varios días",
-        detalle:
-          "8 horas asignadas por cada día del rango",
-      };
-    }
-
-    const duracionHorario =
-      obtenerDuracionHorario(tarea);
-
-    if (duracionHorario !== null) {
-      return {
-        corto: "Horario",
-        detalle:
-          `${formatearHora(
-            tarea.hora_inicio,
-          )} - ${formatearHora(
-            tarea.hora_fin,
-          )}`,
-      };
-    }
-
-    const tiempoEstimado =
-      Number(tarea.tiempo_estimado);
-
-    if (
-      Number.isFinite(tiempoEstimado) &&
-      tiempoEstimado > 0
-    ) {
-      return {
-        corto: "Tiempo estimado",
-        detalle:
-          "Se utilizó el tiempo estimado registrado",
-      };
-    }
-
-    return {
-      corto: "Jornada completa",
-      detalle:
-        "Sin información válida; se asignaron 8 horas",
-    };
-  };
-
-  // =========================================================
-  // SABER SI UNA TAREA OCUPA UNA FECHA
+  // UNA TAREA OCUPA UNA FECHA
   // =========================================================
 
   const tareaOcupaFecha = (
@@ -515,7 +464,10 @@ function Reportes() {
   // =========================================================
 
   const tareasPeriodo = useMemo(() => {
-    if (!fechaDesde || !fechaHasta) {
+    if (
+      !fechaDesde ||
+      !fechaHasta
+    ) {
       return [];
     }
 
@@ -525,7 +477,11 @@ function Reportes() {
     const hasta =
       convertirFecha(fechaHasta);
 
-    if (!desde || !hasta) {
+    if (
+      !desde ||
+      !hasta ||
+      desde > hasta
+    ) {
       return [];
     }
 
@@ -674,13 +630,6 @@ function Reportes() {
             `${usuario.nombre || ""} ${
               usuario.apellido || ""
             }`.trim(),
-          departamento:
-            tareasUsuario[0]?.departamento_id
-              ? obtenerNombreDepartamento(
-                  tareasUsuario[0]
-                    .departamento_id,
-                )
-              : "Sin departamento",
           tareas:
             tareasUsuario,
           cantidadTareas:
@@ -703,11 +652,10 @@ function Reportes() {
     diasPeriodo,
     usuarios,
     tareasPeriodo,
-    departamentosMap,
   ]);
 
   // =========================================================
-  // RENDIMIENTO POR PERSONA
+  // RENDIMIENTO PERSONAS
   // =========================================================
 
   const rendimientoPersonas =
@@ -721,7 +669,7 @@ function Reportes() {
                 usuario.id,
             );
 
-          const diasPersona =
+          const jornadas =
             cargaDiaria.filter(
               (dia) =>
                 dia.usuarioId ===
@@ -729,24 +677,11 @@ function Reportes() {
             );
 
           const tiempo =
-            diasPersona.reduce(
+            jornadas.reduce(
               (total, dia) =>
                 total + dia.minutos,
               0,
             );
-
-          const departamentosPersona =
-            [
-              ...new Set(
-                tareasPersona
-                  .map(
-                    (tarea) =>
-                      obtenerNombreDepartamento(
-                        tarea.departamento_id,
-                      ),
-                  ),
-              ),
-            ];
 
           return {
             id: usuario.id,
@@ -759,36 +694,35 @@ function Reportes() {
             email:
               usuario.email,
 
-            departamento:
-              departamentosPersona.join(
-                ", ",
-              ) ||
-              "Sin departamento",
-
             total:
               tareasPersona.length,
+
+            tareas:
+              tareasPersona,
+
+            jornadas,
 
             tiempo,
 
             diasTrabajados:
-              diasPersona.length,
+              jornadas.length,
 
             diasNormales:
-              diasPersona.filter(
+              jornadas.filter(
                 (dia) =>
                   dia.nivel ===
                   "normal",
               ).length,
 
             diasCargaAlta:
-              diasPersona.filter(
+              jornadas.filter(
                 (dia) =>
                   dia.nivel ===
                   "alta",
               ).length,
 
             diasSobrecargados:
-              diasPersona.filter(
+              jornadas.filter(
                 (dia) =>
                   dia.nivel ===
                   "sobrecargado",
@@ -814,12 +748,6 @@ function Reportes() {
                   tarea.estado ===
                   "pendiente",
               ).length,
-
-            tareas:
-              tareasPersona,
-
-            jornadas:
-              diasPersona,
           };
         })
         .filter(
@@ -834,7 +762,6 @@ function Reportes() {
       usuarios,
       tareasPeriodo,
       cargaDiaria,
-      departamentosMap,
     ]);
 
   // =========================================================
@@ -901,7 +828,595 @@ function Reportes() {
     ]);
 
   // =========================================================
-  // MÉTRICAS GENERALES
+  // TRAZABILIDAD
+  // =========================================================
+
+  const obtenerNivelUrgencia = (
+    tarea,
+  ) => {
+    if (!tarea?.created_at) {
+      return "No determinado";
+    }
+
+    const fechaInicio =
+      tarea.fecha_inicio ||
+      tarea.fecha;
+
+    if (!fechaInicio) {
+      return "No determinado";
+    }
+
+    const horaInicio =
+      tarea.hora_inicio ||
+      "00:00:00";
+
+    const inicio = new Date(
+      `${fechaInicio}T${horaInicio}`,
+    );
+
+    const solicitud =
+      new Date(
+        tarea.created_at,
+      );
+
+    if (
+      Number.isNaN(
+        inicio.getTime(),
+      ) ||
+      Number.isNaN(
+        solicitud.getTime(),
+      )
+    ) {
+      return "No determinado";
+    }
+
+    const horas =
+      (inicio.getTime() -
+        solicitud.getTime()) /
+      3600000;
+
+    if (horas < 1) {
+      return "Última hora";
+    }
+
+    if (horas < 24) {
+      return "Urgente";
+    }
+
+    if (horas < 72) {
+      return "Anticipación corta";
+    }
+
+    return "Planificada";
+  };
+
+  const tareasUrgentes = useMemo(() => {
+    return tareasPeriodo
+      .filter((tarea) => {
+        const nivel =
+          obtenerNivelUrgencia(
+            tarea,
+          );
+
+        return (
+          nivel === "Urgente" ||
+          nivel === "Última hora"
+        );
+      })
+      .sort((a, b) => {
+        const fa =
+          convertirFecha(
+            a.fecha_inicio ||
+              a.fecha,
+          )?.getTime() || 0;
+
+        const fb =
+          convertirFecha(
+            b.fecha_inicio ||
+              b.fecha,
+          )?.getTime() || 0;
+
+        return fa - fb;
+      });
+  }, [tareasPeriodo]);
+
+  // =========================================================
+  // CRUCE DE TAREAS
+  // =========================================================
+
+  const minutosCruce = (
+    a,
+    b,
+  ) => {
+    const fechaA =
+      a.fecha_inicio ||
+      a.fecha;
+
+    const fechaAFin =
+      a.fecha_fin ||
+      fechaA;
+
+    const fechaB =
+      b.fecha_inicio ||
+      b.fecha;
+
+    const fechaBFin =
+      b.fecha_fin ||
+      fechaB;
+
+    if (
+      !fechaA ||
+      !fechaB
+    ) {
+      return 0;
+    }
+
+    const inicioA =
+      new Date(
+        `${fechaA}T${
+          a.hora_inicio ||
+          "00:00:00"
+        }`,
+      );
+
+    const finA =
+      new Date(
+        `${fechaAFin}T${
+          a.hora_fin ||
+          "23:59:59"
+        }`,
+      );
+
+    const inicioB =
+      new Date(
+        `${fechaB}T${
+          b.hora_inicio ||
+          "00:00:00"
+        }`,
+      );
+
+    const finB =
+      new Date(
+        `${fechaBFin}T${
+          b.hora_fin ||
+          "23:59:59"
+        }`,
+      );
+
+    if (
+      [
+        inicioA,
+        finA,
+        inicioB,
+        finB,
+      ].some((fecha) =>
+        Number.isNaN(
+          fecha.getTime(),
+        ),
+      )
+    ) {
+      return 0;
+    }
+
+    const inicioCruce =
+      Math.max(
+        inicioA.getTime(),
+        inicioB.getTime(),
+      );
+
+    const finCruce =
+      Math.min(
+        finA.getTime(),
+        finB.getTime(),
+      );
+
+    return finCruce >
+      inicioCruce
+      ? Math.round(
+          (finCruce -
+            inicioCruce) /
+            60000,
+        )
+      : 0;
+  };
+
+  // =========================================================
+  // RELACIÓN DE PAUSAS
+  // =========================================================
+
+  const obtenerTareaInterrumpida = (
+    pausa,
+  ) => {
+    const posibles = [
+      pausa?.tarea_interrumpida_id,
+      pausa?.tarea_interrumpida,
+      pausa?.tarea_anterior_id,
+      pausa?.tarea_origen_id,
+      pausa?.tarea_pausada_id,
+    ].filter(Boolean);
+
+    return posibles.length
+      ? posibles[0]
+      : null;
+  };
+
+  const obtenerTareaInterrupcion = (
+    pausa,
+  ) => {
+    const posibles = [
+      pausa?.otra_tarea_id,
+      pausa?.tarea_interrupcion_id,
+      pausa?.nueva_tarea_id,
+      pausa?.tarea_destino_id,
+    ].filter(Boolean);
+
+    return posibles.length
+      ? posibles[0]
+      : null;
+  };
+
+  const obtenerInterventor = (
+    pausa,
+    tareaQueInterrumpe,
+  ) => {
+    const posibles = [
+      pausa?.intervenido_por_id,
+      pausa?.interventor_id,
+      pausa?.usuario_interventor_id,
+      pausa?.solicitante_id,
+      pausa?.creado_por,
+      pausa?.usuario_id,
+    ].filter(Boolean);
+
+    if (
+      posibles.length
+    ) {
+      return obtenerNombreUsuario(
+        posibles[0],
+      );
+    }
+
+    if (
+      tareaQueInterrumpe
+        ?.responsable_id
+    ) {
+      return obtenerNombreUsuario(
+        tareaQueInterrumpe.responsable_id,
+      );
+    }
+
+    return "No determinado";
+  };
+
+  // =========================================================
+  // INTERFERENCIAS
+  // =========================================================
+
+  const interferencias =
+    useMemo(() => {
+      const resultado = [];
+      const vistos = new Set();
+
+      usuarios.forEach((usuario) => {
+        const tareasUsuario =
+          tareasPeriodo.filter(
+            (tarea) =>
+              tarea.responsable_id ===
+              usuario.id,
+          );
+
+        for (
+          let i = 0;
+          i <
+          tareasUsuario.length;
+          i += 1
+        ) {
+          for (
+            let j = i + 1;
+            j <
+            tareasUsuario.length;
+            j += 1
+          ) {
+            const a =
+              tareasUsuario[i];
+
+            const b =
+              tareasUsuario[j];
+
+            const duracion =
+              minutosCruce(
+                a,
+                b,
+              );
+
+            if (
+              duracion <= 0
+            ) {
+              continue;
+            }
+
+            const idA =
+              String(a.id);
+
+            const idB =
+              String(b.id);
+
+            const clave = [
+              idA,
+              idB,
+            ]
+              .sort()
+              .join("-");
+
+            if (
+              vistos.has(
+                `${usuario.id}-${clave}`,
+              )
+            ) {
+              continue;
+            }
+
+            vistos.add(
+              `${usuario.id}-${clave}`,
+            );
+
+            const inicioA =
+              new Date(
+                `${a.fecha_inicio || a.fecha}T${
+                  a.hora_inicio ||
+                  "00:00:00"
+                }`,
+              );
+
+            const inicioB =
+              new Date(
+                `${b.fecha_inicio || b.fecha}T${
+                  b.hora_inicio ||
+                  "00:00:00"
+                }`,
+              );
+
+            const tareaInterrumpida =
+              inicioA <= inicioB
+                ? a
+                : b;
+
+            const tareaInterrumpe =
+              inicioA <= inicioB
+                ? b
+                : a;
+
+            const pausa =
+              pausasRegistradas.find(
+                (item) => {
+                  if (
+                    item.motivo !==
+                    "otra_tarea"
+                  ) {
+                    return false;
+                  }
+
+                  const pausada =
+                    obtenerTareaInterrumpida(
+                      item,
+                    );
+
+                  const nueva =
+                    obtenerTareaInterrupcion(
+                      item,
+                    );
+
+                  return (
+                    String(
+                      pausada || "",
+                    ) ===
+                      String(
+                        tareaInterrumpida.id,
+                      ) &&
+                    String(
+                      nueva || "",
+                    ) ===
+                      String(
+                        tareaInterrumpe.id,
+                      )
+                  );
+                },
+              );
+
+            resultado.push({
+              id: `${usuario.id}-${clave}`,
+
+              fecha:
+                tareaInterrumpida.fecha_inicio ||
+                tareaInterrumpida.fecha,
+
+              usuario,
+
+              tareaInterrumpida,
+
+              tareaInterrumpe,
+
+              duracion,
+
+              pausaRegistrada:
+                Boolean(pausa),
+
+              interventor:
+                obtenerInterventor(
+                  pausa,
+                  tareaInterrumpe,
+                ),
+            });
+          }
+        }
+      });
+
+      return resultado.sort(
+        (a, b) => {
+          const fechaA =
+            convertirFecha(
+              a.fecha,
+            )?.getTime() || 0;
+
+          const fechaB =
+            convertirFecha(
+              b.fecha,
+            )?.getTime() || 0;
+
+          return (
+            fechaA - fechaB
+          );
+        },
+      );
+    }, [
+      usuarios,
+      tareasPeriodo,
+      pausasRegistradas,
+    ]);
+
+  // =========================================================
+  // MAPA DE TAREAS INTERRUMPIDAS
+  // =========================================================
+
+  const tareasInterrumpidasIds =
+    useMemo(() => {
+      const mapa = new Map();
+
+      interferencias.forEach(
+        (item) => {
+          const id =
+            String(
+              item
+                .tareaInterrumpida
+                .id,
+            );
+
+          if (!mapa.has(id)) {
+            mapa.set(id, []);
+          }
+
+          mapa
+            .get(id)
+            .push(item);
+        },
+      );
+
+      return mapa;
+    }, [interferencias]);
+
+  // =========================================================
+  // MAPA DE TAREAS QUE PROVOCARON INTERFERENCIA
+  // =========================================================
+
+  const tareasInterrumpenIds =
+    useMemo(() => {
+      const mapa = new Map();
+
+      interferencias.forEach(
+        (item) => {
+          const id =
+            String(
+              item
+                .tareaInterrumpe
+                .id,
+            );
+
+          if (!mapa.has(id)) {
+            mapa.set(id, []);
+          }
+
+          mapa
+            .get(id)
+            .push(item);
+        },
+      );
+
+      return mapa;
+    }, [interferencias]);
+
+  // =========================================================
+  // ESTADO VISUAL DE UNA TAREA
+  // =========================================================
+
+  const obtenerEstadoInterferencia =
+    (tarea) => {
+      const id =
+        String(tarea.id);
+
+      const interrumpidas =
+        tareasInterrumpidasIds.get(
+          id,
+        ) || [];
+
+      if (
+        interrumpidas.length > 0
+      ) {
+        return {
+          tipo: "interrumpida",
+          clase: "tarea-indicador-rojo",
+          texto: "Interrumpida",
+          detalles:
+            interrumpidas,
+        };
+      }
+
+      return {
+        tipo: "fluida",
+        clase: "tarea-indicador-verde",
+        texto: "Fluyó sin interrupciones",
+        detalles: [],
+      };
+    };
+
+  // =========================================================
+  // DÍAS CON MAYOR INTERFERENCIA
+  // =========================================================
+
+  const diasMayorInterferencia =
+    useMemo(() => {
+      const mapa = {};
+
+      interferencias.forEach(
+        (item) => {
+          if (!mapa[item.fecha]) {
+            mapa[item.fecha] = {
+              fecha: item.fecha,
+              cantidad: 0,
+              minutos: 0,
+            };
+          }
+
+          mapa[item.fecha]
+            .cantidad += 1;
+
+          mapa[item.fecha]
+            .minutos +=
+            item.duracion;
+        },
+      );
+
+      return Object.values(
+        mapa,
+      ).sort((a, b) => {
+        if (
+          b.cantidad !==
+          a.cantidad
+        ) {
+          return (
+            b.cantidad -
+            a.cantidad
+          );
+        }
+
+        return (
+          b.minutos -
+          a.minutos
+        );
+      });
+    }, [interferencias]);
+
+  // =========================================================
+  // MÉTRICAS
   // =========================================================
 
   const metricas = useMemo(() => {
@@ -960,7 +1475,8 @@ function Reportes() {
     const diasCargaAlta =
       cargaDiaria.filter(
         (dia) =>
-          dia.nivel === "alta",
+          dia.nivel ===
+          "alta",
       ).length;
 
     const diasSobrecargados =
@@ -992,10 +1508,19 @@ function Reportes() {
       diasSobrecargados,
       tareasPrioritarias:
         tareasPrioritarias.length,
+      urgentes:
+        tareasUrgentes.length,
+      interferencias:
+        interferencias.length,
+      diasMayorInterferencia:
+        diasMayorInterferencia.length,
     };
   }, [
     tareasPeriodo,
     cargaDiaria,
+    tareasUrgentes,
+    interferencias,
+    diasMayorInterferencia,
   ]);
 
   // =========================================================
@@ -1006,8 +1531,7 @@ function Reportes() {
     return [...cargaDiaria]
       .filter(
         (dia) =>
-          dia.nivel ===
-            "alta" ||
+          dia.nivel === "alta" ||
           dia.nivel ===
             "sobrecargado",
       )
@@ -1019,7 +1543,7 @@ function Reportes() {
   }, [cargaDiaria]);
 
   // =========================================================
-  // PRIORIDADES
+  // ACTIVIDADES PRIORITARIAS
   // =========================================================
 
   const actividadesPrioritarias =
@@ -1049,28 +1573,51 @@ function Reportes() {
             fechaA - fechaB
           );
         });
-    }, [
-      tareasPeriodo,
-    ]);
+    }, [tareasPeriodo]);
 
   // =========================================================
   // PAGINACIÓN
   // =========================================================
+
+  const actividadesVisibles =
+    useMemo(() => {
+      const inicio =
+        (paginaActividades -
+          1) *
+        ELEMENTOS_POR_PAGINA;
+
+      return tareasPeriodo.slice(
+        inicio,
+        inicio +
+          ELEMENTOS_POR_PAGINA,
+      );
+    }, [
+      tareasPeriodo,
+      paginaActividades,
+    ]);
+
+  const personasVisibles =
+    useMemo(() => {
+      const inicio =
+        (paginaPersonas -
+          1) *
+        ELEMENTOS_POR_PAGINA;
+
+      return rendimientoPersonas.slice(
+        inicio,
+        inicio +
+          ELEMENTOS_POR_PAGINA,
+      );
+    }, [
+      rendimientoPersonas,
+      paginaPersonas,
+    ]);
 
   const totalPaginasActividades =
     Math.max(
       1,
       Math.ceil(
         tareasPeriodo.length /
-          ELEMENTOS_POR_PAGINA,
-      ),
-    );
-
-  const totalPaginasDepartamentos =
-    Math.max(
-      1,
-      Math.ceil(
-        rendimientoDepartamentos.length /
           ELEMENTOS_POR_PAGINA,
       ),
     );
@@ -1084,77 +1631,40 @@ function Reportes() {
       ),
     );
 
-  const totalPaginasDiasCriticos =
-    Math.max(
-      1,
-      Math.ceil(
-        diasCriticos.length /
-          ELEMENTOS_POR_PAGINA,
-      ),
-    );
-
-  const totalPaginasPrioridades =
-    Math.max(
-      1,
-      Math.ceil(
-        actividadesPrioritarias.length /
-          ELEMENTOS_POR_PAGINA,
-      ),
-    );
-
-  const actividadesPaginadas =
-    tareasPeriodo.slice(
-      (paginaActividades - 1) *
-        ELEMENTOS_POR_PAGINA,
-      paginaActividades *
-        ELEMENTOS_POR_PAGINA,
-    );
-
-  const departamentosPaginados =
-    rendimientoDepartamentos.slice(
-      (paginaDepartamentos - 1) *
-        ELEMENTOS_POR_PAGINA,
-      paginaDepartamentos *
-        ELEMENTOS_POR_PAGINA,
-    );
-
-  const personasPaginadas =
-    rendimientoPersonas.slice(
-      (paginaPersonas - 1) *
-        ELEMENTOS_POR_PAGINA,
-      paginaPersonas *
-        ELEMENTOS_POR_PAGINA,
-    );
-
-  const diasCriticosPaginados =
-    diasCriticos.slice(
-      (paginaDiasCriticos - 1) *
-        ELEMENTOS_POR_PAGINA,
-      paginaDiasCriticos *
-        ELEMENTOS_POR_PAGINA,
-    );
-
-  const prioridadesPaginadas =
-    actividadesPrioritarias.slice(
-      (paginaPrioridades - 1) *
-        ELEMENTOS_POR_PAGINA,
-      paginaPrioridades *
-        ELEMENTOS_POR_PAGINA,
-    );
-
-  // =========================================================
-  // REINICIAR PAGINACIÓN
-  // =========================================================
-
   useEffect(() => {
     setPaginaActividades(1);
-    setPaginaDepartamentos(1);
     setPaginaPersonas(1);
-    setPaginaDiasCriticos(1);
-    setPaginaPrioridades(1);
   }, [
     fechaDesde,
     fechaHasta,
+  ]);
+
+  useEffect(() => {
+    if (
+      paginaActividades >
+      totalPaginasActividades
+    ) {
+      setPaginaActividades(
+        totalPaginasActividades,
+      );
+    }
+  }, [
+    paginaActividades,
+    totalPaginasActividades,
+  ]);
+
+  useEffect(() => {
+    if (
+      paginaPersonas >
+      totalPaginasPersonas
+    ) {
+      setPaginaPersonas(
+        totalPaginasPersonas,
+      );
+    }
+  }, [
+    paginaPersonas,
+    totalPaginasPersonas,
   ]);
 
   // =========================================================
@@ -1219,57 +1729,42 @@ function Reportes() {
   };
 
   // =========================================================
-  // DETALLE PERSONA
+  // FORMATO
   // =========================================================
 
-  const abrirDetallePersona = (
-    persona,
+  const formatearMinutos = (
+    minutos,
   ) => {
-    setPersonaSeleccionada(
-      persona,
+    const valor = Math.max(
+      0,
+      Math.round(
+        Number(minutos) || 0,
+      ),
     );
 
-    setPaginaModalActividades(1);
-    setPaginaModalJornadas(1);
-  };
+    const horas = Math.floor(
+      valor / 60,
+    );
 
-  const cerrarDetallePersona = () => {
-    setPersonaSeleccionada(null);
-  };
+    const minutosRestantes =
+      valor % 60;
 
-  const obtenerDetallePersona = (
-    persona,
-  ) => {
-    if (!persona) {
-      return null;
+    if (horas === 0) {
+      return `${minutosRestantes} min`;
     }
 
-    const jornadas =
-      [...(persona.jornadas || [])]
-        .sort((a, b) =>
-          a.fecha.localeCompare(
-            b.fecha,
-          ),
-        );
+    if (
+      minutosRestantes ===
+      0
+    ) {
+      return `${horas} h`;
+    }
 
-    return {
-      ...persona,
-      jornadas,
-      jornadasSobrecargadas:
-        jornadas.filter(
-          (jornada) =>
-            jornada.nivel ===
-            "sobrecargado",
-        ),
-    };
+    return `${horas} h ${minutosRestantes} min`;
   };
 
   // =========================================================
   // PDF
-  //
-  // IMPORTANTE:
-  // El PDF solamente se genera y descarga.
-  // NO se muestra en pantalla.
   // =========================================================
 
   const descargarPDF = () => {
@@ -1279,41 +1774,28 @@ function Reportes() {
       format: "a4",
     });
 
-    const azul = [
-      7,
-      74,
-      123,
-    ];
-
+    const azul = [7, 74, 123];
     const azulOscuro = [
-      23,
-      32,
-      51,
+      23, 32, 51,
     ];
-
     const gris = [
-      100,
-      110,
-      125,
+      100, 110, 125,
     ];
-
-    const grisClaro = [
-      245,
-      247,
-      249,
+    const rojo = [
+      185, 45, 45,
     ];
-
+    const verde = [
+      40, 125, 78,
+    ];
     const blanco = [
-      255,
-      255,
-      255,
+      255, 255, 255,
     ];
 
-    let y = 20;
+    let y = 18;
 
     const nuevaPagina = () => {
       doc.addPage();
-      y = 20;
+      y = 18;
     };
 
     const encabezadoSeccion = (
@@ -1329,7 +1811,7 @@ function Reportes() {
         "bold",
       );
 
-      doc.setFontSize(15);
+      doc.setFontSize(14);
 
       doc.setTextColor(
         ...azulOscuro,
@@ -1341,7 +1823,7 @@ function Reportes() {
         y,
       );
 
-      y += 7;
+      y += 6;
 
       if (subtitulo) {
         doc.setFont(
@@ -1358,7 +1840,7 @@ function Reportes() {
         const lineas =
           doc.splitTextToSize(
             subtitulo,
-            265,
+            260,
           );
 
         doc.text(
@@ -1368,8 +1850,9 @@ function Reportes() {
         );
 
         y +=
-          lineas.length * 4 +
-          4;
+          lineas.length *
+            4 +
+          3;
       }
     };
 
@@ -1397,7 +1880,7 @@ function Reportes() {
     doc.setFontSize(23);
 
     doc.setTextColor(
-      ...azulOscuro,
+      ...azul,
     );
 
     doc.text(
@@ -1439,7 +1922,7 @@ function Reportes() {
       y,
     );
 
-    y += 14;
+    y += 13;
 
     doc.setFont(
       "helvetica",
@@ -1458,16 +1941,7 @@ function Reportes() {
       y,
     );
 
-    y += 8;
-
-    const porcentajeCompletadas =
-      metricas.total > 0
-        ? (
-            (metricas.completadas /
-              metricas.total) *
-            100
-          ).toFixed(1)
-        : "0.0";
+    y += 7;
 
     const departamentoPrincipal =
       rendimientoDepartamentos[0];
@@ -1478,34 +1952,38 @@ function Reportes() {
     let resumen =
       `Durante el período analizado se registraron ${metricas.total} actividades, ` +
       `distribuidas entre ${metricas.personas} personas y ${metricas.departamentos} departamentos. ` +
-      `La carga planificada acumulada corresponde a ${formatearMinutos(
+      `La carga planificada corresponde a ${formatearMinutos(
         metricas.tiempo,
       )}. `;
 
-    if (departamentoPrincipal) {
+    if (
+      departamentoPrincipal
+    ) {
       resumen +=
-        `El departamento con mayor volumen de trabajo fue ${departamentoPrincipal.nombre}, ` +
-        `con ${departamentoPrincipal.total} actividades, equivalentes al ${departamentoPrincipal.porcentaje.toFixed(
-          1,
-        )}% del total. `;
+        `El departamento con mayor volumen fue ${departamentoPrincipal.nombre}, ` +
+        `con ${departamentoPrincipal.total} actividades. `;
     }
 
-    if (personaMayorCarga) {
+    if (
+      personaMayorCarga
+    ) {
       resumen +=
         `La persona con mayor carga acumulada fue ${personaMayorCarga.nombre}, ` +
         `con ${formatearMinutos(
           personaMayorCarga.tiempo,
-        )} de planificación. `;
+        )}. `;
     }
 
     resumen +=
-      `Se identificaron ${metricas.diasCargaAlta} jornadas con carga alta y ` +
-      `${metricas.diasSobrecargados} jornadas con sobrecarga.`;
+      `Se identificaron ${metricas.diasCargaAlta} jornadas con carga alta, ` +
+      `${metricas.diasSobrecargados} jornadas con sobrecarga, ` +
+      `${metricas.urgentes} solicitudes urgentes y ` +
+      `${metricas.interferencias} interferencias.`;
 
     const lineasResumen =
       doc.splitTextToSize(
         resumen,
-        265,
+        260,
       );
 
     doc.setFont(
@@ -1557,7 +2035,7 @@ function Reportes() {
           ),
           metricas.personas,
           metricas.departamentos,
-          `${metricas.completadas} (${porcentajeCompletadas}%)`,
+          metricas.completadas,
           metricas.enProceso,
           metricas.pendientes,
         ],
@@ -1569,28 +2047,26 @@ function Reportes() {
         fillColor: azul,
         textColor: blanco,
         fontStyle: "bold",
-        halign: "center",
       },
 
       styles: {
         fontSize: 8,
         cellPadding: 4,
-        textColor:
-          azulOscuro,
+        textColor: azulOscuro,
       },
     });
 
     y =
-      doc.lastAutoTable.finalY +
-      12;
+      doc.lastAutoTable
+        .finalY + 12;
 
     // =======================================================
-    // 1. ACTIVIDADES
+    // 1 ACTIVIDADES
     // =======================================================
 
     encabezadoSeccion(
-      "1. Actividades del período",
-      "Detalle de todas las actividades registradas, incluyendo responsable, departamento, fechas, horario, estado y origen del cálculo de carga.",
+      "1. Actividades y trazabilidad",
+      "El indicador identifica si cada actividad tuvo una interrupción registrada o si fluyó sin una interrupción identificada.",
     );
 
     autoTable(doc, {
@@ -1598,48 +2074,43 @@ function Reportes() {
 
       head: [
         [
+          "Indicador",
           "Actividad",
-          "Descripción",
-          "Responsable",
           "Departamento",
-          "Inicio",
-          "Fin",
-          "Carga",
-          "Origen cálculo",
+          "Responsable",
+          "Fecha",
+          "Tiempo",
           "Estado",
+          "Situación",
         ],
       ],
 
       body: tareasPeriodo.map(
         (tarea) => {
-          const fuente =
-            obtenerFuenteCalculo(
+          const estado =
+            obtenerEstadoInterferencia(
               tarea,
             );
 
           return [
+            estado.tipo ===
+            "interrumpida"
+              ? "INTER"
+              : "FLUYE",
+
             tarea.titulo ||
               "Sin título",
-
-            tarea.descripcion ||
-              "Sin descripción registrada",
-
-            obtenerNombreUsuario(
-              tarea.responsable_id,
-            ),
 
             obtenerNombreDepartamento(
               tarea.departamento_id,
             ),
 
-            formatearFecha(
-              tarea.fecha_inicio ||
-                tarea.fecha,
+            obtenerNombreUsuario(
+              tarea.responsable_id,
             ),
 
             formatearFecha(
-              tarea.fecha_fin ||
-                tarea.fecha_inicio ||
+              tarea.fecha_inicio ||
                 tarea.fecha,
             ),
 
@@ -1649,11 +2120,11 @@ function Reportes() {
               ),
             ),
 
-            fuente.corto,
-
             obtenerTextoEstado(
               tarea.estado,
             ),
+
+            estado.texto,
           ];
         },
       ),
@@ -1669,51 +2140,153 @@ function Reportes() {
       styles: {
         fontSize: 7,
         cellPadding: 2.5,
-        textColor:
-          azulOscuro,
+        textColor: azulOscuro,
         overflow: "linebreak",
       },
 
-      columnStyles: {
-        0: {
-          cellWidth: 32,
-        },
-        1: {
-          cellWidth: 50,
-        },
-        2: {
-          cellWidth: 34,
-        },
-        3: {
-          cellWidth: 34,
-        },
-        4: {
-          cellWidth: 21,
-        },
-        5: {
-          cellWidth: 21,
-        },
-        6: {
-          cellWidth: 20,
-        },
-        7: {
-          cellWidth: 28,
-        },
-        8: {
-          cellWidth: 25,
-        },
+      didParseCell: (
+        data,
+      ) => {
+        if (
+          data.section ===
+            "body" &&
+          data.column.index ===
+            0
+        ) {
+          const valor =
+            data.cell.raw;
+
+          if (
+            valor ===
+            "INTER"
+          ) {
+            data.cell.styles.textColor =
+              rojo;
+
+            data.cell.styles.fontStyle =
+              "bold";
+          }
+
+          if (
+            valor ===
+            "FLUYE"
+          ) {
+            data.cell.styles.textColor =
+              verde;
+
+            data.cell.styles.fontStyle =
+              "bold";
+          }
+        }
       },
     });
 
+    y =
+      doc.lastAutoTable
+        .finalY + 10;
+
     // =======================================================
-    // 2. DEPARTAMENTOS
+    // 1.1 DETALLE DE INTERRUPCIONES
+    // =======================================================
+
+    encabezadoSeccion(
+      "1.1 Detalle de interrupciones",
+      "Cuando una actividad fue identificada como interrumpida se muestra qué actividad se cruzó con ella y quién aparece asociado como interventor o responsable de la actividad que generó el cruce.",
+    );
+
+    if (
+      interferencias.length ===
+      0
+    ) {
+      doc.setFontSize(9);
+      doc.setTextColor(
+        ...verde,
+      );
+
+      doc.text(
+        "No se registraron interrupciones durante el período.",
+        14,
+        y,
+      );
+
+      y += 10;
+    } else {
+      autoTable(doc, {
+        startY: y,
+
+        head: [
+          [
+            "Fecha",
+            "Tarea interrumpida",
+            "Actividad que generó el cruce",
+            "Responsable",
+            "Intervino / solicitó",
+            "Tiempo",
+            "Registro",
+          ],
+        ],
+
+        body:
+          interferencias.map(
+            (item) => [
+              formatearFecha(
+                item.fecha,
+              ),
+
+              item
+                .tareaInterrumpida
+                .titulo ||
+                "Sin título",
+
+              item
+                .tareaInterrumpe
+                .titulo ||
+                "Sin título",
+
+              obtenerNombreUsuario(
+                item
+                  .tareaInterrumpida
+                  .responsable_id,
+              ),
+
+              item.interventor,
+
+              formatearMinutos(
+                item.duracion,
+              ),
+
+              item.pausaRegistrada
+                ? "Interrupción registrada"
+                : "Cruce planificado",
+            ],
+          ),
+
+        theme: "grid",
+
+        headStyles: {
+          fillColor: azul,
+          textColor: blanco,
+          fontStyle: "bold",
+        },
+
+        styles: {
+          fontSize: 7,
+          cellPadding: 2.5,
+          textColor: azulOscuro,
+          overflow: "linebreak",
+        },
+      });
+    }
+
+    // =======================================================
+    // 2 DEPARTAMENTOS
     // =======================================================
 
     nuevaPagina();
 
     encabezadoSeccion(
       "2. Distribución por departamento",
-      "Identificación de los departamentos que concentran la demanda de trabajo.",
+      "Permite identificar qué departamentos concentran la demanda de trabajo.",
     );
 
     autoTable(doc, {
@@ -1724,7 +2297,7 @@ function Reportes() {
           "Departamento",
           "Actividades",
           "Participación",
-          "Tiempo registrado",
+          "Tiempo",
         ],
       ],
 
@@ -1753,22 +2326,19 @@ function Reportes() {
       styles: {
         fontSize: 9,
         cellPadding: 4,
-        textColor:
-          azulOscuro,
+        textColor: azulOscuro,
       },
     });
 
     // =======================================================
-    // 3. CARGA POR PERSONA
+    // 3 PERSONAS
     // =======================================================
 
-    y =
-      doc.lastAutoTable.finalY +
-      12;
+    nuevaPagina();
 
     encabezadoSeccion(
-      "3. Carga de trabajo por persona",
-      "La carga se analiza por jornada utilizando una capacidad de referencia de 8 horas diarias por persona.",
+      "3. Carga por persona",
+      "La carga se calcula por jornada utilizando una capacidad de 8 horas diarias.",
     );
 
     autoTable(doc, {
@@ -1777,10 +2347,9 @@ function Reportes() {
       head: [
         [
           "Responsable",
-          "Departamento",
           "Actividades",
           "Carga acumulada",
-          "Días trabajados",
+          "Días",
           "Normales",
           "Carga alta",
           "Sobrecarga",
@@ -1792,7 +2361,6 @@ function Reportes() {
         rendimientoPersonas.map(
           (persona) => [
             persona.nombre,
-            persona.departamento,
             persona.total,
             formatearMinutos(
               persona.tiempo,
@@ -1814,41 +2382,34 @@ function Reportes() {
       },
 
       styles: {
-        fontSize: 7.5,
+        fontSize: 8,
         cellPadding: 3,
-        textColor:
-          azulOscuro,
+        textColor: azulOscuro,
       },
     });
 
     // =======================================================
-    // 4. JORNADAS CRÍTICAS
+    // 4 JORNADAS CRÍTICAS
     // =======================================================
 
     nuevaPagina();
 
     encabezadoSeccion(
-      "4. Jornadas críticas",
-      "Días en los que la planificación alcanzó entre 6 y 8 horas o superó la capacidad diaria de 8 horas.",
+      "4. Jornadas con mayor carga",
+      "Jornadas con carga alta o con planificación superior a la capacidad diaria.",
     );
 
     if (
       diasCriticos.length ===
       0
     ) {
-      doc.setFont(
-        "helvetica",
-        "normal",
-      );
-
-      doc.setFontSize(10);
-
+      doc.setFontSize(9);
       doc.setTextColor(
         ...gris,
       );
 
       doc.text(
-        "No se identificaron jornadas críticas durante el período.",
+        "No se identificaron jornadas críticas.",
         14,
         y,
       );
@@ -1860,7 +2421,6 @@ function Reportes() {
           [
             "Fecha",
             "Responsable",
-            "Departamento",
             "Actividades",
             "Carga",
             "Capacidad",
@@ -1869,35 +2429,34 @@ function Reportes() {
           ],
         ],
 
-        body: diasCriticos.map(
-          (dia) => [
-            formatearFecha(
-              dia.fecha,
-            ),
+        body:
+          diasCriticos.map(
+            (dia) => [
+              formatearFecha(
+                dia.fecha,
+              ),
 
-            dia.nombre,
+              dia.nombre,
 
-            dia.departamento,
+              dia.cantidadTareas,
 
-            dia.cantidadTareas,
+              formatearMinutos(
+                dia.minutos,
+              ),
 
-            formatearMinutos(
-              dia.minutos,
-            ),
+              "8 h",
 
-            "8 h",
+              dia.exceso > 0
+                ? formatearMinutos(
+                    dia.exceso,
+                  )
+                : "0 min",
 
-            dia.exceso > 0
-              ? formatearMinutos(
-                  dia.exceso,
-                )
-              : "0 min",
-
-            obtenerTextoCarga(
-              dia.nivel,
-            ),
-          ],
-        ),
+              obtenerTextoCarga(
+                dia.nivel,
+              ),
+            ],
+          ),
 
         theme: "grid",
 
@@ -1910,40 +2469,33 @@ function Reportes() {
         styles: {
           fontSize: 8,
           cellPadding: 3,
-          textColor:
-            azulOscuro,
+          textColor: azulOscuro,
         },
       });
     }
 
     // =======================================================
-    // 5. PRIORIDADES
+    // 5 URGENCIAS
     // =======================================================
 
     nuevaPagina();
 
     encabezadoSeccion(
-      "5. Actividades que requieren atención",
-      "Actividades de prioridad alta que todavía no han sido completadas.",
+      "5. Solicitudes urgentes y de última hora",
+      "La urgencia se determina comparando el momento de creación con el inicio planificado de la actividad.",
     );
 
     if (
-      actividadesPrioritarias.length ===
+      tareasUrgentes.length ===
       0
     ) {
-      doc.setFont(
-        "helvetica",
-        "normal",
-      );
-
-      doc.setFontSize(10);
-
+      doc.setFontSize(9);
       doc.setTextColor(
-        ...gris,
+        ...verde,
       );
 
       doc.text(
-        "No existen actividades de prioridad alta pendientes de seguimiento.",
+        "No se identificaron solicitudes urgentes durante el período.",
         14,
         y,
       );
@@ -1953,36 +2505,43 @@ function Reportes() {
 
         head: [
           [
-            "Actividad",
-            "Responsable",
-            "Departamento",
             "Fecha",
-            "Prioridad",
+            "Actividad",
+            "Departamento",
+            "Responsable",
+            "Tiempo",
+            "Urgencia",
             "Estado",
           ],
         ],
 
         body:
-          actividadesPrioritarias.map(
+          tareasUrgentes.map(
             (tarea) => [
-              tarea.titulo ||
-                "Sin título",
-
-              obtenerNombreUsuario(
-                tarea.responsable_id,
-              ),
-
-              obtenerNombreDepartamento(
-                tarea.departamento_id,
-              ),
-
               formatearFecha(
                 tarea.fecha_inicio ||
                   tarea.fecha,
               ),
 
-              obtenerTextoPrioridad(
-                tarea.prioridad,
+              tarea.titulo ||
+                "Sin título",
+
+              obtenerNombreDepartamento(
+                tarea.departamento_id,
+              ),
+
+              obtenerNombreUsuario(
+                tarea.responsable_id,
+              ),
+
+              formatearMinutos(
+                obtenerMinutosPlanificados(
+                  tarea,
+                ),
+              ),
+
+              obtenerNivelUrgencia(
+                tarea,
               ),
 
               obtenerTextoEstado(
@@ -2002,21 +2561,88 @@ function Reportes() {
         styles: {
           fontSize: 8,
           cellPadding: 3,
-          textColor:
-            azulOscuro,
+          textColor: azulOscuro,
         },
       });
     }
 
     // =======================================================
-    // 6. ESTADO
+    // 6 TRAZABILIDAD
     // =======================================================
 
     nuevaPagina();
 
     encabezadoSeccion(
-      "6. Estado general del trabajo",
-      "Distribución de las actividades según su estado actual.",
+      "6. Trazabilidad de interferencias",
+      "Fechas que concentraron mayor cantidad de cruces entre actividades.",
+    );
+
+    if (
+      diasMayorInterferencia.length ===
+      0
+    ) {
+      doc.setFontSize(9);
+      doc.setTextColor(
+        ...verde,
+      );
+
+      doc.text(
+        "No existen días con interferencias registradas.",
+        14,
+        y,
+      );
+    } else {
+      autoTable(doc, {
+        startY: y,
+
+        head: [
+          [
+            "Fecha",
+            "Interferencias",
+            "Tiempo acumulado",
+          ],
+        ],
+
+        body:
+          diasMayorInterferencia.map(
+            (dia) => [
+              formatearFecha(
+                dia.fecha,
+              ),
+
+              dia.cantidad,
+
+              formatearMinutos(
+                dia.minutos,
+              ),
+            ],
+          ),
+
+        theme: "grid",
+
+        headStyles: {
+          fillColor: azul,
+          textColor: blanco,
+          fontStyle: "bold",
+        },
+
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          textColor: azulOscuro,
+        },
+      });
+    }
+
+    // =======================================================
+    // 7 LEYENDA
+    // =======================================================
+
+    nuevaPagina();
+
+    encabezadoSeccion(
+      "7. Indicadores de flujo de trabajo",
+      "Los indicadores permiten identificar rápidamente el comportamiento de cada actividad dentro del período analizado.",
     );
 
     autoTable(doc, {
@@ -2024,47 +2650,19 @@ function Reportes() {
 
       head: [
         [
-          "Estado",
-          "Cantidad",
-          "Participación",
+          "Indicador",
+          "Significado",
         ],
       ],
 
       body: [
         [
-          "Completadas",
-          metricas.completadas,
-          metricas.total > 0
-            ? `${(
-                (metricas.completadas /
-                  metricas.total) *
-                100
-              ).toFixed(1)}%`
-            : "0%",
+          "ROJO",
+          "La actividad fue identificada como interrumpida por un cruce con otra actividad del mismo responsable.",
         ],
-
         [
-          "En proceso",
-          metricas.enProceso,
-          metricas.total > 0
-            ? `${(
-                (metricas.enProceso /
-                  metricas.total) *
-                100
-              ).toFixed(1)}%`
-            : "0%",
-        ],
-
-        [
-          "Pendientes",
-          metricas.pendientes,
-          metricas.total > 0
-            ? `${(
-                (metricas.pendientes /
-                  metricas.total) *
-                100
-              ).toFixed(1)}%`
-            : "0%",
+          "VERDE",
+          "No se identificó una interrupción para la actividad dentro de la información disponible.",
         ],
       ],
 
@@ -2079,103 +2677,110 @@ function Reportes() {
       styles: {
         fontSize: 9,
         cellPadding: 4,
-        textColor:
-          azulOscuro,
+        textColor: azulOscuro,
+      },
+
+      didParseCell: (
+        data,
+      ) => {
+        if (
+          data.section ===
+            "body" &&
+          data.column.index ===
+            0
+        ) {
+          if (
+            data.cell.raw ===
+            "ROJO"
+          ) {
+            data.cell.styles.textColor =
+              rojo;
+
+            data.cell.styles.fontStyle =
+              "bold";
+          }
+
+          if (
+            data.cell.raw ===
+            "VERDE"
+          ) {
+            data.cell.styles.textColor =
+              verde;
+
+            data.cell.styles.fontStyle =
+              "bold";
+          }
+        }
       },
     });
 
-    // =======================================================
-    // 7. METODOLOGÍA
-    // =======================================================
+    y =
+      doc.lastAutoTable
+        .finalY + 12;
 
-    nuevaPagina();
-
-    encabezadoSeccion(
-      "7. Metodología de cálculo",
-      "Criterios utilizados para determinar la carga planificada y la capacidad diaria.",
+    doc.setFont(
+      "helvetica",
+      "normal",
     );
 
-    const metodologia = [
-      [
-        "Capacidad diaria",
-        "8 horas por persona, equivalentes a 480 minutos.",
-      ],
-      [
-        "Actividades de varios días",
-        "Ocupan una jornada completa de 8 horas en cada día del rango.",
-      ],
-      [
-        "Actividad de un solo día con horario",
-        "Se utiliza la duración comprendida entre hora de inicio y hora de fin.",
-      ],
-      [
-        "Sin horario válido",
-        "Se utiliza el tiempo estimado registrado en la actividad.",
-      ],
-      [
-        "Sin información válida",
-        "Se considera una jornada completa de 8 horas.",
-      ],
-      [
-        "Carga normal",
-        "Menos de 6 horas.",
-      ],
-      [
-        "Carga alta",
-        "Desde 6 horas hasta 8 horas.",
-      ],
-      [
-        "Sobrecarga",
-        "Más de 8 horas en una misma jornada.",
-      ],
-    ];
+    doc.setFontSize(9);
 
-    autoTable(doc, {
-      startY: y,
+    doc.setTextColor(
+      ...azulOscuro,
+    );
 
-      head: [
-        [
-          "Criterio",
-          "Regla aplicada",
-        ],
-      ],
+    const metodologia =
+      `Fuente de los datos: información registrada en las tablas de tareas, usuarios y departamentos del sistema, complementada con los registros temporales de pausas almacenados para las actividades. ` +
+      `La capacidad diaria utilizada es de 480 minutos, equivalentes a 8 horas. ` +
+      `Las tareas de varios días consideran 8 horas por cada día ocupado; las tareas de un día con horario válido utilizan la diferencia entre hora de inicio y hora de fin; ` +
+      `cuando no existe un horario válido se utiliza el tiempo estimado registrado y, si tampoco existe información válida, se considera una jornada de 8 horas. ` +
+      `Las interferencias se identifican comparando los intervalos de las actividades asignadas al mismo responsable.`;
 
-      body: metodologia,
+    const lineasMetodologia =
+      doc.splitTextToSize(
+        metodologia,
+        260,
+      );
 
-      theme: "grid",
-
-      headStyles: {
-        fillColor: azul,
-        textColor: blanco,
-        fontStyle: "bold",
-      },
-
-      styles: {
-        fontSize: 9,
-        cellPadding: 4,
-        textColor:
-          azulOscuro,
-      },
-
-      columnStyles: {
-        0: {
-          cellWidth: 70,
-        },
-        1: {
-          cellWidth: 190,
-        },
-      },
-    });
+    doc.text(
+      lineasMetodologia,
+      14,
+      y,
+    );
 
     // =======================================================
-    // 8. CONCLUSIÓN
+    // 8 CONCLUSIÓN
     // =======================================================
 
     nuevaPagina();
 
-    encabezadoSeccion(
+    doc.setFillColor(
+      ...azul,
+    );
+
+    doc.rect(
+      0,
+      0,
+      297,
+      8,
+      "F",
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold",
+    );
+
+    doc.setFontSize(18);
+
+    doc.setTextColor(
+      ...azul,
+    );
+
+    doc.text(
       "8. Conclusión ejecutiva",
-      "Síntesis general del comportamiento de la carga durante el período.",
+      14,
+      22,
     );
 
     let conclusion =
@@ -2183,41 +2788,25 @@ function Reportes() {
         fechaDesde,
       )} y ${formatearFecha(
         fechaHasta,
-      )}, el equipo registró ${metricas.total} actividades, ` +
-      `distribuidas entre ${metricas.personas} personas y ${metricas.departamentos} departamentos. ` +
-      `La carga planificada corresponde a ${formatearMinutos(
+      )}, se registraron ${metricas.total} actividades. ` +
+      `La carga planificada fue de ${formatearMinutos(
         metricas.tiempo,
-      )}. `;
+      )}. ` +
+      `Se identificaron ${metricas.urgentes} solicitudes urgentes y ${metricas.interferencias} interferencias. `;
 
     if (
-      departamentoPrincipal
-    ) {
-      conclusion +=
-        `El departamento con mayor volumen fue ${departamentoPrincipal.nombre}, ` +
-        `con ${departamentoPrincipal.total} actividades. `;
-    }
-
-    if (
-      personaMayorCarga
-    ) {
-      conclusion +=
-        `La persona con mayor carga acumulada fue ${personaMayorCarga.nombre}, ` +
-        `con ${formatearMinutos(
-          personaMayorCarga.tiempo,
-        )}. `;
-    }
-
-    conclusion +=
-      `Se identificaron ${metricas.diasCargaAlta} jornadas con carga alta y ` +
-      `${metricas.diasSobrecargados} jornadas con sobrecarga. `;
-
-    if (
-      metricas.tareasPrioritarias >
+      metricas.interferencias >
       0
     ) {
       conclusion +=
-        `Además, existen ${metricas.tareasPrioritarias} actividades de prioridad alta que requieren seguimiento.`;
+        `Las actividades marcadas en rojo corresponden a trabajos que presentaron una interrupción identificable, mientras que las actividades marcadas en verde no presentan una interrupción registrada dentro de la información analizada. `;
+    } else {
+      conclusion +=
+        `No se identificaron interrupciones durante el período analizado. `;
     }
+
+    conclusion +=
+      `La información permite revisar distribución de trabajo, capacidad operativa, prioridades y trazabilidad de las gestiones.`;
 
     doc.setFont(
       "helvetica",
@@ -2230,20 +2819,17 @@ function Reportes() {
       ...azulOscuro,
     );
 
-    const lineasConclusion =
+    doc.text(
       doc.splitTextToSize(
         conclusion,
-        265,
-      );
-
-    doc.text(
-      lineasConclusion,
+        260,
+      ),
       14,
-      y,
+      34,
     );
 
     // =======================================================
-    // PIE DE PÁGINA
+    // PIE
     // =======================================================
 
     const paginas =
@@ -2337,9 +2923,11 @@ function Reportes() {
   return (
     <section className="reportes-page">
 
-      {/* HEADER */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
-      <div className="reportes-header">
+      <header className="reportes-header">
         <div>
           <span className="reportes-eyebrow">
             ANÁLISIS DE GESTIÓN
@@ -2359,7 +2947,6 @@ function Reportes() {
         </div>
 
         <div className="reportes-header-acciones">
-
           <button
             type="button"
             className="reportes-btn reportes-btn-secundario"
@@ -2370,23 +2957,19 @@ function Reportes() {
 
           <button
             type="button"
-            className="reportes-btn reportes-btn-pdf"
+            className="reportes-btn reportes-btn-principal"
             onClick={descargarPDF}
           >
-            <span className="reportes-pdf-icon">
-              PDF
-            </span>
-
             Descargar informe PDF
           </button>
-
         </div>
-      </div>
+      </header>
 
-      {/* FILTROS */}
+      {/* =====================================================
+          FILTROS
+      ===================================================== */}
 
-      <div className="reportes-filtros">
-
+      <section className="reportes-filtros">
         <div className="reporte-filtro">
           <label htmlFor="fechaDesde">
             Fecha desde
@@ -2446,114 +3029,25 @@ function Reportes() {
             {metricas.total}
           </strong>
         </div>
+      </section>
 
-      </div>
+      {/* =====================================================
+          BENTO SUPERIOR
+      ===================================================== */}
 
-      {/* KPIs */}
+      <section className="reportes-bento-superior">
 
-      <div className="reportes-resumen">
-
-        <article className="reporte-metrica">
-          <span>
-            Actividades
+        <article className="bento-card bento-card-principal">
+          <span className="bento-label">
+            RESUMEN DEL PERÍODO
           </span>
 
-          <strong>
-            {metricas.total}
-          </strong>
-
-          <small>
-            Trabajo registrado
-          </small>
-        </article>
-
-        <article className="reporte-metrica">
-          <span>
-            Carga planificada
-          </span>
-
-          <strong>
-            {formatearMinutos(
-              metricas.tiempo,
-            )}
-          </strong>
-
-          <small>
-            Calculada por jornada
-          </small>
-        </article>
-
-        <article className="reporte-metrica">
-          <span>
-            Personas
-          </span>
-
-          <strong>
-            {metricas.personas}
-          </strong>
-
-          <small>
-            Integrantes con actividades
-          </small>
-        </article>
-
-        <article className="reporte-metrica">
-          <span>
-            Departamentos
-          </span>
-
-          <strong>
-            {metricas.departamentos}
-          </strong>
-
-          <small>
-            Áreas atendidas
-          </small>
-        </article>
-
-        <article className="reporte-metrica reporte-metrica-alerta">
-          <span>
-            Sobrecarga
-          </span>
-
-          <strong>
-            {metricas.diasSobrecargados}
-          </strong>
-
-          <small>
-            Jornadas detectadas
-          </small>
-        </article>
-
-      </div>
-
-      {/* RESUMEN EJECUTIVO */}
-
-      <section className="reporte-card reporte-resumen-ejecutivo">
-
-        <div className="reporte-card-header">
-          <div>
-            <span className="reportes-eyebrow">
-              RESUMEN EJECUTIVO
-            </span>
-
-            <h2>
-              ¿Qué está pasando con el trabajo?
-            </h2>
-
-            <p>
-              Una lectura general del período
-              para facilitar la toma de
-              decisiones.
-            </p>
-          </div>
-        </div>
-
-        <div className="reporte-resumen-texto">
+          <h2>
+            ¿Qué ocurrió con el trabajo?
+          </h2>
 
           <p>
-            Durante el período analizado se
-            registraron{" "}
+            El período registra{" "}
             <strong>
               {metricas.total}
             </strong>{" "}
@@ -2567,1743 +3061,1884 @@ function Reportes() {
             .
           </p>
 
-          {rendimientoDepartamentos[0] && (
-            <p>
-              El departamento con mayor
-              volumen de trabajo es{" "}
+          <div className="bento-principal-metricas">
+            <div>
+              <span>
+                Personas
+              </span>
+
               <strong>
-                {
-                  rendimientoDepartamentos[0]
-                    .nombre
-                }
+                {metricas.personas}
               </strong>
-              , con{" "}
-              <strong>
-                {
-                  rendimientoDepartamentos[0]
-                    .total
-                }
-              </strong>{" "}
-              actividades.
-            </p>
-          )}
+            </div>
 
-          {rendimientoPersonas[0] && (
-            <p>
-              La persona con mayor carga
-              acumulada es{" "}
+            <div>
+              <span>
+                Departamentos
+              </span>
+
               <strong>
-                {
-                  rendimientoPersonas[0]
-                    .nombre
-                }
+                {metricas.departamentos}
               </strong>
-              , con{" "}
+            </div>
+
+            <div>
+              <span>
+                Completadas
+              </span>
+
               <strong>
-                {formatearMinutos(
-                  rendimientoPersonas[0]
-                    .tiempo,
-                )}
-              </strong>{" "}
-              de planificación acumulada.
-            </p>
-          )}
+                {metricas.completadas}
+              </strong>
+            </div>
+          </div>
+        </article>
 
-          <p>
-            Se identificaron{" "}
-            <strong>
-              {metricas.diasCargaAlta}
-            </strong>{" "}
-            jornadas con carga alta y{" "}
-            <strong>
-              {metricas.diasSobrecargados}
-            </strong>{" "}
-            jornadas en las que se superó la
-            capacidad diaria de{" "}
-            <strong>
-              8 horas
-            </strong>
-            .
-          </p>
+        <article className="bento-card">
+          <span className="bento-label">
+            CAPACIDAD
+          </span>
 
-        </div>
-      </section>
+          <strong className="bento-number">
+            {formatearMinutos(
+              metricas.tiempo,
+            )}
+          </strong>
 
-      {/* ACTIVIDADES */}
+          <span className="bento-muted">
+            Carga planificada
+          </span>
 
-      <section className="reporte-card">
-
-        <div className="reporte-card-header">
-
-          <div>
-            <span className="reportes-eyebrow">
-              ACTIVIDADES
+          <div className="bento-mini-line">
+            <span>
+              8 h
             </span>
 
-            <h2>
-              Todas las actividades
-            </h2>
+            <span>
+              Capacidad diaria
+            </span>
+          </div>
+        </article>
 
-            <p>
-              Aquí se muestran las actividades
-              del período. Se presentan 10
-              registros por página para mantener
-              la pantalla organizada.
-            </p>
+        <article className="bento-card">
+          <span className="bento-label">
+            URGENCIAS
+          </span>
+
+          <strong className="bento-number">
+            {metricas.urgentes}
+          </strong>
+
+          <span className="bento-muted">
+            Solicitudes urgentes
+          </span>
+
+          <div className="bento-mini-line">
+            <span>
+              {tareasUrgentes.filter(
+                (tarea) =>
+                  obtenerNivelUrgencia(
+                    tarea,
+                  ) ===
+                  "Última hora",
+              ).length}
+            </span>
+
+            <span>
+              Última hora
+            </span>
+          </div>
+        </article>
+
+        <article className="bento-card bento-card-interferencias">
+          <div className="bento-card-top">
+            <span className="bento-label">
+              INTERFERENCIAS
+            </span>
+
+            <span
+              className={
+                interferencias.length >
+                0
+                  ? "bento-status bento-status-red"
+                  : "bento-status bento-status-green"
+              }
+            />
           </div>
 
-        </div>
+          <strong className="bento-number">
+            {metricas.interferencias}
+          </strong>
 
-        {tareasPeriodo.length === 0 ? (
-          <div className="reporte-vacio">
-            <strong>
-              No existen actividades
-              para el período seleccionado.
-            </strong>
+          <span className="bento-muted">
+            Cruces identificados
+          </span>
+
+          <div className="bento-mini-line">
+            <span>
+              {diasMayorInterferencia.length}
+            </span>
+
+            <span>
+              días afectados
+            </span>
           </div>
-        ) : (
-          <>
-            <div className="tabla-contenedor">
+        </article>
 
-              <table className="reporte-tabla">
+      </section>
 
-                <thead>
-                  <tr>
-                    <th>
-                      Actividad
-                    </th>
+      {/* =====================================================
+          NAVEGACIÓN
+      ===================================================== */}
 
-                    <th>
-                      Descripción
-                    </th>
+      <nav className="reportes-pestanas">
+        <button
+          type="button"
+          className={`reportes-pestana ${
+            pestanaActiva ===
+            "resumen"
+              ? "activa"
+              : ""
+          }`}
+          onClick={() =>
+            setPestanaActiva(
+              "resumen",
+            )
+          }
+        >
+          Resumen
+        </button>
 
-                    <th>
-                      Responsable
-                    </th>
+        <button
+          type="button"
+          className={`reportes-pestana ${
+            pestanaActiva ===
+            "actividades"
+              ? "activa"
+              : ""
+          }`}
+          onClick={() =>
+            setPestanaActiva(
+              "actividades",
+            )
+          }
+        >
+          Actividades
+        </button>
 
-                    <th>
-                      Departamento
-                    </th>
+        <button
+          type="button"
+          className={`reportes-pestana ${
+            pestanaActiva ===
+            "departamentos"
+              ? "activa"
+              : ""
+          }`}
+          onClick={() =>
+            setPestanaActiva(
+              "departamentos",
+            )
+          }
+        >
+          Departamentos
+        </button>
 
-                    <th>
-                      Fecha
-                    </th>
+        <button
+          type="button"
+          className={`reportes-pestana ${
+            pestanaActiva ===
+            "personas"
+              ? "activa"
+              : ""
+          }`}
+          onClick={() =>
+            setPestanaActiva(
+              "personas",
+            )
+          }
+        >
+          Carga por persona
+        </button>
 
-                    <th>
-                      Horario
-                    </th>
+        <button
+          type="button"
+          className={`reportes-pestana ${
+            pestanaActiva ===
+            "alertas"
+              ? "activa"
+              : ""
+          }`}
+          onClick={() =>
+            setPestanaActiva(
+              "alertas",
+            )
+          }
+        >
+          Alertas
+        </button>
 
-                    <th>
-                      Carga
-                    </th>
+        <button
+          type="button"
+          className={`reportes-pestana ${
+            pestanaActiva ===
+            "trazabilidad"
+              ? "activa"
+              : ""
+          }`}
+          onClick={() =>
+            setPestanaActiva(
+              "trazabilidad",
+            )
+          }
+        >
+          Trazabilidad
+        </button>
 
-                    <th>
-                      Origen
-                    </th>
+        <button
+          type="button"
+          className={`reportes-pestana ${
+            pestanaActiva ===
+            "prioridades"
+              ? "activa"
+              : ""
+          }`}
+          onClick={() =>
+            setPestanaActiva(
+              "prioridades",
+            )
+          }
+        >
+          Prioridades
+        </button>
 
-                    <th>
-                      Estado
-                    </th>
-                  </tr>
-                </thead>
+        <button
+          type="button"
+          className={`reportes-pestana ${
+            pestanaActiva ===
+            "estado"
+              ? "activa"
+              : ""
+          }`}
+          onClick={() =>
+            setPestanaActiva(
+              "estado",
+            )
+          }
+        >
+          Estado
+        </button>
+      </nav>
 
-                <tbody>
+      {/* =====================================================
+          RESUMEN
+      ===================================================== */}
 
-                  {actividadesPaginadas.map(
-                    (tarea) => {
-                      const fuente =
-                        obtenerFuenteCalculo(
+      {pestanaActiva ===
+        "resumen" && (
+        <div className="reportes-bento-contenido">
+
+          <article className="bento-section bento-section-grande">
+            <div className="bento-section-header">
+              <div>
+                <span className="reportes-eyebrow">
+                  RESUMEN EJECUTIVO
+                </span>
+
+                <h2>
+                  Lectura general del período
+                </h2>
+              </div>
+            </div>
+
+            <div className="resumen-ejecutivo-grid">
+
+              <div>
+                <span>
+                  Mayor demanda
+                </span>
+
+                <strong>
+                  {rendimientoDepartamentos[0]
+                    ?.nombre ||
+                    "Sin datos"}
+                </strong>
+
+                <small>
+                  {rendimientoDepartamentos[0]
+                    ? `${rendimientoDepartamentos[0].total} actividades`
+                    : ""}
+                </small>
+              </div>
+
+              <div>
+                <span>
+                  Mayor carga
+                </span>
+
+                <strong>
+                  {rendimientoPersonas[0]
+                    ?.nombre ||
+                    "Sin datos"}
+                </strong>
+
+                <small>
+                  {rendimientoPersonas[0]
+                    ? formatearMinutos(
+                        rendimientoPersonas[0]
+                          .tiempo,
+                      )
+                    : ""}
+                </small>
+              </div>
+
+              <div>
+                <span>
+                  Jornadas sobrecargadas
+                </span>
+
+                <strong>
+                  {
+                    metricas.diasSobrecargados
+                  }
+                </strong>
+
+                <small>
+                  Más de 8 horas
+                </small>
+              </div>
+
+            </div>
+          </article>
+
+          <article className="bento-section bento-section-interferencias">
+            <div className="bento-section-header">
+              <div>
+                <span className="reportes-eyebrow">
+                  FLUJO
+                </span>
+
+                <h2>
+                  Comportamiento de las tareas
+                </h2>
+              </div>
+            </div>
+
+            <div className="flujo-resumen">
+
+              <div className="flujo-item">
+                <span className="indicador-punto indicador-punto-verde" />
+
+                <div>
+                  <strong>
+                    Tareas que fluyeron
+                  </strong>
+
+                  <small>
+                    Sin interrupción identificada
+                  </small>
+                </div>
+
+                <strong>
+                  {
+                    tareasPeriodo.filter(
+                      (tarea) =>
+                        obtenerEstadoInterferencia(
                           tarea,
-                        );
+                        ).tipo ===
+                        "fluida",
+                    ).length
+                  }
+                </strong>
+              </div>
 
-                      return (
-                        <tr
-                          key={
-                            tarea.id
-                          }
-                        >
+              <div className="flujo-item">
+                <span className="indicador-punto indicador-punto-rojo" />
 
-                          <td>
-                            <strong>
-                              {tarea.titulo ||
-                                "Sin título"}
-                            </strong>
-                          </td>
+                <div>
+                  <strong>
+                    Tareas interrumpidas
+                  </strong>
 
-                          <td className="descripcion-celda">
-                            {tarea.descripcion ||
-                              "Sin descripción"}
-                          </td>
+                  <small>
+                    Presentaron un cruce identificado
+                  </small>
+                </div>
 
-                          <td>
-                            {obtenerNombreUsuario(
-                              tarea.responsable_id,
-                            )}
-                          </td>
-
-                          <td>
-                            {obtenerNombreDepartamento(
-                              tarea.departamento_id,
-                            )}
-                          </td>
-
-                          <td>
-                            {formatearFecha(
-                              tarea.fecha_inicio ||
-                                tarea.fecha,
-                            )}
-                          </td>
-
-                          <td>
-                            {tarea.hora_inicio &&
-                            tarea.hora_fin
-                              ? `${formatearHora(
-                                  tarea.hora_inicio,
-                                )} - ${formatearHora(
-                                  tarea.hora_fin,
-                                )}`
-                              : "Sin horario"}
-                          </td>
-
-                          <td>
-                            <strong>
-                              {formatearMinutos(
-                                obtenerMinutosPlanificados(
-                                  tarea,
-                                ),
-                              )}
-                            </strong>
-                          </td>
-
-                          <td>
-                            <span className="reporte-fuente">
-                              {fuente.corto}
-                            </span>
-                          </td>
-
-                          <td>
-                            <span className="estado">
-                              {obtenerTextoEstado(
-                                tarea.estado,
-                              )}
-                            </span>
-                          </td>
-
-                        </tr>
-                      );
-                    },
-                  )}
-
-                </tbody>
-
-              </table>
+                <strong>
+                  {
+                    tareasPeriodo.filter(
+                      (tarea) =>
+                        obtenerEstadoInterferencia(
+                          tarea,
+                        ).tipo ===
+                        "interrumpida",
+                    ).length
+                  }
+                </strong>
+              </div>
 
             </div>
-
-            <Paginacion
-              paginaActual={
-                paginaActividades
-              }
-              totalPaginas={
-                totalPaginasActividades
-              }
-              onAnterior={() =>
-                setPaginaActividades(
-                  (pagina) =>
-                    Math.max(
-                      1,
-                      pagina - 1,
-                    ),
-                )
-              }
-              onSiguiente={() =>
-                setPaginaActividades(
-                  (pagina) =>
-                    Math.min(
-                      totalPaginasActividades,
-                      pagina + 1,
-                    ),
-                )
-              }
-            />
-          </>
-        )}
-
-      </section>
-
-      {/* DEPARTAMENTOS */}
-
-      <section className="reporte-card">
-
-        <div className="reporte-card-header">
-
-          <div>
-            <span className="reportes-eyebrow">
-              DEMANDA
-            </span>
-
-            <h2>
-              Distribución por departamento
-            </h2>
-
-            <p>
-              Permite identificar de dónde
-              proviene la demanda de trabajo.
-            </p>
-          </div>
+          </article>
 
         </div>
+      )}
 
-        {rendimientoDepartamentos.length ===
-        0 ? (
-          <div className="reporte-vacio">
-            No existen departamentos
-            asociados al período.
-          </div>
-        ) : (
-          <>
-            <div className="tabla-contenedor">
+      {/* =====================================================
+          ACTIVIDADES
+      ===================================================== */}
 
-              <table className="reporte-tabla">
+      {pestanaActiva ===
+        "actividades" && (
+        <section className="bento-section">
 
-                <thead>
-                  <tr>
-                    <th>
-                      Departamento
-                    </th>
+          <div className="bento-section-header">
+            <div>
+              <span className="reportes-eyebrow">
+                ACTIVIDADES
+              </span>
 
-                    <th>
-                      Actividades
-                    </th>
+              <h2>
+                ¿Qué hizo el equipo?
+              </h2>
 
-                    <th>
-                      Participación
-                    </th>
-
-                    <th>
-                      Tiempo
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {departamentosPaginados.map(
-                    (departamento) => (
-                      <tr
-                        key={
-                          departamento.id
-                        }
-                      >
-
-                        <td>
-                          <strong>
-                            {
-                              departamento.nombre
-                            }
-                          </strong>
-                        </td>
-
-                        <td>
-                          {
-                            departamento.total
-                          }
-                        </td>
-
-                        <td>
-                          {departamento.porcentaje.toFixed(
-                            1,
-                          )}
-                          %
-                        </td>
-
-                        <td>
-                          {formatearMinutos(
-                            departamento.tiempo,
-                          )}
-                        </td>
-
-                      </tr>
-                    ),
-                  )}
-
-                </tbody>
-
-              </table>
-
+              <p>
+                Cada actividad muestra un
+                indicador de flujo para identificar
+                rápidamente si tuvo una interrupción.
+              </p>
             </div>
 
-            <Paginacion
-              paginaActual={
-                paginaDepartamentos
-              }
-              totalPaginas={
-                totalPaginasDepartamentos
-              }
-              onAnterior={() =>
-                setPaginaDepartamentos(
-                  (pagina) =>
-                    Math.max(
-                      1,
-                      pagina - 1,
-                    ),
-                )
-              }
-              onSiguiente={() =>
-                setPaginaDepartamentos(
-                  (pagina) =>
-                    Math.min(
-                      totalPaginasDepartamentos,
-                      pagina + 1,
-                    ),
-                )
-              }
-            />
-          </>
-        )}
-
-      </section>
-
-      {/* CARGA POR PERSONA */}
-
-      <section className="reporte-card">
-
-        <div className="reporte-card-header">
-
-          <div>
-            <span className="reportes-eyebrow">
-              CARGA DEL EQUIPO
-            </span>
-
-            <h2>
-              Carga por persona
-            </h2>
-
-            <p>
-              Selecciona una persona para
-              consultar todas sus actividades,
-              departamento y jornadas críticas.
-            </p>
-          </div>
-
-        </div>
-
-        {rendimientoPersonas.length ===
-        0 ? (
-          <div className="reporte-vacio">
-            No existen personas con actividades
-            durante el período seleccionado.
-          </div>
-        ) : (
-          <>
-            <div className="tabla-contenedor">
-
-              <table className="reporte-tabla">
-
-                <thead>
-                  <tr>
-                    <th>
-                      Responsable
-                    </th>
-
-                    <th>
-                      Departamento
-                    </th>
-
-                    <th>
-                      Actividades
-                    </th>
-
-                    <th>
-                      Carga acumulada
-                    </th>
-
-                    <th>
-                      Días trabajados
-                    </th>
-
-                    <th>
-                      Normales
-                    </th>
-
-                    <th>
-                      Carga alta
-                    </th>
-
-                    <th>
-                      Sobrecarga
-                    </th>
-
-                    <th>
-                      Completadas
-                    </th>
-
-                    <th>
-                      Detalle
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {personasPaginadas.map(
-                    (persona) => (
-                      <tr
-                        key={
-                          persona.id
-                        }
-                        className="reporte-fila-persona"
-                        onClick={() =>
-                          abrirDetallePersona(
-                            persona,
-                          )
-                        }
-                      >
-
-                        <td>
-                          <strong>
-                            {
-                              persona.nombre
-                            }
-                          </strong>
-                        </td>
-
-                        <td>
-                          <span className="reporte-departamento">
-                            {
-                              persona.departamento
-                            }
-                          </span>
-                        </td>
-
-                        <td>
-                          {
-                            persona.total
-                          }
-                        </td>
-
-                        <td>
-                          <strong>
-                            {formatearMinutos(
-                              persona.tiempo,
-                            )}
-                          </strong>
-                        </td>
-
-                        <td>
-                          {
-                            persona.diasTrabajados
-                          }
-                        </td>
-
-                        <td>
-                          {
-                            persona.diasNormales
-                          }
-                        </td>
-
-                        <td>
-                          <span className="reporte-badge reporte-badge-alta">
-                            {
-                              persona.diasCargaAlta
-                            }
-                          </span>
-                        </td>
-
-                        <td>
-                          <span className="reporte-badge reporte-badge-sobrecarga">
-                            {
-                              persona.diasSobrecargados
-                            }
-                          </span>
-                        </td>
-
-                        <td>
-                          {
-                            persona.completadas
-                          }
-                        </td>
-
-                        <td>
-                          <button
-                            type="button"
-                            className="reporte-btn-detalle"
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              abrirDetallePersona(
-                                persona,
-                              );
-                            }}
-                          >
-                            Ver informe
-                          </button>
-                        </td>
-
-                      </tr>
-                    ),
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            <Paginacion
-              paginaActual={
-                paginaPersonas
-              }
-              totalPaginas={
-                totalPaginasPersonas
-              }
-              onAnterior={() =>
-                setPaginaPersonas(
-                  (pagina) =>
-                    Math.max(
-                      1,
-                      pagina - 1,
-                    ),
-                )
-              }
-              onSiguiente={() =>
-                setPaginaPersonas(
-                  (pagina) =>
-                    Math.min(
-                      totalPaginasPersonas,
-                      pagina + 1,
-                    ),
-                )
-              }
-            />
-          </>
-        )}
-
-      </section>
-
-      {/* JORNADAS CRÍTICAS */}
-
-      <section className="reporte-card">
-
-        <div className="reporte-card-header">
-
-          <div>
-            <span className="reportes-eyebrow">
-              ALERTAS OPERATIVAS
-            </span>
-
-            <h2>
-              Jornadas críticas
-            </h2>
-
-            <p>
-              Días en los que la planificación
-              alcanzó niveles altos o superó
-              la capacidad diaria.
-            </p>
-          </div>
-
-        </div>
-
-        {diasCriticos.length === 0 ? (
-          <div className="reporte-vacio">
-            <strong>
-              No se detectaron jornadas
-              críticas.
-            </strong>
-
-            <span>
-              La planificación se mantuvo
-              dentro de la capacidad disponible.
+            <span className="bento-contador">
+              {tareasPeriodo.length} actividades
             </span>
           </div>
-        ) : (
-          <>
-            <div className="tabla-contenedor">
 
-              <table className="reporte-tabla">
+          <div className="actividades-bento">
 
-                <thead>
-                  <tr>
-                    <th>
-                      Fecha
-                    </th>
+            {actividadesVisibles.map(
+              (tarea) => {
+                const estado =
+                  obtenerEstadoInterferencia(
+                    tarea,
+                  );
 
-                    <th>
-                      Responsable
-                    </th>
+                const interrupciones =
+                  estado.detalles;
 
-                    <th>
-                      Departamento
-                    </th>
+                return (
+                  <article
+                    className={`actividad-bento ${
+                      estado.tipo ===
+                      "interrumpida"
+                        ? "actividad-bento-interrumpida"
+                        : ""
+                    }`}
+                    key={tarea.id}
+                  >
 
-                    <th>
-                      Actividades
-                    </th>
+                    <div className="actividad-bento-top">
 
-                    <th>
-                      Carga
-                    </th>
+                      <div className="actividad-titulo-wrap">
 
-                    <th>
-                      Capacidad
-                    </th>
-
-                    <th>
-                      Exceso
-                    </th>
-
-                    <th>
-                      Nivel
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {diasCriticosPaginados.map(
-                    (dia, index) => (
-                      <tr
-                        key={`${dia.fecha}-${dia.usuarioId}-${index}`}
-                      >
-
-                        <td>
-                          {formatearFecha(
-                            dia.fecha,
-                          )}
-                        </td>
-
-                        <td>
-                          <strong>
-                            {
-                              dia.nombre
-                            }
-                          </strong>
-                        </td>
-
-                        <td>
-                          {
-                            dia.departamento
+                        <span
+                          className={`indicador-punto ${estado.clase}`}
+                          title={
+                            estado.texto
                           }
-                        </td>
+                        />
 
-                        <td>
-                          {
-                            dia.cantidadTareas
-                          }
-                        </td>
-
-                        <td>
-                          {formatearMinutos(
-                            dia.minutos,
-                          )}
-                        </td>
-
-                        <td>
-                          8 h
-                        </td>
-
-                        <td>
-                          {dia.exceso >
-                          0
-                            ? formatearMinutos(
-                                dia.exceso,
-                              )
-                            : "0 min"}
-                        </td>
-
-                        <td>
-                          <span
-                            className={
-                              dia.nivel ===
-                              "sobrecargado"
-                                ? "reporte-badge reporte-badge-sobrecarga"
-                                : "reporte-badge reporte-badge-alta"
-                            }
-                          >
-                            {obtenerTextoCarga(
-                              dia.nivel,
-                            )}
-                          </span>
-                        </td>
-
-                      </tr>
-                    ),
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            <Paginacion
-              paginaActual={
-                paginaDiasCriticos
-              }
-              totalPaginas={
-                totalPaginasDiasCriticos
-              }
-              onAnterior={() =>
-                setPaginaDiasCriticos(
-                  (pagina) =>
-                    Math.max(
-                      1,
-                      pagina - 1,
-                    ),
-                )
-              }
-              onSiguiente={() =>
-                setPaginaDiasCriticos(
-                  (pagina) =>
-                    Math.min(
-                      totalPaginasDiasCriticos,
-                      pagina + 1,
-                    ),
-                )
-              }
-            />
-          </>
-        )}
-
-      </section>
-
-      {/* PRIORIDADES */}
-
-      <section className="reporte-card">
-
-        <div className="reporte-card-header">
-
-          <div>
-            <span className="reportes-eyebrow">
-              SEGUIMIENTO
-            </span>
-
-            <h2>
-              Actividades que requieren atención
-            </h2>
-
-            <p>
-              Actividades de prioridad alta
-              que todavía no han sido
-              completadas.
-            </p>
-          </div>
-
-        </div>
-
-        {actividadesPrioritarias.length ===
-        0 ? (
-          <div className="reporte-vacio">
-            <strong>
-              No existen actividades
-              prioritarias pendientes.
-            </strong>
-
-            <span>
-              No se encontraron actividades
-              de prioridad alta sin completar.
-            </span>
-          </div>
-        ) : (
-          <>
-            <div className="tabla-contenedor">
-
-              <table className="reporte-tabla">
-
-                <thead>
-                  <tr>
-                    <th>
-                      Actividad
-                    </th>
-
-                    <th>
-                      Responsable
-                    </th>
-
-                    <th>
-                      Departamento
-                    </th>
-
-                    <th>
-                      Fecha
-                    </th>
-
-                    <th>
-                      Prioridad
-                    </th>
-
-                    <th>
-                      Estado
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {prioridadesPaginadas.map(
-                    (tarea) => (
-                      <tr
-                        key={
-                          tarea.id
-                        }
-                      >
-
-                        <td>
+                        <div>
                           <strong>
                             {tarea.titulo ||
                               "Sin título"}
                           </strong>
-                        </td>
 
-                        <td>
+                          <small>
+                            {
+                              obtenerNombreDepartamento(
+                                tarea.departamento_id,
+                              )
+                            }
+                          </small>
+                        </div>
+
+                      </div>
+
+                      <span className="actividad-tiempo">
+                        {formatearMinutos(
+                          obtenerMinutosPlanificados(
+                            tarea,
+                          ),
+                        )}
+                      </span>
+
+                    </div>
+
+                    <p className="actividad-descripcion">
+                      {tarea.descripcion ||
+                        "Sin descripción registrada."}
+                    </p>
+
+                    <div className="actividad-meta">
+
+                      <span>
+                        Responsable
+                        <strong>
                           {obtenerNombreUsuario(
                             tarea.responsable_id,
                           )}
-                        </td>
+                        </strong>
+                      </span>
 
-                        <td>
-                          {obtenerNombreDepartamento(
-                            tarea.departamento_id,
-                          )}
-                        </td>
-
-                        <td>
+                      <span>
+                        Fecha
+                        <strong>
                           {formatearFecha(
                             tarea.fecha_inicio ||
                               tarea.fecha,
                           )}
-                        </td>
-
-                        <td>
-                          <span className="reporte-badge reporte-badge-prioridad">
-                            Alta
-                          </span>
-                        </td>
-
-                        <td>
-                          <span className="estado">
-                            {obtenerTextoEstado(
-                              tarea.estado,
-                            )}
-                          </span>
-                        </td>
-
-                      </tr>
-                    ),
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            <Paginacion
-              paginaActual={
-                paginaPrioridades
-              }
-              totalPaginas={
-                totalPaginasPrioridades
-              }
-              onAnterior={() =>
-                setPaginaPrioridades(
-                  (pagina) =>
-                    Math.max(
-                      1,
-                      pagina - 1,
-                    ),
-                )
-              }
-              onSiguiente={() =>
-                setPaginaPrioridades(
-                  (pagina) =>
-                    Math.min(
-                      totalPaginasPrioridades,
-                      pagina + 1,
-                    ),
-                )
-              }
-            />
-          </>
-        )}
-
-      </section>
-
-      {/* ESTADO GENERAL */}
-
-      <section className="reporte-card">
-
-        <div className="reporte-card-header">
-
-          <div>
-            <span className="reportes-eyebrow">
-              ESTADO
-            </span>
-
-            <h2>
-              Estado general del trabajo
-            </h2>
-
-            <p>
-              Distribución de las actividades
-              según su estado actual.
-            </p>
-          </div>
-
-        </div>
-
-        <div className="reportes-estados">
-
-          <div className="reporte-estado-item">
-            <span>
-              Completadas
-            </span>
-
-            <strong>
-              {metricas.completadas}
-            </strong>
-          </div>
-
-          <div className="reporte-estado-item">
-            <span>
-              En proceso
-            </span>
-
-            <strong>
-              {metricas.enProceso}
-            </strong>
-          </div>
-
-          <div className="reporte-estado-item">
-            <span>
-              Pendientes
-            </span>
-
-            <strong>
-              {metricas.pendientes}
-            </strong>
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* METODOLOGÍA EN PANTALLA */}
-
-      <section className="reporte-nota">
-
-        <div className="reporte-nota-header">
-          <div>
-            <span className="reportes-eyebrow">
-              METODOLOGÍA
-            </span>
-
-            <strong>
-              ¿Cómo se calcula la carga?
-            </strong>
-          </div>
-
-          <span className="reporte-nota-capacidad">
-            8 h = 480 min
-          </span>
-        </div>
-
-        <p>
-          El reporte considera una jornada de
-          trabajo de{" "}
-          <strong>
-            8 horas diarias
-          </strong>{" "}
-          por persona, equivalentes a
-          480 minutos.
-        </p>
-
-        <p>
-          Las actividades que abarcan varios
-          días ocupan una jornada completa de
-          <strong>
-            {" "}8 horas en cada día del rango.
-          </strong>{" "}
-          Cuando una actividad corresponde a
-          un solo día y tiene un horario
-          definido, se utiliza la duración de
-          ese horario.
-        </p>
-
-        <p>
-          Si no existe un horario válido,
-          se utiliza el{" "}
-          <strong>
-            tiempo estimado
-          </strong>{" "}
-          registrado. Si tampoco existe
-          información válida, se considera una
-          jornada completa de 8 horas.
-        </p>
-
-        <p>
-          Una persona se considera{" "}
-          <strong>
-            sobrecargada
-          </strong>{" "}
-          cuando la planificación de una
-          jornada supera las 8 horas
-          disponibles.
-        </p>
-
-        <div className="reporte-metodologia-grid">
-
-          <div>
-            <span>
-              Menos de 6 h
-            </span>
-
-            <strong>
-              Normal
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              6 h a 8 h
-            </span>
-
-            <strong>
-              Carga alta
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Más de 8 h
-            </span>
-
-            <strong>
-              Sobrecargado
-            </strong>
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* MODAL INFORME INDIVIDUAL */}
-
-      {personaSeleccionada && (
-        <div
-          className="reporte-modal-overlay"
-          onMouseDown={(e) => {
-            if (
-              e.target ===
-              e.currentTarget
-            ) {
-              cerrarDetallePersona();
-            }
-          }}
-        >
-
-          <div
-            className="reporte-modal"
-            role="dialog"
-            aria-modal="true"
-          >
-
-            {(() => {
-              const detalle =
-                obtenerDetallePersona(
-                  personaSeleccionada,
-                );
-
-              const totalPaginasModalActividades =
-                Math.max(
-                  1,
-                  Math.ceil(
-                    detalle.tareas.length /
-                      ELEMENTOS_POR_PAGINA,
-                  ),
-                );
-
-              const totalPaginasModalJornadas =
-                Math.max(
-                  1,
-                  Math.ceil(
-                    detalle
-                      .jornadasSobrecargadas
-                      .length /
-                      ELEMENTOS_POR_PAGINA,
-                  ),
-                );
-
-              const actividadesModal =
-                detalle.tareas.slice(
-                  (paginaModalActividades -
-                    1) *
-                    ELEMENTOS_POR_PAGINA,
-
-                  paginaModalActividades *
-                    ELEMENTOS_POR_PAGINA,
-                );
-
-              const jornadasModal =
-                detalle
-                  .jornadasSobrecargadas
-                  .slice(
-                    (paginaModalJornadas -
-                      1) *
-                      ELEMENTOS_POR_PAGINA,
-
-                    paginaModalJornadas *
-                      ELEMENTOS_POR_PAGINA,
-                  );
-
-              return (
-                <>
-
-                  {/* CABECERA PERSONA */}
-
-                  <div className="reporte-modal-header">
-
-                    <div>
-
-                      <span className="reportes-eyebrow">
-                        INFORME INDIVIDUAL
+                        </strong>
                       </span>
 
-                      <h2>
-                        {detalle.nombre}
-                      </h2>
-
-                      <p>
-                        {detalle.departamento}
-                      </p>
+                      <span>
+                        Estado
+                        <strong>
+                          {obtenerTextoEstado(
+                            tarea.estado,
+                          )}
+                        </strong>
+                      </span>
 
                     </div>
 
-                    <button
-                      type="button"
-                      className="reporte-modal-cerrar"
-                      onClick={
-                        cerrarDetallePersona
-                      }
-                      aria-label="Cerrar informe"
-                    >
-                      ×
-                    </button>
+                    {estado.tipo ===
+                      "interrumpida" && (
+                      <div className="actividad-interrupcion">
+
+                        <div>
+                          <span>
+                            TAREA INTERRUMPIDA
+                          </span>
+
+                          <strong>
+                            Interferencia detectada
+                          </strong>
+                        </div>
+
+                        {interrupciones.map(
+                          (item) => (
+                            <div
+                              className="interrupcion-detalle"
+                              key={item.id}
+                            >
+                              <small>
+                                Actividad que generó el cruce
+                              </small>
+
+                              <strong>
+                                {
+                                  item
+                                    .tareaInterrumpe
+                                    .titulo
+                                }
+                              </strong>
+
+                              <small>
+                                Intervino / solicitó
+                              </small>
+
+                              <strong>
+                                {
+                                  item.interventor
+                                }
+                              </strong>
+                            </div>
+                          ),
+                        )}
+
+                      </div>
+                    )}
+
+                    {estado.tipo ===
+                      "fluida" && (
+                      <div className="actividad-flujo">
+
+                        <span className="indicador-punto indicador-punto-verde" />
+
+                        <span>
+                          Fluyó sin interrupciones
+                        </span>
+
+                      </div>
+                    )}
+
+                  </article>
+                );
+              },
+            )}
+
+          </div>
+
+          {totalPaginasActividades >
+            1 && (
+            <div className="reporte-paginacion">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPaginaActividades(
+                    (pagina) =>
+                      Math.max(
+                        1,
+                        pagina - 1,
+                      ),
+                  )
+                }
+                disabled={
+                  paginaActividades ===
+                  1
+                }
+              >
+                Anterior
+              </button>
+
+              <span>
+                Página{" "}
+                {paginaActividades}{" "}
+                de{" "}
+                {
+                  totalPaginasActividades
+                }
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPaginaActividades(
+                    (pagina) =>
+                      Math.min(
+                        totalPaginasActividades,
+                        pagina + 1,
+                      ),
+                  )
+                }
+                disabled={
+                  paginaActividades ===
+                  totalPaginasActividades
+                }
+              >
+                Siguiente
+              </button>
+
+            </div>
+          )}
+
+        </section>
+      )}
+
+      {/* =====================================================
+          DEPARTAMENTOS
+      ===================================================== */}
+
+      {pestanaActiva ===
+        "departamentos" && (
+        <section className="bento-section">
+
+          <div className="bento-section-header">
+            <div>
+              <span className="reportes-eyebrow">
+                DEMANDA
+              </span>
+
+              <h2>
+                ¿Qué departamentos generan más trabajo?
+              </h2>
+            </div>
+          </div>
+
+          <div className="departamentos-bento">
+
+            {rendimientoDepartamentos.map(
+              (departamento) => (
+                <article
+                  className="departamento-bento"
+                  key={departamento.id}
+                >
+                  <span>
+                    {
+                      departamento.nombre
+                    }
+                  </span>
+
+                  <strong>
+                    {
+                      departamento.total
+                    }
+                  </strong>
+
+                  <small>
+                    actividades
+                  </small>
+
+                  <div className="departamento-linea">
+                    <span
+                      style={{
+                        width: `${Math.min(
+                          departamento.porcentaje,
+                          100,
+                        )}%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="departamento-footer">
+                    <span>
+                      {departamento.porcentaje.toFixed(
+                        1,
+                      )}
+                      %
+                    </span>
+
+                    <strong>
+                      {formatearMinutos(
+                        departamento.tiempo,
+                      )}
+                    </strong>
+                  </div>
+                </article>
+              ),
+            )}
+
+          </div>
+
+        </section>
+      )}
+
+      {/* =====================================================
+          PERSONAS
+      ===================================================== */}
+
+      {pestanaActiva ===
+        "personas" && (
+        <section className="bento-section">
+
+          <div className="bento-section-header">
+            <div>
+              <span className="reportes-eyebrow">
+                CARGA DEL EQUIPO
+              </span>
+
+              <h2>
+                ¿Quién tiene mayor carga?
+              </h2>
+
+              <p>
+                Selecciona una persona para
+                consultar el detalle.
+              </p>
+            </div>
+          </div>
+
+          <div className="personas-bento">
+
+            {personasVisibles.map(
+              (persona) => (
+                <article
+                  className="persona-bento"
+                  key={persona.id}
+                  onClick={() =>
+                    setPersonaSeleccionada(
+                      persona,
+                    )
+                  }
+                >
+
+                  <div className="persona-bento-header">
+
+                    <div className="persona-avatar">
+                      {persona.nombre
+                        .split(" ")
+                        .map(
+                          (parte) =>
+                            parte.charAt(
+                              0,
+                            ),
+                        )
+                        .join("")
+                        .substring(
+                          0,
+                          2,
+                        )
+                        .toUpperCase()}
+                    </div>
+
+                    <div>
+                      <strong>
+                        {
+                          persona.nombre
+                        }
+                      </strong>
+
+                      <small>
+                        {
+                          persona.total
+                        }{" "}
+                        actividades
+                      </small>
+                    </div>
 
                   </div>
 
-                  {/* MÉTRICAS PERSONA */}
+                  <div className="persona-bento-metricas">
 
-                  <div className="reporte-modal-metricas">
-
-                    <article>
+                    <div>
                       <span>
-                        Actividades
-                      </span>
-
-                      <strong>
-                        {detalle.total}
-                      </strong>
-                    </article>
-
-                    <article>
-                      <span>
-                        Carga acumulada
+                        Carga
                       </span>
 
                       <strong>
                         {formatearMinutos(
-                          detalle.tiempo,
+                          persona.tiempo,
                         )}
                       </strong>
-                    </article>
+                    </div>
 
-                    <article>
+                    <div>
                       <span>
-                        Días trabajados
+                        Días
                       </span>
 
                       <strong>
                         {
-                          detalle.diasTrabajados
+                          persona.diasTrabajados
                         }
                       </strong>
-                    </article>
-
-                    <article>
-                      <span>
-                        Días sobrecargados
-                      </span>
-
-                      <strong>
-                        {
-                          detalle.diasSobrecargados
-                        }
-                      </strong>
-                    </article>
+                    </div>
 
                   </div>
 
-                  {/* TODAS LAS ACTIVIDADES */}
-
-                  <div className="reporte-modal-seccion">
-
-                    <div className="reporte-modal-seccion-header">
-
-                      <h3>
-                        Todas las actividades
-                      </h3>
-
-                      <p>
-                        Aquí aparecen todas las
-                        actividades asignadas a
-                        esta persona durante el
-                        período.
-                      </p>
-
-                    </div>
-
-                    <div className="reporte-modal-tabla-contenedor">
-
-                      <table className="reporte-tabla reporte-tabla-modal">
-
-                        <thead>
-                          <tr>
-                            <th>
-                              Actividad
-                            </th>
-
-                            <th>
-                              Descripción
-                            </th>
-
-                            <th>
-                              Inicio
-                            </th>
-
-                            <th>
-                              Fin
-                            </th>
-
-                            <th>
-                              Horario
-                            </th>
-
-                            <th>
-                              Departamento
-                            </th>
-
-                            <th>
-                              Carga
-                            </th>
-
-                            <th>
-                              Origen
-                            </th>
-
-                            <th>
-                              Prioridad
-                            </th>
-
-                            <th>
-                              Estado
-                            </th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-
-                          {actividadesModal.map(
-                            (tarea) => {
-                              const fuente =
-                                obtenerFuenteCalculo(
-                                  tarea,
-                                );
-
-                              return (
-                                <tr
-                                  key={
-                                    tarea.id
-                                  }
-                                >
-
-                                  <td>
-                                    <strong>
-                                      {tarea.titulo ||
-                                        "Sin título"}
-                                    </strong>
-                                  </td>
-
-                                  <td className="descripcion-celda">
-                                    {tarea.descripcion ||
-                                      "Sin descripción"}
-                                  </td>
-
-                                  <td>
-                                    {formatearFecha(
-                                      tarea.fecha_inicio ||
-                                        tarea.fecha,
-                                    )}
-                                  </td>
-
-                                  <td>
-                                    {formatearFecha(
-                                      tarea.fecha_fin ||
-                                        tarea.fecha_inicio ||
-                                        tarea.fecha,
-                                    )}
-                                  </td>
-
-                                  <td>
-                                    {tarea.hora_inicio &&
-                                    tarea.hora_fin
-                                      ? `${formatearHora(
-                                          tarea.hora_inicio,
-                                        )} - ${formatearHora(
-                                          tarea.hora_fin,
-                                        )}`
-                                      : "Sin horario"}
-                                  </td>
-
-                                  <td>
-                                    {obtenerNombreDepartamento(
-                                      tarea.departamento_id,
-                                    )}
-                                  </td>
-
-                                  <td>
-                                    <strong>
-                                      {formatearMinutos(
-                                        obtenerMinutosPlanificados(
-                                          tarea,
-                                        ),
-                                      )}
-                                    </strong>
-                                  </td>
-
-                                  <td>
-                                    <span className="reporte-fuente">
-                                      {
-                                        fuente.corto
-                                      }
-                                    </span>
-                                  </td>
-
-                                  <td>
-                                    <span className="reporte-badge reporte-badge-prioridad">
-                                      {obtenerTextoPrioridad(
-                                        tarea.prioridad,
-                                      )}
-                                    </span>
-                                  </td>
-
-                                  <td>
-                                    <span className="estado">
-                                      {obtenerTextoEstado(
-                                        tarea.estado,
-                                      )}
-                                    </span>
-                                  </td>
-
-                                </tr>
-                              );
-                            },
-                          )}
-
-                        </tbody>
-
-                      </table>
-
-                    </div>
-
-                    <Paginacion
-                      paginaActual={
-                        paginaModalActividades
-                      }
-                      totalPaginas={
-                        totalPaginasModalActividades
-                      }
-                      onAnterior={() =>
-                        setPaginaModalActividades(
-                          (pagina) =>
+                  <div className="persona-carga-barra">
+                    <span
+                      style={{
+                        width: `${Math.min(
+                          (persona.tiempo /
                             Math.max(
                               1,
-                              pagina - 1,
-                            ),
-                        )
-                      }
-                      onSiguiente={() =>
-                        setPaginaModalActividades(
-                          (pagina) =>
-                            Math.min(
-                              totalPaginasModalActividades,
-                              pagina + 1,
-                            ),
-                        )
-                      }
+                              persona.diasTrabajados,
+                            ) /
+                            MINUTOS_JORNADA) *
+                            100,
+                          100,
+                        )}%`,
+                      }}
                     />
-
                   </div>
 
-                  {/* JORNADAS SOBRECARGADAS */}
-
-                  <div className="reporte-modal-seccion">
-
-                    <div className="reporte-modal-seccion-header">
-
-                      <h3>
-                        Días críticos de{" "}
-                        {detalle.nombre}
-                      </h3>
-
-                      <p>
-                        Jornadas donde la suma de
-                        las actividades superó
-                        las 8 horas disponibles.
-                      </p>
-
-                    </div>
-
-                    {detalle
-                      .jornadasSobrecargadas
-                      .length === 0 ? (
-                      <div className="reporte-vacio">
-                        <strong>
-                          No se detectaron jornadas
-                          sobrecargadas.
-                        </strong>
-
-                        <span>
-                          Ninguna jornada superó
-                          los 480 minutos.
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="reporte-modal-jornadas">
-
-                          {jornadasModal.map(
-                            (jornada) => (
-                              <article
-                                className="reporte-modal-jornada"
-                                key={`${jornada.fecha}-${jornada.usuarioId}`}
-                              >
-
-                                <div className="reporte-modal-jornada-top">
-
-                                  <div>
-                                    <span>
-                                      Fecha
-                                    </span>
-
-                                    <strong>
-                                      {formatearFecha(
-                                        jornada.fecha,
-                                      )}
-                                    </strong>
-                                  </div>
-
-                                  <span className="reporte-badge reporte-badge-sobrecarga">
-                                    Sobrecargado
-                                  </span>
-
-                                </div>
-
-                                <div className="reporte-modal-jornada-metricas">
-
-                                  <div>
-                                    <span>
-                                      Carga
-                                    </span>
-
-                                    <strong>
-                                      {formatearMinutos(
-                                        jornada.minutos,
-                                      )}
-                                    </strong>
-                                  </div>
-
-                                  <div>
-                                    <span>
-                                      Capacidad
-                                    </span>
-
-                                    <strong>
-                                      8 h
-                                    </strong>
-                                  </div>
-
-                                  <div>
-                                    <span>
-                                      Exceso
-                                    </span>
-
-                                    <strong>
-                                      {formatearMinutos(
-                                        jornada.exceso,
-                                      )}
-                                    </strong>
-                                  </div>
-
-                                </div>
-
-                                <div className="reporte-modal-actividades-sobrecarga">
-
-                                  <span>
-                                    Actividades presentes
-                                    en esta jornada
-                                  </span>
-
-                                  <ul>
-
-                                    {jornada.tareas.map(
-                                      (tarea) => (
-                                        <li
-                                          key={
-                                            tarea.id
-                                          }
-                                        >
-
-                                          <div>
-                                            <strong>
-                                              {tarea.titulo ||
-                                                "Sin título"}
-                                            </strong>
-
-                                            <small>
-                                              {obtenerNombreDepartamento(
-                                                tarea.departamento_id,
-                                              )}
-                                            </small>
-                                          </div>
-
-                                          <div>
-                                            <small>
-                                              {tarea.hora_inicio &&
-                                              tarea.hora_fin
-                                                ? `${formatearHora(
-                                                    tarea.hora_inicio,
-                                                  )} - ${formatearHora(
-                                                    tarea.hora_fin,
-                                                  )}`
-                                                : "Sin horario"}
-                                            </small>
-
-                                            <small>
-                                              {formatearMinutos(
-                                                obtenerMinutosPlanificados(
-                                                  tarea,
-                                                ),
-                                              )}
-                                            </small>
-                                          </div>
-
-                                        </li>
-                                      ),
-                                    )}
-
-                                  </ul>
-
-                                </div>
-
-                              </article>
-                            ),
-                          )}
-
-                        </div>
-
-                        <Paginacion
-                          paginaActual={
-                            paginaModalJornadas
-                          }
-                          totalPaginas={
-                            totalPaginasModalJornadas
-                          }
-                          onAnterior={() =>
-                            setPaginaModalJornadas(
-                              (pagina) =>
-                                Math.max(
-                                  1,
-                                  pagina - 1,
-                                ),
-                            )
-                          }
-                          onSiguiente={() =>
-                            setPaginaModalJornadas(
-                              (pagina) =>
-                                Math.min(
-                                  totalPaginasModalJornadas,
-                                  pagina + 1,
-                                ),
-                            )
-                          }
-                        />
-
-                      </>
-                    )}
-
-                  </div>
-
-                  {/* EXPLICACIÓN */}
-
-                  <div className="reporte-modal-metodologia">
-
-                    <strong>
-                      ¿De dónde salen estos valores?
-                    </strong>
-
-                    <p>
-                      La carga acumulada se obtiene
-                      a partir de las jornadas
-                      correspondientes al período.
-                      Una actividad de varios días
-                      representa 8 horas en cada
-                      jornada que ocupa.
-                    </p>
-
-                    <p>
-                      Para una actividad de un solo
-                      día con horario válido se utiliza
-                      la duración del horario. Si no
-                      existe horario válido, se utiliza
-                      el tiempo estimado registrado.
-                    </p>
-
-                  </div>
-
-                  {/* FOOTER */}
-
-                  <div className="reporte-modal-footer">
+                  <div className="persona-bento-footer">
 
                     <span>
-                      Capacidad diaria:
-                      <strong>
-                        {" "}8 horas
-                        (480 minutos)
-                      </strong>
+                      Normal{" "}
+                      {
+                        persona.diasNormales
+                      }
                     </span>
 
-                    <button
-                      type="button"
-                      className="reportes-btn reportes-btn-secundario"
-                      onClick={
-                        cerrarDetallePersona
+                    <span>
+                      Alta{" "}
+                      {
+                        persona.diasCargaAlta
                       }
-                    >
-                      Cerrar
-                    </button>
+                    </span>
+
+                    <span>
+                      Sobre{" "}
+                      {
+                        persona.diasSobrecargados
+                      }
+                    </span>
 
                   </div>
 
-                </>
-              );
-            })()}
+                  <div className="persona-ver">
+                    Ver detalle →
+                  </div>
+
+                </article>
+              ),
+            )}
 
           </div>
 
+          {totalPaginasPersonas >
+            1 && (
+            <div className="reporte-paginacion">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPaginaPersonas(
+                    (pagina) =>
+                      Math.max(
+                        1,
+                        pagina - 1,
+                      ),
+                  )
+                }
+                disabled={
+                  paginaPersonas ===
+                  1
+                }
+              >
+                Anterior
+              </button>
+
+              <span>
+                Página{" "}
+                {paginaPersonas} de{" "}
+                {
+                  totalPaginasPersonas
+                }
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPaginaPersonas(
+                    (pagina) =>
+                      Math.min(
+                        totalPaginasPersonas,
+                        pagina + 1,
+                      ),
+                  )
+                }
+                disabled={
+                  paginaPersonas ===
+                  totalPaginasPersonas
+                }
+              >
+                Siguiente
+              </button>
+
+            </div>
+          )}
+
+        </section>
+      )}
+
+      {/* =====================================================
+          ALERTAS
+      ===================================================== */}
+
+      {pestanaActiva ===
+        "alertas" && (
+        <section className="bento-section">
+
+          <div className="bento-section-header">
+            <div>
+              <span className="reportes-eyebrow">
+                ALERTAS OPERATIVAS
+              </span>
+
+              <h2>
+                Jornadas con mayor carga
+              </h2>
+            </div>
+          </div>
+
+          {diasCriticos.length ===
+          0 ? (
+            <div className="reporte-vacio">
+              <strong>
+                No se detectaron jornadas críticas.
+              </strong>
+
+              <span>
+                La planificación se mantuvo
+                dentro de la capacidad disponible.
+              </span>
+            </div>
+          ) : (
+            <div className="alertas-bento">
+
+              {diasCriticos.map(
+                (dia, index) => (
+                  <article
+                    className={`alerta-bento ${
+                      dia.nivel ===
+                      "sobrecargado"
+                        ? "alerta-bento-sobrecarga"
+                        : ""
+                    }`}
+                    key={`${dia.fecha}-${dia.usuarioId}-${index}`}
+                  >
+
+                    <span className="bento-label">
+                      {formatearFecha(
+                        dia.fecha,
+                      )}
+                    </span>
+
+                    <strong>
+                      {dia.nombre}
+                    </strong>
+
+                    <div className="alerta-metricas">
+
+                      <div>
+                        <span>
+                          Actividades
+                        </span>
+
+                        <strong>
+                          {
+                            dia.cantidadTareas
+                          }
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Carga
+                        </span>
+
+                        <strong>
+                          {formatearMinutos(
+                            dia.minutos,
+                          )}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Exceso
+                        </span>
+
+                        <strong>
+                          {formatearMinutos(
+                            dia.exceso,
+                          )}
+                        </strong>
+                      </div>
+
+                    </div>
+
+                    <span
+                      className={`reporte-badge ${
+                        dia.nivel ===
+                        "sobrecargado"
+                          ? "reporte-badge-sobrecarga"
+                          : "reporte-badge-alta"
+                      }`}
+                    >
+                      {obtenerTextoCarga(
+                        dia.nivel,
+                      )}
+                    </span>
+
+                  </article>
+                ),
+              )}
+
+            </div>
+          )}
+
+        </section>
+      )}
+
+      {/* =====================================================
+          TRAZABILIDAD
+      ===================================================== */}
+
+      {pestanaActiva ===
+        "trazabilidad" && (
+        <div className="reportes-bento-contenido">
+
+          <section className="bento-section">
+
+            <div className="bento-section-header">
+              <div>
+                <span className="reportes-eyebrow">
+                  TRAZABILIDAD
+                </span>
+
+                <h2>
+                  ¿Qué ocurrió durante el período?
+                </h2>
+
+                <p>
+                  Relación entre departamento,
+                  actividad, responsable, fecha,
+                  duración, urgencia e interferencias.
+                </p>
+              </div>
+            </div>
+
+            <div className="trazabilidad-kpis">
+
+              <article>
+                <span>
+                  Tareas urgentes
+                </span>
+
+                <strong>
+                  {
+                    tareasUrgentes.length
+                  }
+                </strong>
+              </article>
+
+              <article>
+                <span>
+                  Interferencias
+                </span>
+
+                <strong>
+                  {
+                    interferencias.length
+                  }
+                </strong>
+              </article>
+
+              <article>
+                <span>
+                  Días afectados
+                </span>
+
+                <strong>
+                  {
+                    diasMayorInterferencia.length
+                  }
+                </strong>
+              </article>
+
+              <article>
+                <span>
+                  Tiempo de interferencia
+                </span>
+
+                <strong>
+                  {formatearMinutos(
+                    interferencias.reduce(
+                      (
+                        total,
+                        item,
+                      ) =>
+                        total +
+                        item.duracion,
+                      0,
+                    ),
+                  )}
+                </strong>
+              </article>
+
+            </div>
+
+          </section>
+
+          <section className="bento-section">
+
+            <div className="bento-section-header">
+              <div>
+                <span className="reportes-eyebrow">
+                  INTERFERENCIAS
+                </span>
+
+                <h2>
+                  Tareas que fueron interrumpidas
+                </h2>
+              </div>
+            </div>
+
+            {interferencias.length ===
+            0 ? (
+              <div className="reporte-vacio">
+                <strong>
+                  No se detectaron interferencias.
+                </strong>
+
+                <span>
+                  No existen cruces identificables
+                  durante el período.
+                </span>
+              </div>
+            ) : (
+              <div className="interferencias-bento">
+
+                {interferencias.map(
+                  (item) => (
+                    <article
+                      className="interferencia-bento"
+                      key={item.id}
+                    >
+
+                      <div className="interferencia-bento-indicador">
+                        <span className="indicador-punto indicador-punto-rojo" />
+                      </div>
+
+                      <div className="interferencia-bento-contenido">
+
+                        <span className="bento-label">
+                          {
+                            formatearFecha(
+                              item.fecha,
+                            )
+                          }
+                        </span>
+
+                        <strong>
+                          {
+                            item
+                              .tareaInterrumpida
+                              .titulo
+                          }
+                        </strong>
+
+                        <small>
+                          Tarea interrumpida
+                        </small>
+
+                        <div className="interferencia-relacion">
+
+                          <span>
+                            Interrumpida por
+                          </span>
+
+                          <strong>
+                            {
+                              item
+                                .tareaInterrumpe
+                                .titulo
+                            }
+                          </strong>
+
+                        </div>
+
+                        <div className="interferencia-persona">
+
+                          <span>
+                            Intervino / solicitó
+                          </span>
+
+                          <strong>
+                            {
+                              item.interventor
+                            }
+                          </strong>
+
+                        </div>
+
+                      </div>
+
+                      <div className="interferencia-tiempo">
+                        {formatearMinutos(
+                          item.duracion,
+                        )}
+                      </div>
+
+                    </article>
+                  ),
+                )}
+
+              </div>
+            )}
+
+          </section>
+
+          <section className="bento-section">
+
+            <div className="bento-section-header">
+              <div>
+                <span className="reportes-eyebrow">
+                  DÍAS DE MAYOR INTERFERENCIA
+                </span>
+
+                <h2>
+                  Fechas que concentraron más cruces
+                </h2>
+              </div>
+            </div>
+
+            <div className="dias-interferencia-bento">
+
+              {diasMayorInterferencia.map(
+                (dia) => (
+                  <article
+                    key={dia.fecha}
+                  >
+                    <span>
+                      {
+                        formatearFecha(
+                          dia.fecha,
+                        )
+                      }
+                    </span>
+
+                    <strong>
+                      {dia.cantidad}
+                    </strong>
+
+                    <small>
+                      interferencias
+                    </small>
+
+                    <em>
+                      {formatearMinutos(
+                        dia.minutos,
+                      )}
+                    </em>
+                  </article>
+                ),
+              )}
+
+            </div>
+
+          </section>
+
         </div>
       )}
+
+      {/* =====================================================
+          PRIORIDADES
+      ===================================================== */}
+
+      {pestanaActiva ===
+        "prioridades" && (
+        <section className="bento-section">
+
+          <div className="bento-section-header">
+            <div>
+              <span className="reportes-eyebrow">
+                SEGUIMIENTO
+              </span>
+
+              <h2>
+                Actividades que requieren atención
+              </h2>
+            </div>
+          </div>
+
+          {actividadesPrioritarias.length ===
+          0 ? (
+            <div className="reporte-vacio">
+              <strong>
+                No existen actividades prioritarias pendientes.
+              </strong>
+
+              <span>
+                No se encontraron actividades
+                de prioridad alta sin completar.
+              </span>
+            </div>
+          ) : (
+            <div className="prioridades-bento">
+
+              {actividadesPrioritarias.map(
+                (tarea) => (
+                  <article
+                    key={tarea.id}
+                  >
+
+                    <div className="prioridad-top">
+                      <span className="reporte-badge reporte-badge-prioridad">
+                        Alta
+                      </span>
+
+                      <span>
+                        {
+                          formatearFecha(
+                            tarea.fecha_inicio ||
+                              tarea.fecha,
+                          )
+                        }
+                      </span>
+                    </div>
+
+                    <strong>
+                      {
+                        tarea.titulo
+                      }
+                    </strong>
+
+                    <p>
+                      {
+                        obtenerNombreDepartamento(
+                          tarea.departamento_id,
+                        )
+                      }
+                    </p>
+
+                    <div>
+                      <span>
+                        Responsable
+                      </span>
+
+                      <strong>
+                        {
+                          obtenerNombreUsuario(
+                            tarea.responsable_id,
+                          )
+                        }
+                      </strong>
+                    </div>
+
+                  </article>
+                ),
+              )}
+
+            </div>
+          )}
+
+        </section>
+      )}
+
+      {/* =====================================================
+          ESTADO
+      ===================================================== */}
+
+      {pestanaActiva ===
+        "estado" && (
+        <section className="bento-section">
+
+          <div className="bento-section-header">
+            <div>
+              <span className="reportes-eyebrow">
+                ESTADO
+              </span>
+
+              <h2>
+                Estado general del trabajo
+              </h2>
+            </div>
+          </div>
+
+          <div className="estado-bento">
+
+            <article>
+              <span>
+                Completadas
+              </span>
+
+              <strong>
+                {
+                  metricas.completadas
+                }
+              </strong>
+
+              <small>
+                {metricas.total > 0
+                  ? `${(
+                      (metricas.completadas /
+                        metricas.total) *
+                      100
+                    ).toFixed(
+                      1,
+                    )}% del total`
+                  : "0%"}
+              </small>
+            </article>
+
+            <article>
+              <span>
+                En proceso
+              </span>
+
+              <strong>
+                {
+                  metricas.enProceso
+                }
+              </strong>
+
+              <small>
+                {metricas.total > 0
+                  ? `${(
+                      (metricas.enProceso /
+                        metricas.total) *
+                      100
+                    ).toFixed(
+                      1,
+                    )}% del total`
+                  : "0%"}
+              </small>
+            </article>
+
+            <article>
+              <span>
+                Pendientes
+              </span>
+
+              <strong>
+                {
+                  metricas.pendientes
+                }
+              </strong>
+
+              <small>
+                {metricas.total > 0
+                  ? `${(
+                      (metricas.pendientes /
+                        metricas.total) *
+                      100
+                    ).toFixed(
+                      1,
+                    )}% del total`
+                  : "0%"}
+              </small>
+            </article>
+
+          </div>
+
+        </section>
+      )}
+
+      {/* =====================================================
+          MODAL PERSONA
+      ===================================================== */}
+
+      {personaSeleccionada && (
+        <div
+          className="reporte-modal-overlay"
+          onClick={() =>
+            setPersonaSeleccionada(
+              null,
+            )
+          }
+        >
+          <div
+            className="reporte-modal"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+
+            <div className="reporte-modal-header">
+
+              <div>
+                <span className="reportes-eyebrow">
+                  DETALLE DE CARGA
+                </span>
+
+                <h2>
+                  {
+                    personaSeleccionada.nombre
+                  }
+                </h2>
+
+                <p>
+                  {
+                    personaSeleccionada.total
+                  }{" "}
+                  actividades ·{" "}
+                  {formatearMinutos(
+                    personaSeleccionada.tiempo,
+                  )}{" "}
+                  planificados
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="reporte-modal-cerrar"
+                onClick={() =>
+                  setPersonaSeleccionada(
+                    null,
+                  )
+                }
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+
+            </div>
+
+            <div className="reporte-modal-metricas">
+
+              <article>
+                <span>
+                  Días trabajados
+                </span>
+
+                <strong>
+                  {
+                    personaSeleccionada.diasTrabajados
+                  }
+                </strong>
+              </article>
+
+              <article>
+                <span>
+                  Normales
+                </span>
+
+                <strong>
+                  {
+                    personaSeleccionada.diasNormales
+                  }
+                </strong>
+              </article>
+
+              <article>
+                <span>
+                  Carga alta
+                </span>
+
+                <strong>
+                  {
+                    personaSeleccionada.diasCargaAlta
+                  }
+                </strong>
+              </article>
+
+              <article>
+                <span>
+                  Sobrecarga
+                </span>
+
+                <strong>
+                  {
+                    personaSeleccionada.diasSobrecargados
+                  }
+                </strong>
+              </article>
+
+            </div>
+
+            <div className="reporte-modal-seccion">
+
+              <div className="reporte-modal-seccion-header">
+                <h3>
+                  Actividades asignadas
+                </h3>
+
+                <p>
+                  Las actividades mantienen
+                  el indicador de flujo.
+                </p>
+              </div>
+
+              <div className="reporte-modal-tareas">
+
+                {personaSeleccionada.tareas.map(
+                  (tarea) => {
+                    const estado =
+                      obtenerEstadoInterferencia(
+                        tarea,
+                      );
+
+                    return (
+                      <div
+                        className="reporte-modal-tarea"
+                        key={tarea.id}
+                      >
+
+                        <div className="modal-tarea-identidad">
+
+                          <span
+                            className={`indicador-punto ${estado.clase}`}
+                          />
+
+                          <div>
+                            <strong>
+                              {
+                                tarea.titulo
+                              }
+                            </strong>
+
+                            <span>
+                              {
+                                formatearFecha(
+                                  tarea.fecha_inicio ||
+                                    tarea.fecha,
+                                )
+                              }
+                            </span>
+
+                            <small>
+                              {
+                                obtenerNombreDepartamento(
+                                  tarea.departamento_id,
+                                )
+                              }
+                            </small>
+                          </div>
+
+                        </div>
+
+                        <div className="modal-tarea-derecha">
+
+                          <strong>
+                            {formatearMinutos(
+                              obtenerMinutosPlanificados(
+                                tarea,
+                              ),
+                            )}
+                          </strong>
+
+                          <span>
+                            {
+                              estado.texto
+                            }
+                          </span>
+
+                        </div>
+
+                      </div>
+                    );
+                  },
+                )}
+
+              </div>
+
+            </div>
+
+            <div className="reporte-modal-seccion">
+
+              <div className="reporte-modal-seccion-header">
+                <h3>
+                  Jornadas críticas
+                </h3>
+              </div>
+
+              <div className="reporte-modal-jornadas">
+
+                {personaSeleccionada.jornadas
+                  .filter(
+                    (dia) =>
+                      dia.nivel ===
+                        "alta" ||
+                      dia.nivel ===
+                        "sobrecargado",
+                  )
+                  .map(
+                    (dia) => (
+                      <div
+                        className="reporte-modal-jornada"
+                        key={`${dia.fecha}-${dia.usuarioId}`}
+                      >
+
+                        <div>
+                          <strong>
+                            {
+                              formatearFecha(
+                                dia.fecha,
+                              )
+                            }
+                          </strong>
+
+                          <span>
+                            {
+                              dia.cantidadTareas
+                            }{" "}
+                            tareas ·{" "}
+                            {formatearMinutos(
+                              dia.minutos,
+                            )}
+                          </span>
+                        </div>
+
+                        <span
+                          className={`reporte-badge ${
+                            dia.nivel ===
+                            "sobrecargado"
+                              ? "reporte-badge-sobrecarga"
+                              : "reporte-badge-alta"
+                          }`}
+                        >
+                          {obtenerTextoCarga(
+                            dia.nivel,
+                          )}
+                        </span>
+
+                      </div>
+                    ),
+                  )}
+
+              </div>
+
+            </div>
+
+            <div className="reporte-modal-footer">
+
+              <span>
+                Capacidad de referencia:
+                <strong>
+                  {" "}
+                  8 horas diarias
+                </strong>
+              </span>
+
+              <button
+                type="button"
+                className="reportes-btn reportes-btn-secundario"
+                onClick={() =>
+                  setPersonaSeleccionada(
+                    null,
+                  )
+                }
+              >
+                Cerrar
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          METODOLOGÍA
+      ===================================================== */}
+
+      <section className="reporte-nota">
+
+        <strong>
+          ¿Cómo se calculan estos datos?
+        </strong>
+
+        <p>
+          El reporte utiliza una jornada de
+          <strong>
+            {" "}
+            8 horas diarias
+          </strong>
+          , equivalentes a 480 minutos por
+          persona.
+        </p>
+
+        <p>
+          Las tareas de varios días ocupan
+          una jornada completa de 8 horas en
+          cada día del rango. Las tareas de un
+          solo día con horario válido utilizan
+          la duración entre hora de inicio y
+          hora de fin. Si no existe un horario
+          válido se utiliza el tiempo estimado
+          registrado.
+        </p>
+
+        <p>
+          <strong>
+            Punto rojo:
+          </strong>{" "}
+          la actividad presenta una interrupción
+          identificada mediante el cruce de
+          actividades.{" "}
+          <strong>
+            Punto verde:
+          </strong>{" "}
+          no se identificó una interrupción para
+          esa actividad dentro de la información
+          disponible.
+        </p>
+
+        <p>
+          Las interferencias permiten identificar
+          qué actividad fue afectada, qué actividad
+          generó el cruce y quién aparece asociado
+          como responsable o solicitante cuando
+          existe esa información.
+        </p>
+
+      </section>
 
     </section>
   );

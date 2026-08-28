@@ -10,9 +10,6 @@ function NuevaTarea() {
     titulo: "",
     descripcion: "",
     fecha_inicio: "",
-    fecha_fin: "",
-    hora_inicio: "08:00",
-    hora_fin: "",
     prioridad: "media",
     estado: "pendiente",
     responsable_id: "",
@@ -29,7 +26,6 @@ function NuevaTarea() {
     useState(true);
 
   const [guardando, setGuardando] = useState(false);
-
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
 
@@ -129,35 +125,7 @@ function NuevaTarea() {
 
       if (!formulario.fecha_inicio) {
         throw new Error(
-          "La fecha de inicio es obligatoria."
-        );
-      }
-
-      if (!formulario.fecha_fin) {
-        throw new Error(
-          "La fecha de finalización es obligatoria."
-        );
-      }
-
-      if (
-        formulario.fecha_fin <
-        formulario.fecha_inicio
-      ) {
-        throw new Error(
-          "La fecha de finalización no puede ser anterior a la fecha de inicio."
-        );
-      }
-
-      if (
-        formulario.hora_inicio &&
-        formulario.hora_fin &&
-        formulario.fecha_inicio ===
-          formulario.fecha_fin &&
-        formulario.hora_fin <=
-          formulario.hora_inicio
-      ) {
-        throw new Error(
-          "La hora de finalización debe ser posterior a la hora de inicio."
+          "La fecha programada es obligatoria."
         );
       }
 
@@ -174,20 +142,27 @@ function NuevaTarea() {
             descripcion:
               formulario.descripcion.trim() || null,
 
+            // Fecha en la que está programada la actividad
             fecha_inicio:
               formulario.fecha_inicio,
 
-            fecha_fin:
-              formulario.fecha_fin,
+            // No se define una fecha de finalización.
+            // El sistema la registrará cuando termine.
+            fecha_fin: null,
 
+            // Se mantiene este campo porque ya existe
+            // en la estructura actual de la tabla.
             fecha:
               formulario.fecha_inicio,
 
-            hora_inicio:
-              formulario.hora_inicio || "08:00",
+            // Ya NO usamos hora_inicio como hora real.
+            // La hora real será registrada posteriormente
+            // cuando el responsable pulse "Iniciar".
+            hora_inicio: null,
 
-            hora_fin:
-              formulario.hora_fin || null,
+            // La hora real de finalización será registrada
+            // posteriormente al terminar la tarea.
+            hora_fin: null,
 
             prioridad:
               formulario.prioridad,
@@ -200,6 +175,18 @@ function NuevaTarea() {
 
             departamento_id:
               formulario.departamento_id || null,
+
+            // ==========================================
+            // CONTROL DE EJECUCIÓN
+            // ==========================================
+
+            inicio_real: null,
+
+            fin_real: null,
+
+            tiempo_trabajado_min: 0,
+
+            estado_ejecucion: "sin_iniciar",
           })
           .select()
           .single();
@@ -216,10 +203,7 @@ function NuevaTarea() {
         );
       }
 
-      console.log(
-        "Tarea creada:",
-        data
-      );
+      console.log("Tarea creada:", data);
 
       // ==========================================
       // CREAR NOTIFICACIÓN
@@ -278,9 +262,6 @@ function NuevaTarea() {
         titulo: "",
         descripcion: "",
         fecha_inicio: "",
-        fecha_fin: "",
-        hora_inicio: "08:00",
-        hora_fin: "",
         prioridad: "media",
         estado: "pendiente",
         responsable_id: "",
@@ -310,7 +291,9 @@ function NuevaTarea() {
   return (
     <section className="nueva-tarea-page">
 
-      {/* ENCABEZADO */}
+      {/* ==========================================
+          ENCABEZADO
+      ========================================== */}
 
       <div className="nueva-tarea-header">
 
@@ -338,14 +321,18 @@ function NuevaTarea() {
 
       </div>
 
-      {/* FORMULARIO */}
+      {/* ==========================================
+          FORMULARIO
+      ========================================== */}
 
       <form
         className="nueva-tarea-card"
         onSubmit={handleSubmit}
       >
 
-        {/* INFORMACIÓN */}
+        {/* ==========================================
+            INFORMACIÓN
+        ========================================== */}
 
         <div className="nueva-tarea-section">
 
@@ -359,6 +346,8 @@ function NuevaTarea() {
 
           <div className="nueva-tarea-grid">
 
+            {/* TÍTULO */}
+
             <div className="nueva-tarea-group">
 
               <label htmlFor="titulo">
@@ -371,11 +360,13 @@ function NuevaTarea() {
                 type="text"
                 value={formulario.titulo}
                 onChange={handleChange}
-                placeholder="Ej. Diseñar 30 artes para redes sociales"
+                placeholder="Ej. Actualizar página web"
                 required
               />
 
             </div>
+
+            {/* DESCRIPCIÓN */}
 
             <div className="nueva-tarea-group">
 
@@ -398,16 +389,18 @@ function NuevaTarea() {
 
         </div>
 
-        {/* FECHAS */}
+        {/* ==========================================
+            FECHA
+        ========================================== */}
 
         <div className="nueva-tarea-section">
 
           <h2>
-            Fecha y horario
+            Fecha
           </h2>
 
           <p>
-            Define la ventana disponible para realizar la tarea.
+            Define el día en el que está programada la actividad.
           </p>
 
           <div className="nueva-tarea-grid">
@@ -415,7 +408,7 @@ function NuevaTarea() {
             <div className="nueva-tarea-group">
 
               <label htmlFor="fecha_inicio">
-                Fecha de inicio
+                Fecha programada
               </label>
 
               <input
@@ -427,61 +420,8 @@ function NuevaTarea() {
                 required
               />
 
-            </div>
-
-            <div className="nueva-tarea-group">
-
-              <label htmlFor="fecha_fin">
-                Fecha de finalización
-              </label>
-
-              <input
-                id="fecha_fin"
-                name="fecha_fin"
-                type="date"
-                value={formulario.fecha_fin}
-                onChange={handleChange}
-                required
-              />
-
-            </div>
-
-            <div className="nueva-tarea-group">
-
-              <label htmlFor="hora_inicio">
-                Hora de inicio
-              </label>
-
-              <input
-                id="hora_inicio"
-                name="hora_inicio"
-                type="time"
-                value={formulario.hora_inicio}
-                onChange={handleChange}
-              />
-
               <small className="nueva-tarea-help">
-                Por defecto, la jornada comienza a las 08:00.
-              </small>
-
-            </div>
-
-            <div className="nueva-tarea-group">
-
-              <label htmlFor="hora_fin">
-                Hora de finalización
-              </label>
-
-              <input
-                id="hora_fin"
-                name="hora_fin"
-                type="time"
-                value={formulario.hora_fin}
-                onChange={handleChange}
-              />
-
-              <small className="nueva-tarea-help">
-                Opcional. Úsala cuando exista una hora límite específica.
+                La hora real de inicio la registrará el sistema cuando el responsable inicie la tarea.
               </small>
 
             </div>
@@ -490,7 +430,9 @@ function NuevaTarea() {
 
         </div>
 
-        {/* ASIGNACIÓN */}
+        {/* ==========================================
+            ASIGNACIÓN
+        ========================================== */}
 
         <div className="nueva-tarea-section">
 
@@ -503,6 +445,8 @@ function NuevaTarea() {
           </p>
 
           <div className="nueva-tarea-grid">
+
+            {/* PRIORIDAD */}
 
             <div className="nueva-tarea-group">
 
@@ -531,6 +475,8 @@ function NuevaTarea() {
 
             </div>
 
+            {/* ESTADO */}
+
             <div className="nueva-tarea-group">
 
               <label htmlFor="estado">
@@ -557,6 +503,8 @@ function NuevaTarea() {
               </select>
 
             </div>
+
+            {/* DEPARTAMENTO */}
 
             <div className="nueva-tarea-group">
 
@@ -590,6 +538,8 @@ function NuevaTarea() {
               </select>
 
             </div>
+
+            {/* RESPONSABLE */}
 
             <div className="nueva-tarea-group">
 
@@ -632,7 +582,9 @@ function NuevaTarea() {
 
         </div>
 
-        {/* MENSAJES */}
+        {/* ==========================================
+            MENSAJES
+        ========================================== */}
 
         {mensaje && (
           <div className="nueva-tarea-mensaje">
@@ -646,7 +598,9 @@ function NuevaTarea() {
           </div>
         )}
 
-        {/* BOTONES */}
+        {/* ==========================================
+            BOTONES
+        ========================================== */}
 
         <div className="nueva-tarea-actions">
 

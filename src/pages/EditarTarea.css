@@ -1,249 +1,730 @@
+/* =========================================================
+   EDITAR TAREA
+   Diseño alineado con el CRM
+   ========================================================= */
+
 .editar-tarea-page {
   width: 100%;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 28px 60px;
+  padding: 32px;
   box-sizing: border-box;
+  color: #172033;
 }
+
+/* =========================================================
+   HEADER
+   ========================================================= */
 
 .editar-tarea-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
+}
+
+.editar-tarea-header > div {
+  min-width: 0;
+}
+
+.editar-tarea-header .eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #074a7b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
 }
 
 .editar-tarea-header h1 {
-  margin: 6px 0 8px;
-  font-size: 34px;
-  font-weight: 800;
+  margin: 0;
   color: #172033;
-  letter-spacing: -0.8px;
+  font-size: 32px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .editar-tarea-header p {
-  margin: 0;
-  color: #667085;
-  font-size: 15px;
+  margin: 9px 0 0;
+  max-width: 650px;
+  color: #7a8494;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-.eyebrow {
-  display: inline-block;
+/* =========================================================
+   BOTONES GENERALES
+   ========================================================= */
+
+.editar-tarea-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.editar-tarea-btn:hover {
+  transform: translateY(-1px);
+}
+
+.editar-tarea-btn:active {
+  transform: translateY(0);
+}
+
+.editar-tarea-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+/* =========================================================
+   BOTÓN CANCELAR / VOLVER
+   ========================================================= */
+
+.editar-tarea-btn.cancelar {
+  background: #f1f3f6;
+  color: #374151;
+  border: 1px solid #e5e8ed;
+}
+
+.editar-tarea-btn.cancelar:hover {
+  background: #e8ebef;
+  border-color: #dfe3e8;
+}
+
+/* =========================================================
+   ESTADO ACTUAL
+   ========================================================= */
+
+.editar-tarea-estado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid #e7ebf0;
+  border-radius: 18px;
+  box-shadow: 0 6px 22px rgba(23, 32, 51, 0.04);
+}
+
+.editar-tarea-estado > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.editar-tarea-estado > div:first-child > span {
+  color: #7a8494;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 1.2px;
+  letter-spacing: 0.08em;
+}
+
+.editar-tarea-estado strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Estados */
+
+.editar-tarea-estado .estado-pendiente {
+  background: #fff5d9;
+  color: #946200;
+}
+
+.editar-tarea-estado .estado-en_proceso {
+  background: #e8f2f9;
   color: #074a7b;
 }
 
+.editar-tarea-estado .estado-completada {
+  background: #e8f6ed;
+  color: #247a48;
+}
+
+/* =========================================================
+   CONTROLES
+   ========================================================= */
+
+.editar-tarea-controles {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+/* Iniciar */
+
+.editar-tarea-btn.iniciar {
+  background: #074a7b;
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgba(7, 74, 123, 0.16);
+}
+
+.editar-tarea-btn.iniciar:hover {
+  background: #063d66;
+}
+
+/* Pausar */
+
+.editar-tarea-btn.pausar {
+  background: #f3a712;
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgba(243, 167, 18, 0.15);
+}
+
+.editar-tarea-btn.pausar:hover {
+  background: #dc9508;
+}
+
+/* Reanudar */
+
+.editar-tarea-btn.reanudar {
+  background: #074a7b;
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgba(7, 74, 123, 0.16);
+}
+
+.editar-tarea-btn.reanudar:hover {
+  background: #063d66;
+}
+
+/* Terminar */
+
+.editar-tarea-btn.terminar {
+  background: #247a48;
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgba(36, 122, 72, 0.15);
+}
+
+.editar-tarea-btn.terminar:hover {
+  background: #1d653c;
+}
+
+/* =========================================================
+   MENSAJES
+   ========================================================= */
+
+.editar-tarea-mensaje,
+.editar-tarea-error {
+  margin-bottom: 18px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.editar-tarea-mensaje {
+  background: #edf8f1;
+  border: 1px solid #cce9d6;
+  color: #216b3e;
+  font-weight: 650;
+}
+
+.editar-tarea-error {
+  background: #fff3f1;
+  border: 1px solid #f0ceca;
+  color: #a1261c;
+  font-weight: 650;
+}
+
+/* =========================================================
+   TARJETA PRINCIPAL
+   ========================================================= */
+
 .editar-tarea-card {
+  position: relative;
+  width: 100%;
   background: #ffffff;
-  border: 1px solid #e4eaf1;
+  border: 1px solid #e7ebf0;
   border-radius: 24px;
-  box-shadow: 0 14px 40px rgba(23, 32, 51, 0.08);
+  box-shadow: 0 10px 32px rgba(23, 32, 51, 0.06);
   overflow: hidden;
 }
 
-.formulario-seccion {
-  padding: 30px 34px;
-  border-bottom: 1px solid #edf1f5;
+/* =========================================================
+   SECCIONES
+   ========================================================= */
+
+.editar-tarea-section {
+  padding: 28px 30px;
+  border-bottom: 1px solid #edf0f4;
 }
 
-.seccion-titulo {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 26px;
+.editar-tarea-section:last-of-type {
+  border-bottom: 0;
 }
 
-.seccion-titulo > span {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: #eaf3f9;
-  color: #074a7b;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.seccion-titulo h2 {
-  margin: 0 0 5px;
-  font-size: 20px;
-  color: #172033;
-}
-
-.seccion-titulo p {
+.editar-tarea-section h2 {
   margin: 0;
-  color: #7a8495;
-  font-size: 14px;
+  color: #172033;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
-.formulario-grid {
+.editar-tarea-section > p {
+  margin: 7px 0 22px;
+  color: #7a8494;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   GRID
+   ========================================================= */
+
+.editar-tarea-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
 
-.campo {
+/* =========================================================
+   CAMPOS
+   ========================================================= */
+
+.form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
-.campo-completo {
-  margin-bottom: 20px;
+.form-group-full {
+  grid-column: 1 / -1;
 }
 
-.campo label {
+.form-group label {
+  color: #374151;
   font-size: 13px;
-  font-weight: 700;
-  color: #344054;
+  font-weight: 750;
 }
 
-.campo input,
-.campo textarea,
-.campo select {
+.form-group input,
+.form-group textarea,
+.form-group select {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #d7dee8;
+  border: 1px solid #dce2e9;
   border-radius: 12px;
-  background: #fbfcfe;
+  background: #ffffff;
   color: #172033;
+  padding: 12px 14px;
   font-family: inherit;
   font-size: 14px;
   outline: none;
-  transition: 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
 }
 
-.campo input,
-.campo select {
-  height: 48px;
-  padding: 0 14px;
+.form-group input {
+  min-height: 46px;
 }
 
-.campo textarea {
-  padding: 13px 14px;
+.form-group textarea {
+  min-height: 125px;
   resize: vertical;
-  min-height: 120px;
+  line-height: 1.55;
 }
 
-.campo input:focus,
-.campo textarea:focus,
-.campo select:focus {
+.form-group select {
+  min-height: 46px;
+  cursor: pointer;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
   border-color: #074a7b;
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(7, 74, 123, 0.08);
+  box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.09);
 }
 
-.acciones-formulario {
+.form-group input:disabled,
+.form-group textarea:disabled,
+.form-group select:disabled {
+  background: #f5f7f9;
+  color: #7b8491;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   REGISTRO DE ACTIVIDAD
+   ========================================================= */
+
+.editar-tarea-section:nth-of-type(2) {
+  background: #fbfcfd;
+}
+
+.editar-tarea-section:nth-of-type(2) .form-group input {
+  background: #f5f7f9;
+  color: #667085;
+  border-color: #e2e6eb;
+}
+
+/* =========================================================
+   SELECTS
+   ========================================================= */
+
+.form-group select {
+  appearance: auto;
+}
+
+/* =========================================================
+   ACCIONES INFERIORES
+   ========================================================= */
+
+.editar-tarea-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 30px;
+  background: #fafbfc;
+  border-top: 1px solid #edf0f4;
+}
+
+.editar-tarea-actions-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 24px 34px;
-  background: #f8fafc;
-}
-
-.btn-secundario,
-.btn-cancelar,
-.btn-guardar {
-  border: 0;
-  border-radius: 11px;
-  min-height: 44px;
-  padding: 0 18px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.btn-secundario,
-.btn-cancelar {
-  background: #ffffff;
-  color: #475467;
-  border: 1px solid #d7dee8;
-}
-
-.btn-secundario:hover,
-.btn-cancelar:hover {
-  background: #f2f5f8;
-  transform: translateY(-1px);
-}
-
-.btn-guardar {
-  background: #074a7b;
-  color: white;
-  box-shadow: 0 8px 18px rgba(7, 74, 123, 0.2);
-}
-
-.btn-guardar:hover {
-  background: #053b63;
-  transform: translateY(-1px);
-}
-
-.btn-guardar:disabled,
-.btn-cancelar:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.mensaje-error,
-.mensaje-exito {
-  margin: 0 34px 20px;
-  padding: 13px 16px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
   gap: 10px;
-  font-size: 14px;
 }
 
-.mensaje-error {
-  background: #fff1f1;
-  border: 1px solid #ffd5d5;
+/* =========================================================
+   ELIMINAR
+   ========================================================= */
+
+.editar-tarea-btn.eliminar {
+  background: #ffffff;
   color: #b42318;
+  border: 1px solid #efc8c4;
 }
 
-.mensaje-exito {
-  background: #ecfdf3;
-  border: 1px solid #c6f0d5;
-  color: #067647;
+.editar-tarea-btn.eliminar:hover {
+  background: #fff5f4;
+  border-color: #e5aaa4;
 }
 
-.estado-carga {
-  min-height: 300px;
+/* =========================================================
+   GUARDAR
+   ========================================================= */
+
+.editar-tarea-btn.guardar {
+  background: #074a7b;
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgba(7, 74, 123, 0.16);
+}
+
+.editar-tarea-btn.guardar:hover {
+  background: #063d66;
+}
+
+/* =========================================================
+   MODAL DE PAUSA
+   ========================================================= */
+
+.pausa-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  color: #667085;
+  padding: 20px;
+  background: rgba(23, 32, 51, 0.48);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: pausaOverlayEntrada 0.18s ease-out;
 }
 
-.spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #e4eaf1;
+@keyframes pausaOverlayEntrada {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.pausa-modal {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e5e9ef;
+  border-radius: 24px;
+  box-shadow:
+    0 25px 70px rgba(23, 32, 51, 0.2),
+    0 8px 25px rgba(23, 32, 51, 0.1);
+  animation: pausaModalEntrada 0.22s ease-out;
+}
+
+@keyframes pausaModalEntrada {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================================================
+   HEADER DEL MODAL
+   ========================================================= */
+
+.pausa-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 26px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.pausa-modal-header > div {
+  min-width: 0;
+}
+
+.pausa-modal-header span {
+  display: block;
+  margin-bottom: 7px;
+  color: #074a7b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.pausa-modal-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+.pausa-modal-header p {
+  margin: 7px 0 0;
+  color: #7a8494;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pausa-cerrar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e8ed;
+  border-radius: 10px;
+  background: #f4f5f7;
+  color: #4b5563;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.pausa-cerrar:hover {
+  background: #e9ebee;
+  border-color: #dce1e6;
+  transform: rotate(3deg);
+}
+
+/* =========================================================
+   OPCIONES DE PAUSA
+   ========================================================= */
+
+.pausa-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px 26px;
+}
+
+.pausa-opcion {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid #dfe4ea;
+  border-radius: 14px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.pausa-opcion:hover {
+  border-color: #b8cad8;
+  background: #f9fbfc;
+  transform: translateY(-1px);
+}
+
+.pausa-opcion.seleccionada {
+  border-color: #074a7b;
+  background: #f2f8fc;
+  box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.07);
+}
+
+.pausa-opcion input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: #074a7b;
+  cursor: pointer;
+}
+
+.pausa-opcion > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pausa-opcion strong {
+  color: #172033;
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+.pausa-opcion span {
+  color: #7a8494;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   ERROR DENTRO DEL MODAL
+   ========================================================= */
+
+.pausa-modal .editar-tarea-error {
+  margin: 0 26px 18px;
+}
+
+/* =========================================================
+   ACCIONES DEL MODAL
+   ========================================================= */
+
+.pausa-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 26px 22px;
+  border-top: 1px solid #edf0f4;
+  background: #fafbfc;
+}
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.editar-tarea-loading {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  color: #6b7280;
+}
+
+.editar-tarea-loading p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.loader {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e3e8ee;
   border-top-color: #074a7b;
   border-radius: 50%;
-  animation: girar 0.8s linear infinite;
+  animation: editarTareaGiro 0.8s linear infinite;
 }
 
-@keyframes girar {
+@keyframes editarTareaGiro {
   to {
     transform: rotate(360deg);
   }
 }
 
-@media (max-width: 700px) {
+/* =========================================================
+   SCROLLBAR MODAL
+   ========================================================= */
+
+.pausa-modal::-webkit-scrollbar {
+  width: 7px;
+}
+
+.pausa-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pausa-modal::-webkit-scrollbar-thumb {
+  background: #d6dce2;
+  border-radius: 999px;
+}
+
+.pausa-modal::-webkit-scrollbar-thumb:hover {
+  background: #c2cad2;
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
   .editar-tarea-page {
-    padding: 20px 14px 40px;
+    padding: 24px;
   }
 
   .editar-tarea-header {
@@ -251,21 +732,201 @@
     flex-direction: column;
   }
 
-  .formulario-seccion {
-    padding: 24px 20px;
-  }
-
-  .formulario-grid {
+  .editar-tarea-grid {
     grid-template-columns: 1fr;
   }
 
-  .acciones-formulario {
-    padding: 20px;
-    flex-direction: column-reverse;
+  .form-group-full {
+    grid-column: auto;
   }
 
-  .btn-cancelar,
-  .btn-guardar {
+  .editar-tarea-estado {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .editar-tarea-controles {
     width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* =========================================================
+   MÓVIL
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .editar-tarea-page {
+    padding: 18px 14px;
+  }
+
+  .editar-tarea-header {
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .editar-tarea-header h1 {
+    font-size: 27px;
+  }
+
+  .editar-tarea-header p {
+    font-size: 13px;
+  }
+
+  .editar-tarea-header > .editar-tarea-btn {
+    width: 100%;
+  }
+
+  /* Estado */
+
+  .editar-tarea-estado {
+    align-items: stretch;
+    gap: 14px;
+    padding: 15px;
+    border-radius: 16px;
+  }
+
+  .editar-tarea-estado > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .editar-tarea-controles {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .editar-tarea-controles .editar-tarea-btn {
+    width: 100%;
+  }
+
+  /* Tarjeta */
+
+  .editar-tarea-card {
+    border-radius: 20px;
+  }
+
+  .editar-tarea-section {
+    padding: 22px 18px;
+  }
+
+  .editar-tarea-section h2 {
+    font-size: 18px;
+  }
+
+  .editar-tarea-section > p {
+    margin-bottom: 18px;
+    font-size: 12px;
+  }
+
+  .editar-tarea-grid {
+    gap: 16px;
+  }
+
+  /* Acciones */
+
+  .editar-tarea-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    padding: 20px 18px;
+  }
+
+  .editar-tarea-actions-right {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .editar-tarea-actions .editar-tarea-btn {
+    width: 100%;
+  }
+
+  /* Mensajes */
+
+  .editar-tarea-mensaje,
+  .editar-tarea-error {
+    margin-bottom: 16px;
+  }
+
+  /* Modal */
+
+  .pausa-overlay {
+    align-items: flex-end;
+    padding: 10px;
+  }
+
+  .pausa-modal {
+    max-width: 100%;
+    max-height: calc(100vh - 20px);
+    border-radius: 20px;
+  }
+
+  .pausa-modal-header {
+    padding: 20px;
+  }
+
+  .pausa-modal-header h2 {
+    font-size: 18px;
+  }
+
+  .pausa-modal-header p {
+    font-size: 12px;
+  }
+
+  .pausa-opciones {
+    padding: 20px;
+    gap: 9px;
+  }
+
+  .pausa-opcion {
+    padding: 14px;
+  }
+
+  .pausa-modal-actions {
+    padding: 16px 20px 20px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .pausa-modal-actions .editar-tarea-btn {
+    width: 100%;
+  }
+
+  .pausa-modal .editar-tarea-error {
+    margin: 0 20px 16px;
+  }
+}
+
+/* =========================================================
+   MÓVIL PEQUEÑO
+   ========================================================= */
+
+@media (max-width: 400px) {
+  .editar-tarea-page {
+    padding: 14px 10px;
+  }
+
+  .editar-tarea-header h1 {
+    font-size: 24px;
+  }
+
+  .editar-tarea-section {
+    padding: 20px 15px;
+  }
+
+  .editar-tarea-actions {
+    padding: 18px 15px;
+  }
+
+  .pausa-modal-header {
+    padding: 18px;
+  }
+
+  .pausa-opciones {
+    padding: 18px;
+  }
+
+  .pausa-modal-actions {
+    padding: 15px 18px 18px;
   }
 }
