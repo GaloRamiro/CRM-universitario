@@ -13,6 +13,8 @@ import RoleRoute from "./components/RoleRoute";
 import EditarUsuario from "./pages/EditarUsuario";
 import EditarTarea from "./pages/EditarTarea";
 import CargaEquipo from "./pages/CargaEquipo";
+import TareaOlvidada from "./pages/TareaOlvidada";
+import MiTareas from "./pages/MisTareas";
 function App() {
   return (
     <BrowserRouter>
@@ -29,9 +31,9 @@ function App() {
             {/* Accesibles para usuarios autenticados */}
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="tareas" element={<Tareas />} />
-
+            <Route path="mis-tareas" element={<MiTareas />} />
             <Route path="tareas/nueva" element={<NuevaTarea />} />
-
+            <Route path="tareas/olvidada" element={<TareaOlvidada />} />
             <Route path="tareas/:id/editar" element={<EditarTarea />} />
             <Route path="carga-equipo" element={<CargaEquipo />} />
             {/* Solo administradores */}
