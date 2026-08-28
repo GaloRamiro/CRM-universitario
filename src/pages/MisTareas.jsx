@@ -13,20 +13,30 @@ function MisTareas() {
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
 
-  // =========================================================
-  // CONTADORES ANIMADOS
-  // =========================================================
-
   const [contadorPendientes, setContadorPendientes] = useState(0);
   const [contadorProceso, setContadorProceso] = useState(0);
   const [contadorPausadas, setContadorPausadas] = useState(0);
 
   // =========================================================
-  // SLIDER
+  // PAGINACIÓN
   // =========================================================
 
+  const [paginaActual, setPaginaActual] = useState(0);
   const TAREAS_POR_PAGINA = 5;
-  const [paginaActual, setPaginaActual] = useState(1);
+
+  // =========================================================
+  // RELOJ EN TIEMPO REAL
+  // =========================================================
+
+  const [ahora, setAhora] = useState(Date.now());
+
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setAhora(Date.now());
+    }, 1000);
+
+    return () => clearInterval(intervalo);
+  }, []);
 
   // =========================================================
   // CARGAR INFORMACIÓN
@@ -43,7 +53,7 @@ function MisTareas() {
 
     try {
       // -------------------------------------------------------
-      // 1. OBTENER USUARIO AUTENTICADO
+      // 1. USUARIO AUTENTICADO
       // -------------------------------------------------------
 
       const {
@@ -60,16 +70,19 @@ function MisTareas() {
       }
 
       // -------------------------------------------------------
-      // 2. BUSCAR EL USUARIO EN LA TABLA usuarios
+      // 2. USUARIO EN TABLA usuarios
       // -------------------------------------------------------
 
-      const { data: usuarioData, error: usuarioError } = await supabase
-        .from("usuarios")
-        .select("id, nombre, apellido, email, activo, auth_user_id")
-        .eq("auth_user_id", user.id)
-        .single();
+      const { data: usuarioData, error: usuarioError } =
+        await supabase
+          .from("usuarios")
+          .select(
+            "id, nombre, apellido, email, activo, auth_user_id"
+          )
+          .eq("auth_user_id", user.id)
+          .single();
 
-      if (usuarioError) {
+      if (usuarioError || !usuarioData) {
         console.error("Error buscando usuario:", usuarioError);
 
         throw new Error(
@@ -77,42 +90,39 @@ function MisTareas() {
         );
       }
 
-      if (!usuarioData) {
-        throw new Error("No se encontró información del usuario.");
-      }
-
       setUsuarioActual(usuarioData);
 
       // -------------------------------------------------------
-      // 3. CARGAR TAREAS DEL USUARIO
+      // 3. TAREAS DEL USUARIO
       // -------------------------------------------------------
 
-      const { data: tareasData, error: tareasError } = await supabase
-        .from("tareas")
-        .select(`
-          id,
-          titulo,
-          descripcion,
-          fecha,
-          fecha_inicio,
-          fecha_fin,
-          hora_inicio,
-          hora_fin,
-          prioridad,
-          estado,
-          responsable_id,
-          departamento_id,
-          tiempo_estimado,
-          inicio_real,
-          fin_real,
-          tiempo_trabajado_min,
-          estado_ejecucion,
-          created_at,
-          updated_at
-        `)
-        .eq("responsable_id", usuarioData.id)
-        .order("fecha_inicio", { ascending: true })
-        .order("hora_inicio", { ascending: true });
+      const { data: tareasData, error: tareasError } =
+        await supabase
+          .from("tareas")
+          .select(`
+            id,
+            titulo,
+            descripcion,
+            fecha,
+            fecha_inicio,
+            fecha_fin,
+            hora_inicio,
+            hora_fin,
+            prioridad,
+            estado,
+            responsable_id,
+            departamento_id,
+            tiempo_estimado,
+            inicio_real,
+            fin_real,
+            tiempo_trabajado_min,
+            estado_ejecucion,
+            created_at,
+            updated_at
+          `)
+          .eq("responsable_id", usuarioData.id)
+          .order("fecha_inicio", { ascending: true })
+          .order("hora_inicio", { ascending: true });
 
       if (tareasError) {
         console.error("Error cargando mis tareas:", tareasError);
@@ -120,18 +130,36 @@ function MisTareas() {
       }
 
       setTareas(tareasData || []);
-      setPaginaActual(1);
     } catch (err) {
       console.error(err);
-      setError(err.message || "No se pudieron cargar tus tareas.");
+
+      setError(
+        err.message || "No se pudieron cargar tus tareas."
+      );
     } finally {
       setCargando(false);
     }
   };
 
   // =========================================================
-  // DETECTAR TAREA PAUSADA
+  // PAUSAS
   // =========================================================
+
+  const obtenerDatosPausa = (tarea) => {
+    try {
+      const datos = localStorage.getItem(
+        `tarea_pausa_${tarea.id}`
+      );
+
+      if (!datos) {
+        return null;
+      }
+
+      return JSON.parse(datos);
+    } catch {
+      return null;
+    }
+  };
 
   const estaPausada = (tarea) => {
     if (!tarea) {
@@ -142,11 +170,13 @@ function MisTareas() {
       return false;
     }
 
-    return Boolean(localStorage.getItem(`tarea_pausa_${tarea.id}`));
+    return Boolean(
+      localStorage.getItem(`tarea_pausa_${tarea.id}`)
+    );
   };
 
   // =========================================================
-  // ESTADO VISUAL DE LA TAREA
+  // ESTADO VISUAL
   // =========================================================
 
   const obtenerEstadoVisual = (tarea) => {
@@ -173,7 +203,7 @@ function MisTareas() {
   };
 
   // =========================================================
-  // SOLO TAREAS ACTIVAS
+  // TAREAS ACTIVAS
   // =========================================================
 
   const misTareasActivas = useMemo(() => {
@@ -186,7 +216,7 @@ function MisTareas() {
         estado === "pausada"
       );
     });
-  }, [tareas]);
+  }, [tareas, ahora]);
 
   // =========================================================
   // CONTADORES
@@ -194,15 +224,18 @@ function MisTareas() {
 
   const cantidades = useMemo(() => {
     const pendientes = misTareasActivas.filter(
-      (tarea) => obtenerEstadoVisual(tarea) === "pendiente"
+      (tarea) =>
+        obtenerEstadoVisual(tarea) === "pendiente"
     ).length;
 
     const enProceso = misTareasActivas.filter(
-      (tarea) => obtenerEstadoVisual(tarea) === "en_proceso"
+      (tarea) =>
+        obtenerEstadoVisual(tarea) === "en_proceso"
     ).length;
 
     const pausadas = misTareasActivas.filter(
-      (tarea) => obtenerEstadoVisual(tarea) === "pausada"
+      (tarea) =>
+        obtenerEstadoVisual(tarea) === "pausada"
     ).length;
 
     return {
@@ -213,7 +246,7 @@ function MisTareas() {
   }, [misTareasActivas]);
 
   // =========================================================
-  // ANIMACIÓN DE CONTADORES
+  // ANIMACIÓN CONTADORES
   // =========================================================
 
   useEffect(() => {
@@ -229,7 +262,8 @@ function MisTareas() {
         return;
       }
 
-      const incremento = valorFinal / (duracion / 20);
+      const incremento =
+        valorFinal / (duracion / 20);
 
       const intervalo = setInterval(() => {
         inicio += incremento;
@@ -273,40 +307,50 @@ function MisTareas() {
   ]);
 
   // =========================================================
-  // PAGINACIÓN / SLIDER
+  // PAGINACIÓN
   // =========================================================
 
-  const totalPaginas = Math.max(
-    1,
-    Math.ceil(
-      misTareasActivas.length / TAREAS_POR_PAGINA
-    )
+  const totalPaginas = Math.ceil(
+    misTareasActivas.length / TAREAS_POR_PAGINA
   );
 
-  useEffect(() => {
-    if (paginaActual > totalPaginas) {
-      setPaginaActual(totalPaginas);
-    }
-  }, [paginaActual, totalPaginas]);
-
-  const tareasVisibles = useMemo(() => {
+  const tareasPagina = useMemo(() => {
     const inicio =
-      (paginaActual - 1) * TAREAS_POR_PAGINA;
+      paginaActual * TAREAS_POR_PAGINA;
 
-    const fin = inicio + TAREAS_POR_PAGINA;
-
-    return misTareasActivas.slice(inicio, fin);
+    return misTareasActivas.slice(
+      inicio,
+      inicio + TAREAS_POR_PAGINA
+    );
   }, [misTareasActivas, paginaActual]);
 
-  const irPaginaAnterior = () => {
-    setPaginaActual((pagina) =>
-      Math.max(1, pagina - 1)
+  useEffect(() => {
+    if (
+      paginaActual >= totalPaginas &&
+      totalPaginas > 0
+    ) {
+      setPaginaActual(totalPaginas - 1);
+    }
+
+    if (
+      totalPaginas === 0 &&
+      paginaActual !== 0
+    ) {
+      setPaginaActual(0);
+    }
+  }, [totalPaginas, paginaActual]);
+
+  const paginaAnterior = () => {
+    setPaginaActual((actual) =>
+      actual > 0 ? actual - 1 : actual
     );
   };
 
-  const irPaginaSiguiente = () => {
-    setPaginaActual((pagina) =>
-      Math.min(totalPaginas, pagina + 1)
+  const paginaSiguiente = () => {
+    setPaginaActual((actual) =>
+      actual < totalPaginas - 1
+        ? actual + 1
+        : actual
     );
   };
 
@@ -319,7 +363,9 @@ function MisTareas() {
       return "Sin fecha";
     }
 
-    const fecha = new Date(`${fechaTexto}T00:00:00`);
+    const fecha = new Date(
+      `${fechaTexto}T00:00:00`
+    );
 
     if (Number.isNaN(fecha.getTime())) {
       return "Sin fecha";
@@ -333,7 +379,19 @@ function MisTareas() {
   };
 
   // =========================================================
-  // TEXTOS
+  // HORA
+  // =========================================================
+
+  const formatearHora = (hora) => {
+    if (!hora) {
+      return "--:--";
+    }
+
+    return hora.slice(0, 5);
+  };
+
+  // =========================================================
+  // NOMBRES
   // =========================================================
 
   const obtenerNombreEstado = (tarea) => {
@@ -350,27 +408,78 @@ function MisTareas() {
     return estados[estado] || "Pendiente";
   };
 
-  const obtenerNombrePrioridad = (prioridad) => {
-    const prioridades = {
-      alta: "Alta",
-      media: "Media",
-      baja: "Baja",
-    };
+  // =========================================================
+  // TIEMPO TRABAJADO
+  // =========================================================
 
-    return prioridades[prioridad] || "Media";
+  const obtenerTiempoTrabajadoSegundos = (tarea) => {
+    const minutosGuardados =
+      Number(tarea.tiempo_trabajado_min) || 0;
+
+    let segundos = minutosGuardados * 60;
+
+    const estado = obtenerEstadoVisual(tarea);
+
+    // EN PROCESO
+    if (
+      estado === "en_proceso" &&
+      tarea.inicio_real
+    ) {
+      const inicio = new Date(
+        tarea.inicio_real
+      ).getTime();
+
+      if (!Number.isNaN(inicio)) {
+        const segundosActuales = Math.max(
+          0,
+          Math.floor((ahora - inicio) / 1000)
+        );
+
+        segundos += segundosActuales;
+      }
+    }
+
+    // PAUSADA
+    if (estado === "pausada") {
+      const datosPausa = obtenerDatosPausa(tarea);
+
+      if (
+        datosPausa &&
+        Number.isFinite(
+          Number(
+            datosPausa.tiempoTrabajadoSegundos
+          )
+        )
+      ) {
+        segundos =
+          Number(
+            datosPausa.tiempoTrabajadoSegundos
+          );
+      }
+    }
+
+    return segundos;
   };
 
-  // =========================================================
-  // HORA ACTUAL
-  // =========================================================
+  const formatearTiempo = (segundos) => {
+    const total = Math.max(
+      0,
+      Math.floor(segundos || 0)
+    );
 
-  const obtenerHoraActual = () => {
-    const fecha = new Date();
+    const horas = Math.floor(total / 3600);
 
-    const horas = String(fecha.getHours()).padStart(2, "0");
-    const minutos = String(fecha.getMinutes()).padStart(2, "0");
+    const minutos = Math.floor(
+      (total % 3600) / 60
+    );
 
-    return `${horas}:${minutos}`;
+    const segundosRestantes = total % 60;
+
+    return [
+      String(horas).padStart(2, "0"),
+      String(minutos).padStart(2, "0"),
+      String(segundosRestantes).padStart(2, "0"),
+    ].join(":");
   };
 
   // =========================================================
@@ -381,17 +490,49 @@ function MisTareas() {
     const fecha = new Date();
 
     const año = fecha.getFullYear();
-    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-    const dia = String(fecha.getDate()).padStart(2, "0");
+
+    const mes = String(
+      fecha.getMonth() + 1
+    ).padStart(2, "0");
+
+    const dia = String(
+      fecha.getDate()
+    ).padStart(2, "0");
 
     return `${año}-${mes}-${dia}`;
   };
 
   // =========================================================
-  // INICIAR TAREA
+  // HORA ACTUAL
+  // =========================================================
+
+  const obtenerHoraActual = () => {
+    const fecha = new Date();
+
+    const horas = String(
+      fecha.getHours()
+    ).padStart(2, "0");
+
+    const minutos = String(
+      fecha.getMinutes()
+    ).padStart(2, "0");
+
+    const segundos = String(
+      fecha.getSeconds()
+    ).padStart(2, "0");
+
+    return `${horas}:${minutos}:${segundos}`;
+  };
+
+  // =========================================================
+  // INICIAR
   // =========================================================
 
   const iniciarTarea = async (tarea) => {
+    if (!usuarioActual) {
+      return;
+    }
+
     setProcesando(tarea.id);
     setError("");
     setMensaje("");
@@ -399,19 +540,28 @@ function MisTareas() {
     try {
       const fechaActual = obtenerFechaActual();
       const horaActual = obtenerHoraActual();
+      const ahoraISO = new Date().toISOString();
 
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "en_proceso",
-          fecha_inicio: fechaActual,
-          fecha: fechaActual,
-          hora_inicio: horaActual,
-          hora_fin: null,
-          fecha_fin: null,
-        })
-        .eq("id", tarea.id)
-        .eq("responsable_id", usuarioActual.id);
+      const { error: updateError } =
+        await supabase
+          .from("tareas")
+          .update({
+            estado: "en_proceso",
+            fecha_inicio: fechaActual,
+            fecha: fechaActual,
+            hora_inicio: horaActual,
+            hora_fin: null,
+            fecha_fin: null,
+            inicio_real: ahoraISO,
+            fin_real: null,
+            tiempo_trabajado_min: 0,
+            estado_ejecucion: "en_proceso",
+          })
+          .eq("id", tarea.id)
+          .eq(
+            "responsable_id",
+            usuarioActual.id
+          );
 
       if (updateError) {
         throw new Error(
@@ -419,6 +569,10 @@ function MisTareas() {
             "No se pudo iniciar la tarea."
         );
       }
+
+      localStorage.removeItem(
+        `tarea_pausa_${tarea.id}`
+      );
 
       setTareas((actuales) =>
         actuales.map((item) =>
@@ -431,6 +585,11 @@ function MisTareas() {
                 hora_inicio: horaActual,
                 hora_fin: null,
                 fecha_fin: null,
+                inicio_real: ahoraISO,
+                fin_real: null,
+                tiempo_trabajado_min: 0,
+                estado_ejecucion:
+                  "en_proceso",
               }
             : item
         )
@@ -441,8 +600,10 @@ function MisTareas() {
       );
     } catch (err) {
       console.error(err);
+
       setError(
-        err.message || "No se pudo iniciar la tarea."
+        err.message ||
+          "No se pudo iniciar la tarea."
       );
     } finally {
       setProcesando(null);
@@ -450,64 +611,11 @@ function MisTareas() {
   };
 
   // =========================================================
-  // REANUDAR TAREA
+  // PAUSAR
   // =========================================================
 
-  const reanudarTarea = async (tarea) => {
-    setProcesando(tarea.id);
-    setError("");
-    setMensaje("");
-
-    try {
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "en_proceso",
-        })
-        .eq("id", tarea.id)
-        .eq("responsable_id", usuarioActual.id);
-
-      if (updateError) {
-        throw new Error(
-          updateError.message ||
-            "No se pudo reanudar la tarea."
-        );
-      }
-
-      localStorage.removeItem(`tarea_pausa_${tarea.id}`);
-
-      setTareas((actuales) =>
-        actuales.map((item) =>
-          item.id === tarea.id
-            ? {
-                ...item,
-                estado: "en_proceso",
-              }
-            : item
-        )
-      );
-
-      setMensaje(`"${tarea.titulo}" reanudada.`);
-    } catch (err) {
-      console.error(err);
-      setError(
-        err.message || "No se pudo reanudar la tarea."
-      );
-    } finally {
-      setProcesando(null);
-    }
-  };
-
-  // =========================================================
-  // CANCELAR TAREA
-  // =========================================================
-
-  const cancelarTarea = async (tarea) => {
-    const confirmar = window.confirm(
-      `¿Deseas cancelar la tarea "${tarea.titulo}"?\n\nLa tarea dejará de aparecer en "Mis tareas".`
-    );
-
-    if (!confirmar) {
+  const pausarTarea = async (tarea) => {
+    if (!usuarioActual) {
       return;
     }
 
@@ -516,22 +624,226 @@ function MisTareas() {
     setMensaje("");
 
     try {
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "cancelada",
-        })
-        .eq("id", tarea.id)
-        .eq("responsable_id", usuarioActual.id);
+      const segundosTrabajados =
+        obtenerTiempoTrabajadoSegundos(tarea);
+
+      const minutosTrabajados = Math.floor(
+        segundosTrabajados / 60
+      );
+
+      const datosPausa = {
+        tiempoTrabajadoSegundos:
+          segundosTrabajados,
+        pausadaEn:
+          new Date().toISOString(),
+      };
+
+      // IMPORTANTE:
+      // Este mismo dato puede ser leído desde
+      // Editar tarea para mantener sincronizados
+      // ambos lugares.
+
+      localStorage.setItem(
+        `tarea_pausa_${tarea.id}`,
+        JSON.stringify(datosPausa)
+      );
+
+      const { error: updateError } =
+        await supabase
+          .from("tareas")
+          .update({
+            estado: "pendiente",
+            tiempo_trabajado_min:
+              minutosTrabajados,
+            estado_ejecucion: "pausada",
+          })
+          .eq("id", tarea.id)
+          .eq(
+            "responsable_id",
+            usuarioActual.id
+          );
+
+      if (updateError) {
+        localStorage.removeItem(
+          `tarea_pausa_${tarea.id}`
+        );
+
+        throw new Error(
+          updateError.message ||
+            "No se pudo pausar la tarea."
+        );
+      }
+
+      setTareas((actuales) =>
+        actuales.map((item) =>
+          item.id === tarea.id
+            ? {
+                ...item,
+                estado: "pendiente",
+                tiempo_trabajado_min:
+                  minutosTrabajados,
+                estado_ejecucion:
+                  "pausada",
+              }
+            : item
+        )
+      );
+
+      setMensaje(
+        `"${tarea.titulo}" fue pausada.`
+      );
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.message ||
+          "No se pudo pausar la tarea."
+      );
+    } finally {
+      setProcesando(null);
+    }
+  };
+
+  // =========================================================
+  // REANUDAR
+  // =========================================================
+
+  const reanudarTarea = async (tarea) => {
+    if (!usuarioActual) {
+      return;
+    }
+
+    setProcesando(tarea.id);
+    setError("");
+    setMensaje("");
+
+    try {
+      const datosPausa =
+        obtenerDatosPausa(tarea);
+
+      const segundosAcumulados =
+        datosPausa &&
+        Number.isFinite(
+          Number(
+            datosPausa.tiempoTrabajadoSegundos
+          )
+        )
+          ? Number(
+              datosPausa.tiempoTrabajadoSegundos
+            )
+          : Number(
+              tarea.tiempo_trabajado_min || 0
+            ) * 60;
+
+      const nuevoInicio = new Date(
+        Date.now() -
+          segundosAcumulados * 1000
+      ).toISOString();
+
+      const horaActual =
+        obtenerHoraActual();
+
+      const { error: updateError } =
+        await supabase
+          .from("tareas")
+          .update({
+            estado: "en_proceso",
+            inicio_real: nuevoInicio,
+            estado_ejecucion:
+              "en_proceso",
+            hora_inicio:
+              tarea.hora_inicio ||
+              horaActual,
+          })
+          .eq("id", tarea.id)
+          .eq(
+            "responsable_id",
+            usuarioActual.id
+          );
 
       if (updateError) {
         throw new Error(
           updateError.message ||
-            "No se pudo cancelar la tarea."
+            "No se pudo reanudar la tarea."
         );
       }
 
-      localStorage.removeItem(`tarea_pausa_${tarea.id}`);
+      localStorage.removeItem(
+        `tarea_pausa_${tarea.id}`
+      );
+
+      setTareas((actuales) =>
+        actuales.map((item) =>
+          item.id === tarea.id
+            ? {
+                ...item,
+                estado: "en_proceso",
+                inicio_real: nuevoInicio,
+                estado_ejecucion:
+                  "en_proceso",
+              }
+            : item
+        )
+      );
+
+      setMensaje(
+        `"${tarea.titulo}" reanudada.`
+      );
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.message ||
+          "No se pudo reanudar la tarea."
+      );
+    } finally {
+      setProcesando(null);
+    }
+  };
+
+  // =========================================================
+  // CANCELAR / ELIMINAR
+  // =========================================================
+
+  const eliminarTarea = async (tarea) => {
+    const confirmar = window.confirm(
+      `¿Deseas eliminar la tarea "${tarea.titulo}"?\n\nEsta acción eliminará la tarea de forma permanente.`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    if (!usuarioActual) {
+      return;
+    }
+
+    setProcesando(tarea.id);
+    setError("");
+    setMensaje("");
+
+    try {
+      const { error: deleteError } =
+        await supabase
+          .from("tareas")
+          .delete()
+          .eq("id", tarea.id)
+          .eq(
+            "responsable_id",
+            usuarioActual.id
+          );
+
+      if (deleteError) {
+        throw new Error(
+          deleteError.message ||
+            "No se pudo eliminar la tarea."
+        );
+      }
+
+      localStorage.removeItem(
+        `tarea_pausa_${tarea.id}`
+      );
+
       localStorage.removeItem(
         `tarea_reanudacion_${tarea.id}`
       );
@@ -542,11 +854,15 @@ function MisTareas() {
         )
       );
 
-      setMensaje(`"${tarea.titulo}" fue cancelada.`);
+      setMensaje(
+        `"${tarea.titulo}" fue eliminada.`
+      );
     } catch (err) {
       console.error(err);
+
       setError(
-        err.message || "No se pudo cancelar la tarea."
+        err.message ||
+          "No se pudo eliminar la tarea."
       );
     } finally {
       setProcesando(null);
@@ -566,17 +882,23 @@ function MisTareas() {
   // =========================================================
 
   const renderTarea = (tarea) => {
-    const estado = obtenerEstadoVisual(tarea);
-    const estaProcesando = procesando === tarea.id;
+    const estado =
+      obtenerEstadoVisual(tarea);
+
+    const estaProcesando =
+      procesando === tarea.id;
+
+    const tiempoReal =
+      obtenerTiempoTrabajadoSegundos(
+        tarea
+      );
 
     return (
       <article
         key={tarea.id}
-        className={`mi-tarea-card estado-${estado} prioridad-${
-          tarea.prioridad || "media"
-        }`}
+        className={`mi-tarea-card estado-${estado}`}
       >
-        {/* PARTE SUPERIOR */}
+        {/* CABECERA */}
 
         <div className="mi-tarea-card-top">
           <div className="mi-tarea-card-titulo">
@@ -585,12 +907,9 @@ function MisTareas() {
             </span>
 
             <h3>
-              {tarea.titulo || "Sin título"}
+              {tarea.titulo ||
+                "Sin título"}
             </h3>
-
-            {tarea.descripcion && (
-              <p>{tarea.descripcion}</p>
-            )}
           </div>
 
           <span
@@ -600,7 +919,7 @@ function MisTareas() {
           </span>
         </div>
 
-        {/* INFORMACIÓN */}
+        {/* INFORMACIÓN PRINCIPAL */}
 
         <div className="mi-tarea-info">
           <div className="mi-tarea-info-item">
@@ -608,62 +927,51 @@ function MisTareas() {
 
             <strong>
               {formatearFecha(
-                tarea.fecha_inicio || tarea.fecha
+                tarea.fecha_inicio ||
+                  tarea.fecha
               )}
             </strong>
           </div>
 
           <div className="mi-tarea-info-item">
-            <span>Horario</span>
+            <span>Hora</span>
 
             <strong>
-              {tarea.hora_inicio || "--:--"}
-
-              {tarea.hora_fin
-                ? ` - ${tarea.hora_fin}`
-                : ""}
+              {formatearHora(
+                tarea.hora_inicio
+              )}
             </strong>
           </div>
 
-          <div className="mi-tarea-info-item">
-            <span>Tiempo estimado</span>
+          <div className="mi-tarea-info-item tiempo-real">
+            <span>Tiempo</span>
 
             <strong>
-              {tarea.tiempo_estimado || 0} min
-            </strong>
-          </div>
-
-          <div className="mi-tarea-info-item">
-            <span>Prioridad</span>
-
-            <strong
-              className={`mi-tarea-prioridad prioridad-${
-                tarea.prioridad || "media"
-              }`}
-            >
-              {obtenerNombrePrioridad(
-                tarea.prioridad
+              {formatearTiempo(
+                tiempoReal
               )}
             </strong>
           </div>
         </div>
 
-        {/* INFORMACIÓN PAUSA */}
+        {/* CRONÓMETRO */}
 
-        {estado === "pausada" && (
-          <div className="mi-tarea-pausa-info">
-            <span className="mi-tarea-pausa-icono">
-              ⏸
+        {(estado === "en_proceso" ||
+          estado === "pausada") && (
+          <div
+            className={`mi-tarea-cronometro-box ${estado}`}
+          >
+            <span>
+              {estado === "en_proceso"
+                ? "● Trabajo en curso"
+                : "⏸ Tarea pausada"}
             </span>
 
-            <div>
-              <strong>Tarea pausada</strong>
-
-              <span>
-                Puedes reanudarla para continuar con el
-                trabajo.
-              </span>
-            </div>
+            <strong>
+              {formatearTiempo(
+                tiempoReal
+              )}
+            </strong>
           </div>
         )}
 
@@ -673,17 +981,23 @@ function MisTareas() {
           <button
             type="button"
             className="mi-tarea-btn editar"
-            onClick={() => abrirTarea(tarea)}
+            onClick={() =>
+              abrirTarea(tarea)
+            }
             disabled={estaProcesando}
           >
             ✎ Modificar
           </button>
 
+          {/* PENDIENTE */}
+
           {estado === "pendiente" && (
             <button
               type="button"
               className="mi-tarea-btn iniciar"
-              onClick={() => iniciarTarea(tarea)}
+              onClick={() =>
+                iniciarTarea(tarea)
+              }
               disabled={estaProcesando}
             >
               {estaProcesando
@@ -692,11 +1006,15 @@ function MisTareas() {
             </button>
           )}
 
+          {/* PAUSADA */}
+
           {estado === "pausada" && (
             <button
               type="button"
               className="mi-tarea-btn reanudar"
-              onClick={() => reanudarTarea(tarea)}
+              onClick={() =>
+                reanudarTarea(tarea)
+              }
               disabled={estaProcesando}
             >
               {estaProcesando
@@ -705,24 +1023,34 @@ function MisTareas() {
             </button>
           )}
 
+          {/* EN PROCESO */}
+
           {estado === "en_proceso" && (
             <button
               type="button"
-              className="mi-tarea-btn continuar"
-              onClick={() => abrirTarea(tarea)}
+              className="mi-tarea-btn pausar"
+              onClick={() =>
+                pausarTarea(tarea)
+              }
               disabled={estaProcesando}
             >
-              ⏱ En proceso
+              {estaProcesando
+                ? "Pausando..."
+                : "⏸ Pausar"}
             </button>
           )}
 
+          {/* ELIMINAR */}
+
           <button
             type="button"
-            className="mi-tarea-btn cancelar"
-            onClick={() => cancelarTarea(tarea)}
+            className="mi-tarea-btn eliminar"
+            onClick={() =>
+              eliminarTarea(tarea)
+            }
             disabled={estaProcesando}
           >
-            Cancelar
+            🗑 Eliminar
           </button>
         </div>
       </article>
@@ -738,7 +1066,10 @@ function MisTareas() {
       <section className="mi-tareas-page">
         <div className="mi-tareas-loading">
           <span className="mi-tareas-loader" />
-          <p>Cargando tus tareas...</p>
+
+          <p>
+            Cargando tus tareas...
+          </p>
         </div>
       </section>
     );
@@ -762,21 +1093,27 @@ function MisTareas() {
           <h1>Mis tareas</h1>
 
           <p>
-            Consulta, inicia y administra las actividades
-            que tienes asignadas.
+            Gestiona rápidamente tus
+            actividades asignadas.
           </p>
 
           {usuarioActual && (
             <div className="mi-tareas-usuario">
               <span className="mi-tareas-avatar">
                 {(
-                  (usuarioActual.nombre?.charAt(0) || "") +
-                  (usuarioActual.apellido?.charAt(0) || "")
+                  (usuarioActual.nombre?.charAt(
+                    0
+                  ) || "") +
+                  (usuarioActual.apellido?.charAt(
+                    0
+                  ) || "")
                 ).toUpperCase()}
               </span>
 
               <div>
-                <small>Usuario</small>
+                <small>
+                  Usuario
+                </small>
 
                 <strong>
                   {usuarioActual.nombre}{" "}
@@ -799,7 +1136,9 @@ function MisTareas() {
           <button
             type="button"
             className="mi-tareas-btn-principal"
-            onClick={() => navigate("/tareas")}
+            onClick={() =>
+              navigate("/tareas")
+            }
           >
             Ver calendario
           </button>
@@ -836,57 +1175,27 @@ function MisTareas() {
 
       <div className="mi-tareas-resumen">
         <div className="mi-tareas-metrica pendiente">
-          <div className="mi-tareas-metrica-top">
-            <span>PENDIENTES</span>
+          <span>PENDIENTES</span>
 
-            <span className="mi-tareas-metrica-icono">
-              ○
-            </span>
-          </div>
-
-          <strong className="mi-tareas-numero">
+          <strong>
             {contadorPendientes}
           </strong>
-
-          <p>
-            Tareas que todavía no has iniciado
-          </p>
         </div>
 
         <div className="mi-tareas-metrica proceso">
-          <div className="mi-tareas-metrica-top">
-            <span>EN PROCESO</span>
+          <span>EN PROCESO</span>
 
-            <span className="mi-tareas-metrica-icono">
-              ◉
-            </span>
-          </div>
-
-          <strong className="mi-tareas-numero">
+          <strong>
             {contadorProceso}
           </strong>
-
-          <p>
-            Actividades actualmente en ejecución
-          </p>
         </div>
 
         <div className="mi-tareas-metrica pausada">
-          <div className="mi-tareas-metrica-top">
-            <span>PAUSADAS</span>
+          <span>PAUSADAS</span>
 
-            <span className="mi-tareas-metrica-icono">
-              ⏸
-            </span>
-          </div>
-
-          <strong className="mi-tareas-numero">
+          <strong>
             {contadorPausadas}
           </strong>
-
-          <p>
-            Actividades pendientes de reanudación
-          </p>
         </div>
       </div>
 
@@ -900,7 +1209,9 @@ function MisTareas() {
               ACTIVIDADES ASIGNADAS
             </span>
 
-            <h2>Trabajo pendiente</h2>
+            <h2>
+              Trabajo pendiente
+            </h2>
           </div>
 
           <span className="mi-tareas-total">
@@ -917,108 +1228,130 @@ function MisTareas() {
               ✓
             </div>
 
-            <h3>No tienes tareas pendientes</h3>
+            <h3>
+              No tienes tareas pendientes
+            </h3>
 
             <p>
-              En este momento no tienes actividades
-              pendientes, pausadas o en proceso.
+              En este momento no tienes
+              actividades pendientes,
+              pausadas o en proceso.
             </p>
 
             <button
               type="button"
               className="mi-tareas-btn-principal"
-              onClick={() => navigate("/tareas")}
+              onClick={() =>
+                navigate("/tareas")
+              }
             >
               Ver todas las tareas
             </button>
           </div>
         ) : (
           <>
-            {/* SLIDER DE TAREAS */}
+            {/* SLIDER */}
 
             <div className="mi-tareas-slider">
 
+              <button
+                type="button"
+                className="mi-tareas-slider-btn anterior"
+                onClick={
+                  paginaAnterior
+                }
+                disabled={
+                  paginaActual === 0
+                }
+                aria-label="Página anterior"
+              >
+                ‹
+              </button>
+
               <div className="mi-tareas-lista">
-                {tareasVisibles.map((tarea) =>
-                  renderTarea(tarea)
+                {tareasPagina.map(
+                  (tarea) =>
+                    renderTarea(tarea)
                 )}
               </div>
 
+              <button
+                type="button"
+                className="mi-tareas-slider-btn siguiente"
+                onClick={
+                  paginaSiguiente
+                }
+                disabled={
+                  paginaActual >=
+                  totalPaginas - 1
+                }
+                aria-label="Página siguiente"
+              >
+                ›
+              </button>
             </div>
 
-            {/* CONTROLES DEL SLIDER */}
+            {/* PAGINACIÓN */}
 
             {totalPaginas > 1 && (
               <div className="mi-tareas-paginacion">
 
                 <button
                   type="button"
-                  className="mi-tareas-paginacion-btn"
-                  onClick={irPaginaAnterior}
-                  disabled={paginaActual === 1}
-                  aria-label="Ver tareas anteriores"
+                  onClick={
+                    paginaAnterior
+                  }
+                  disabled={
+                    paginaActual === 0
+                  }
                 >
-                  <span>‹</span>
                   Anterior
                 </button>
 
-                <div className="mi-tareas-paginacion-centro">
-                  <span className="mi-tareas-pagina-actual">
-                    {paginaActual}
-                  </span>
-
-                  <span className="mi-tareas-pagina-separador">
-                    /
-                  </span>
-
-                  <span className="mi-tareas-pagina-total">
-                    {totalPaginas}
-                  </span>
-
-                  <span className="mi-tareas-pagina-texto">
-                    página
-                    {totalPaginas !== 1 ? "s" : ""}
-                  </span>
+                <div className="mi-tareas-puntos">
+                  {Array.from({
+                    length: totalPaginas,
+                  }).map(
+                    (_, indice) => (
+                      <button
+                        type="button"
+                        key={indice}
+                        className={
+                          indice ===
+                          paginaActual
+                            ? "activo"
+                            : ""
+                        }
+                        onClick={() =>
+                          setPaginaActual(
+                            indice
+                          )
+                        }
+                        aria-label={`Ir a página ${
+                          indice + 1
+                        }`}
+                      />
+                    )
+                  )}
                 </div>
+
+                <span>
+                  {paginaActual + 1} /{" "}
+                  {totalPaginas}
+                </span>
 
                 <button
                   type="button"
-                  className="mi-tareas-paginacion-btn"
-                  onClick={irPaginaSiguiente}
-                  disabled={paginaActual === totalPaginas}
-                  aria-label="Ver siguientes tareas"
+                  onClick={
+                    paginaSiguiente
+                  }
+                  disabled={
+                    paginaActual >=
+                    totalPaginas - 1
+                  }
                 >
                   Siguiente
-                  <span>›</span>
                 </button>
-
-              </div>
-            )}
-
-            {/* INDICADORES */}
-
-            {totalPaginas > 1 && (
-              <div className="mi-tareas-dots">
-                {Array.from(
-                  { length: totalPaginas },
-                  (_, indice) => (
-                    <button
-                      key={indice}
-                      type="button"
-                      className={`mi-tareas-dot ${
-                        paginaActual === indice + 1
-                          ? "activo"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        setPaginaActual(indice + 1)
-                      }
-                      aria-label={`Ir a la página ${
-                        indice + 1
-                      }`}
-                    />
-                  )
-                )}
               </div>
             )}
           </>
