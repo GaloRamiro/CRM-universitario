@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import "./Sidebar.css";
 
 function Sidebar({ mobileOpen = false, onClose }) {
   const [colapsado, setColapsado] = useState(false);
+
+  const { profile } = useAuth();
 
   const cerrarMenuMovil = () => {
     if (onClose) {
@@ -14,6 +17,16 @@ function Sidebar({ mobileOpen = false, onClose }) {
   const obtenerClaseLink = ({ isActive }) =>
     `nav-link ${isActive ? "nav-link-activo" : ""}`;
 
+  // =========================================================
+  // ROL DEL USUARIO
+  // =========================================================
+
+  const rol = String(profile?.rol || "").toLowerCase();
+
+  const esAdministrador =
+    rol === "admin" ||
+    rol === "administrador";
+
   return (
     <aside
       className={`sidebar ${
@@ -23,6 +36,7 @@ function Sidebar({ mobileOpen = false, onClose }) {
       {/* =====================================================
           MARCA
       ====================================================== */}
+
       <div className="sidebar-brand">
         <div className="brand-icon">
           <span>GC</span>
@@ -34,6 +48,7 @@ function Sidebar({ mobileOpen = false, onClose }) {
         </div>
 
         {/* Cerrar menú en móvil */}
+
         <button
           type="button"
           className="sidebar-mobile-close"
@@ -52,6 +67,7 @@ function Sidebar({ mobileOpen = false, onClose }) {
         </button>
 
         {/* Botón colapsar */}
+
         <button
           type="button"
           className="sidebar-toggle"
@@ -80,9 +96,13 @@ function Sidebar({ mobileOpen = false, onClose }) {
       {/* =====================================================
           NAVEGACIÓN
       ====================================================== */}
+
       <nav className="sidebar-nav">
 
-        {/* DASHBOARD */}
+        {/* =================================================
+            DASHBOARD
+        ================================================== */}
+
         <NavLink
           to="/dashboard"
           className={obtenerClaseLink}
@@ -95,16 +115,43 @@ function Sidebar({ mobileOpen = false, onClose }) {
             stroke="currentColor"
             strokeWidth="1.8"
           >
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
+            <rect
+              x="3"
+              y="3"
+              width="7"
+              height="7"
+              rx="1"
+            />
+            <rect
+              x="14"
+              y="3"
+              width="7"
+              height="7"
+              rx="1"
+            />
+            <rect
+              x="3"
+              y="14"
+              width="7"
+              height="7"
+              rx="1"
+            />
+            <rect
+              x="14"
+              y="14"
+              width="7"
+              height="7"
+              rx="1"
+            />
           </svg>
 
           <span>Dashboard</span>
         </NavLink>
 
-        {/* TAREAS */}
+        {/* =================================================
+            TAREAS
+        ================================================== */}
+
         <NavLink
           to="/tareas"
           className={obtenerClaseLink}
@@ -132,7 +179,10 @@ function Sidebar({ mobileOpen = false, onClose }) {
           <span>Tareas</span>
         </NavLink>
 
-        {/* MIS TAREAS */}
+        {/* =================================================
+            MIS TAREAS
+        ================================================== */}
+
         <NavLink
           to="/mis-tareas"
           className={obtenerClaseLink}
@@ -160,7 +210,10 @@ function Sidebar({ mobileOpen = false, onClose }) {
           <span>Mis tareas</span>
         </NavLink>
 
-        {/* CARGA DE EQUIPO */}
+        {/* =================================================
+            CARGA DE EQUIPO
+        ================================================== */}
+
         <NavLink
           to="/carga-equipo"
           className={obtenerClaseLink}
@@ -173,9 +226,20 @@ function Sidebar({ mobileOpen = false, onClose }) {
             stroke="currentColor"
             strokeWidth="1.8"
           >
-            <circle cx="9" cy="8" r="3" />
-            <circle cx="17" cy="9" r="2.5" />
+            <circle
+              cx="9"
+              cy="8"
+              r="3"
+            />
+
+            <circle
+              cx="17"
+              cy="9"
+              r="2.5"
+            />
+
             <path d="M3.5 20c.5-4 2.3-6 5.5-6s5 2 5.5 6" />
+
             <path d="M14 15c2.8-.5 5.2 1.2 6 4.5" />
           </svg>
 
@@ -184,79 +248,112 @@ function Sidebar({ mobileOpen = false, onClose }) {
 
         {/* =================================================
             ADMINISTRACIÓN
+            SOLO ADMINISTRADORES
         ================================================== */}
 
-        <NavLink
-          to="/usuarios"
-          className={obtenerClaseLink}
-          onClick={cerrarMenuMovil}
-        >
-          <svg
-            className="sidebar-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-          >
-            <circle cx="9" cy="8" r="3" />
-            <path d="M3 20c.6-4 2.5-6 6-6s5.4 2 6 6" />
-            <path d="M16 11a3 3 0 1 0 0-6" />
-            <path d="M16 14c2.8.1 4.5 2 5 5" />
-          </svg>
+        {esAdministrador && (
+          <>
+            {/* =================================================
+                USUARIOS
+            ================================================== */}
 
-          <span>Usuarios</span>
-        </NavLink>
+            <NavLink
+              to="/usuarios"
+              className={obtenerClaseLink}
+              onClick={cerrarMenuMovil}
+            >
+              <svg
+                className="sidebar-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <circle
+                  cx="9"
+                  cy="8"
+                  r="3"
+                />
 
-        <NavLink
-          to="/departamentos"
-          className={obtenerClaseLink}
-          onClick={cerrarMenuMovil}
-        >
-          <svg
-            className="sidebar-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-          >
-            <path d="M5 21h14" />
-            <path d="M7 21V5h10v16" />
-            <path d="M9 8h2" />
-            <path d="M13 8h2" />
-            <path d="M9 12h2" />
-            <path d="M13 12h2" />
-            <path d="M9 16h2" />
-            <path d="M13 16h2" />
-          </svg>
+                <path d="M3 20c.6-4 2.5-6 6-6s5.4 2 6 6" />
 
-          <span>Departamentos</span>
-        </NavLink>
+                <path
+                  d="M16 11a3 3 0 1 0 0-6"
+                />
 
-        <NavLink
-          to="/reportes"
-          className={obtenerClaseLink}
-          onClick={cerrarMenuMovil}
-        >
-          <svg
-            className="sidebar-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-          >
-            <path d="M5 20V11" />
-            <path d="M10 20V7" />
-            <path d="M15 20V4" />
-            <path d="M20 20V9" />
-          </svg>
+                <path
+                  d="M16 14c2.8.1 4.5 2 5 5"
+                />
+              </svg>
 
-          <span>Reportes</span>
-        </NavLink>
+              <span>Usuarios</span>
+            </NavLink>
+
+            {/* =================================================
+                DEPARTAMENTOS
+            ================================================== */}
+
+            <NavLink
+              to="/departamentos"
+              className={obtenerClaseLink}
+              onClick={cerrarMenuMovil}
+            >
+              <svg
+                className="sidebar-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M5 21h14" />
+
+                <path d="M7 21V5h10v16" />
+
+                <path d="M9 8h2" />
+                <path d="M13 8h2" />
+
+                <path d="M9 12h2" />
+                <path d="M13 12h2" />
+
+                <path d="M9 16h2" />
+                <path d="M13 16h2" />
+              </svg>
+
+              <span>Departamentos</span>
+            </NavLink>
+
+            {/* =================================================
+                REPORTES
+            ================================================== */}
+
+            <NavLink
+              to="/reportes"
+              className={obtenerClaseLink}
+              onClick={cerrarMenuMovil}
+            >
+              <svg
+                className="sidebar-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M5 20V11" />
+                <path d="M10 20V7" />
+                <path d="M15 20V4" />
+                <path d="M20 20V9" />
+              </svg>
+
+              <span>Reportes</span>
+            </NavLink>
+          </>
+        )}
       </nav>
 
       {/* =====================================================
           FOOTER
       ====================================================== */}
+
       <div className="sidebar-footer">
         <span>CRM Universitario</span>
         <small>v1.0</small>
