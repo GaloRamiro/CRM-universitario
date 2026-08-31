@@ -356,7 +356,7 @@ function Sidebar({ mobileOpen = false, onClose }) {
 
       <div className="sidebar-footer">
         <span>CRM Universitario</span>
-        <small>v1.0</small>
+        <small>v3.0</small>
       </div>
     </aside>
   );
