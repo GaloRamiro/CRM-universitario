@@ -1,603 +1,526 @@
+/* =========================================================
+   MIS TAREAS
+   ========================================================= */
+
 .mi-tareas-page {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1250px;
   margin: 0 auto;
-  padding: 28px;
+  padding: 34px;
   box-sizing: border-box;
+  color: #172033;
 }
 
 /* =========================================================
    HEADER
-========================================================= */
+   ========================================================= */
 
 .mi-tareas-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 30px;
-  margin-bottom: 24px;
+  gap: 25px;
+  margin-bottom: 25px;
 }
 
 .mi-tareas-eyebrow {
-  display: block;
+  display: inline-block;
   margin-bottom: 7px;
-  color: #074a7b;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 1.4px;
+  color: #074a7b;
 }
 
 .mi-tareas-header h1 {
   margin: 0;
-  color: #172033;
-  font-size: 32px;
+  font-size: 34px;
   line-height: 1.15;
+  font-weight: 800;
+  color: #10233f;
 }
 
 .mi-tareas-header p {
-  margin: 8px 0 0;
-  color: #667085;
-  font-size: 14px;
+  margin: 9px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #68758a;
 }
 
 .mi-tareas-header-actions {
   display: flex;
   gap: 10px;
-  align-items: center;
-}
-
-/* =========================================================
-   USUARIO
-========================================================= */
-
-.mi-tareas-usuario {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.mi-tareas-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #074a7b;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.mi-tareas-usuario small {
-  display: block;
-  color: #98a2b3;
-  font-size: 10px;
-}
-
-.mi-tareas-usuario strong {
-  display: block;
-  color: #172033;
-  font-size: 13px;
+  flex-wrap: wrap;
 }
 
 /* =========================================================
    BOTONES GENERALES
-========================================================= */
+   ========================================================= */
 
-.mi-tareas-btn-principal,
-.mi-tareas-btn-secundario {
+.mi-tareas-btn {
   border: 0;
   border-radius: 12px;
-  padding: 11px 16px;
-  font-size: 13px;
+  padding: 11px 17px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
-.mi-tareas-btn-principal {
-  background: #074a7b;
-  color: white;
-}
-
-.mi-tareas-btn-principal:hover {
+.mi-tareas-btn:hover {
   transform: translateY(-1px);
-  opacity: 0.92;
 }
 
 .mi-tareas-btn-secundario {
-  background: #eef2f6;
-  color: #344054;
-}
-
-.mi-tareas-btn-secundario:hover {
-  background: #e4e9ef;
+  background: #ffffff;
+  border: 1px solid #dce5ef;
+  color: #17314f;
+  box-shadow: 0 4px 15px rgba(16, 35, 63, 0.05);
 }
 
 /* =========================================================
-   MENSAJES
-========================================================= */
+   USUARIO
+   ========================================================= */
 
-.mi-tareas-mensaje {
+.mi-tareas-usuario {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 15px;
-  margin-bottom: 18px;
-  border-radius: 12px;
-  background: #ecfdf3;
-  color: #027a48;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 14px;
+  padding: 16px 19px;
+  margin-bottom: 22px;
+  background: #ffffff;
+  border: 1px solid #e3eaf2;
+  border-radius: 18px;
+  box-shadow: 0 8px 25px rgba(16, 35, 63, 0.05);
 }
 
-.mi-tareas-mensaje span {
-  font-size: 16px;
-}
-
-.mi-tareas-error {
+.mi-tareas-avatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 14px;
-  margin-bottom: 18px;
-  border-radius: 12px;
-  background: #fff1f0;
-  color: #b42318;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #074a7b;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
 }
 
-.mi-tareas-error strong {
-  font-size: 13px;
-}
-
-.mi-tareas-error span {
+.mi-tareas-usuario span {
+  display: block;
+  margin-bottom: 3px;
   font-size: 12px;
+  color: #8491a4;
 }
 
-.mi-tareas-error button {
-  width: fit-content;
-  margin-top: 5px;
-  padding: 7px 11px;
-  border: 0;
-  border-radius: 8px;
-  background: #b42318;
-  color: white;
-  cursor: pointer;
+.mi-tareas-usuario strong {
+  display: block;
+  font-size: 15px;
+  color: #172b46;
 }
 
 /* =========================================================
-   CONTADORES
-========================================================= */
+   RESUMEN
+   ========================================================= */
 
 .mi-tareas-resumen {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 22px;
+  gap: 16px;
+  margin-bottom: 28px;
 }
 
-.mi-tareas-metrica {
-  padding: 17px 18px;
-  border: 1px solid #e7ebf0;
-  border-radius: 18px;
-  background: white;
-  box-shadow: 0 5px 18px rgba(16, 35, 63, 0.05);
-}
-
-.mi-tareas-metrica span {
-  display: block;
-  color: #667085;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.mi-tareas-metrica strong {
-  display: block;
-  margin-top: 5px;
-  color: #172033;
-  font-size: 28px;
-  line-height: 1;
-}
-
-/* =========================================================
-   CONTENEDOR
-========================================================= */
-
-.mi-tareas-contenedor {
-  padding: 22px;
-  border: 1px solid #e7ebf0;
-  border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 8px 28px rgba(16, 35, 63, 0.05);
-}
-
-.mi-tareas-lista-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 17px;
-}
-
-.mi-tareas-lista-header h2 {
-  margin: 0;
-  color: #172033;
-  font-size: 20px;
-}
-
-.mi-tareas-total {
-  padding: 7px 11px;
+.mi-tareas-stat {
+  min-height: 125px;
+  padding: 20px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e1e8f0;
   border-radius: 20px;
-  background: #f1f5f9;
-  color: #475467;
+  box-shadow: 0 8px 25px rgba(16, 35, 63, 0.05);
+}
+
+.mi-tareas-stat-label {
+  display: block;
+  margin-bottom: 8px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
+  color: #8a97a9;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.mi-tareas-stat-number {
+  display: block;
+  font-size: 29px;
+  line-height: 1.1;
+  color: #102b49;
+  font-weight: 800;
+}
+
+.mi-tareas-stat-text {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #7c899b;
+}
+
+.reloj-actual {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
 }
 
 /* =========================================================
-   SLIDER
-========================================================= */
+   MENSAJES
+   ========================================================= */
 
-.mi-tareas-slider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.editar-tarea-mensaje,
+.editar-tarea-error {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  margin-bottom: 18px;
+  border-radius: 13px;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.mi-tareas-lista {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.editar-tarea-mensaje {
+  background: #edf9f2;
+  border: 1px solid #c8efd7;
+  color: #177044;
 }
 
-.mi-tareas-slider-btn {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  border: 1px solid #d9e0e7;
-  border-radius: 50%;
-  background: white;
+.editar-tarea-error {
+  background: #fff2f2;
+  border: 1px solid #f1cccc;
+  color: #a52d2d;
+}
+
+/* =========================================================
+   SECCIÓN
+   ========================================================= */
+
+.mi-tareas-section-header {
+  margin: 30px 0 17px;
+}
+
+.mi-tareas-section-header span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 800;
   color: #074a7b;
-  font-size: 26px;
-  line-height: 1;
-  cursor: pointer;
-  transition: 0.2s ease;
+  letter-spacing: 1.3px;
 }
 
-.mi-tareas-slider-btn:hover:not(:disabled) {
-  background: #f2f7fb;
+.mi-tareas-section-header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #10233f;
 }
 
-.mi-tareas-slider-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+.mi-tareas-section-header p {
+  margin: 6px 0 0;
+  color: #7a8799;
+  font-size: 14px;
+}
+
+/* =========================================================
+   GRID
+   ========================================================= */
+
+.mi-tareas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
 }
 
 /* =========================================================
    TARJETA
-========================================================= */
+   ========================================================= */
 
 .mi-tarea-card {
-  padding: 16px 18px;
-  border: 1px solid #e5e9ee;
-  border-left: 4px solid #074a7b;
-  border-radius: 15px;
-  background: white;
-  transition: 0.2s ease;
+  min-width: 0;
+  padding: 23px;
+  background: #ffffff;
+  border: 1px solid #e0e7ef;
+  border-radius: 24px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 26px rgba(16, 35, 63, 0.06);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .mi-tarea-card:hover {
-  box-shadow: 0 5px 18px rgba(16, 35, 63, 0.07);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(16, 35, 63, 0.09);
 }
 
-.mi-tarea-card.estado-pausada {
-  border-left-color: #f59e0b;
+.mi-tarea-card-activa {
+  border-color: #0b66a3;
+  box-shadow:
+    0 0 0 1px rgba(11, 102, 163, 0.08),
+    0 12px 30px rgba(16, 35, 63, 0.08);
 }
-
-.mi-tarea-card.estado-en_proceso {
-  border-left-color: #16a34a;
-}
-
-/* =========================================================
-   PARTE SUPERIOR
-========================================================= */
 
 .mi-tarea-card-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 15px;
 }
 
-.mi-tarea-etiqueta {
+.mi-tarea-card-label {
   display: block;
-  margin-bottom: 3px;
-  color: #98a2b3;
-  font-size: 9px;
+  margin-bottom: 6px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 1.2px;
+  color: #8794a7;
 }
 
-.mi-tarea-card-titulo h3 {
+.mi-tarea-card h3 {
   margin: 0;
-  color: #172033;
-  font-size: 16px;
-  line-height: 1.25;
+  color: #14243a;
+  font-size: 19px;
+  line-height: 1.35;
+  font-weight: 800;
 }
-
-/* =========================================================
-   ESTADO
-========================================================= */
 
 .mi-tarea-estado {
   flex-shrink: 0;
-  padding: 6px 10px;
-  border-radius: 20px;
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 11px;
   font-weight: 800;
 }
 
-.mi-tarea-estado.estado-pendiente {
-  background: #f1f5f9;
-  color: #475467;
+.estado-en_proceso {
+  background: #e8f5fb;
+  color: #08648e;
 }
 
-.mi-tarea-estado.estado-en_proceso {
-  background: #ecfdf3;
-  color: #027a48;
+.estado-pendiente {
+  background: #f1f4f8;
+  color: #64748b;
 }
 
-.mi-tarea-estado.estado-pausada {
-  background: #fff7ed;
-  color: #c2410c;
+.estado-completada {
+  background: #eaf8ef;
+  color: #227345;
+}
+
+.mi-tarea-card-description {
+  min-height: 25px;
+  margin: 13px 0 18px;
+  color: #738197;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 /* =========================================================
-   INFORMACIÓN
-========================================================= */
+   META
+   ========================================================= */
 
-.mi-tarea-info {
+.mi-tarea-meta {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid #eef1f4;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 22px;
+  padding: 17px 0;
+  border-top: 1px solid #e8edf3;
+  border-bottom: 1px solid #e8edf3;
 }
 
-.mi-tarea-info-item span {
+.mi-tarea-meta-item span {
   display: block;
-  margin-bottom: 3px;
-  color: #98a2b3;
-  font-size: 10px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  color: #8995a7;
 }
 
-.mi-tarea-info-item strong {
-  color: #344054;
-  font-size: 12px;
+.mi-tarea-meta-item strong {
+  display: block;
+  color: #1b2d45;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mi-tarea-meta-item:nth-child(4) strong {
+  color: #d47700;
 }
 
 /* =========================================================
-   CRONÓMETRO
-========================================================= */
+   TIEMPO
+   ========================================================= */
 
-.mi-tarea-cronometro-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  margin-top: 12px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  background: #f8fafc;
-}
-
-.mi-tarea-cronometro-box span {
-  color: #667085;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.mi-tarea-cronometro-box strong {
-  color: #172033;
-  font-size: 15px;
+.mi-tarea-meta-item strong.tiempo-en-vivo {
   font-variant-numeric: tabular-nums;
-}
-
-.mi-tarea-cronometro-box.en_proceso {
-  background: #f0fdf4;
-}
-
-.mi-tarea-cronometro-box.en_proceso span {
-  color: #15803d;
-}
-
-.mi-tarea-cronometro-box.pausada {
-  background: #fff7ed;
-}
-
-.mi-tarea-cronometro-box.pausada span {
-  color: #c2410c;
+  letter-spacing: 0.4px;
+  color: #074a7b;
 }
 
 /* =========================================================
-   BOTONES DE TARJETA
-========================================================= */
+   ACCIONES
+   ========================================================= */
 
-.mi-tarea-footer {
+.mi-tarea-actions {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: 7px;
-  margin-top: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 17px;
 }
 
-.mi-tarea-btn {
-  border: 0;
-  border-radius: 9px;
-  padding: 8px 11px;
-  font-size: 11px;
-  font-weight: 700;
+.mi-tarea-actions button {
+  min-height: 39px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 800;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
 }
 
-.mi-tarea-btn:hover:not(:disabled) {
+.mi-tarea-actions button:hover {
   transform: translateY(-1px);
 }
 
-.mi-tarea-btn:disabled {
+.mi-tarea-actions button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  transform: none;
 }
 
-.mi-tarea-btn.editar {
-  background: #f2f4f7;
-  color: #344054;
+.mi-tarea-btn-iniciar {
+  background: #ecfff4;
+  border: 1px solid #b8edcf;
+  color: #16804a;
 }
 
-.mi-tarea-btn.iniciar {
-  background: #074a7b;
-  color: white;
+.mi-tarea-btn-pausar {
+  background: #fff7ee;
+  border: 1px solid #ffd29e;
+  color: #d85c00;
 }
 
-.mi-tarea-btn.pausar {
-  background: #f59e0b;
-  color: white;
+.mi-tarea-btn-reanudar {
+  background: #effff5;
+  border: 1px solid #b8edcf;
+  color: #16804a;
 }
 
-.mi-tarea-btn.reanudar {
-  background: #16a34a;
-  color: white;
+.mi-tarea-btn-terminar {
+  background: #102b49;
+  border: 1px solid #102b49;
+  color: #ffffff;
 }
 
-.mi-tarea-btn.eliminar {
-  background: #fff1f0;
-  color: #b42318;
+.mi-tarea-btn-editar {
+  background: #f3f6fa;
+  border: 1px solid #dce4ed;
+  color: #30455f;
+}
+
+/* =========================================================
+   EMPTY
+   ========================================================= */
+
+.mi-tareas-empty {
+  padding: 55px 25px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px dashed #d6e0eb;
+  border-radius: 22px;
+}
+
+.mi-tareas-empty strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 17px;
+  color: #263c56;
+}
+
+.mi-tareas-empty p {
+  margin: 0;
+  color: #7c899a;
+  font-size: 14px;
 }
 
 /* =========================================================
    PAGINACIÓN
-========================================================= */
+   ========================================================= */
 
 .mi-tareas-paginacion {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 14px;
-  margin-top: 18px;
+  align-items: center;
+  gap: 15px;
+  margin-top: 25px;
 }
 
-.mi-tareas-paginacion > button {
-  border: 1px solid #d9e0e7;
-  border-radius: 9px;
-  padding: 7px 11px;
-  background: white;
-  color: #344054;
-  font-size: 11px;
+.mi-tareas-paginacion button {
+  min-height: 38px;
+  padding: 0 15px;
+  background: #ffffff;
+  border: 1px solid #dce4ed;
+  border-radius: 10px;
+  color: #30455f;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.mi-tareas-paginacion > button:disabled {
-  opacity: 0.4;
+.mi-tareas-paginacion button:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.mi-tareas-puntos {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.mi-tareas-puntos button {
-  width: 7px;
-  height: 7px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: #d0d5dd;
-  cursor: pointer;
-}
-
-.mi-tareas-puntos button.activo {
-  width: 9px;
-  height: 9px;
-  background: #074a7b;
-}
-
 .mi-tareas-paginacion span {
-  color: #667085;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-/* =========================================================
-   VACÍO
-========================================================= */
-
-.mi-tareas-vacio {
-  padding: 45px 20px;
-  text-align: center;
-}
-
-.mi-tareas-vacio-icono {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 12px;
-  border-radius: 50%;
-  background: #ecfdf3;
-  color: #16a34a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.mi-tareas-vacio h3 {
-  margin: 0;
-  color: #172033;
-  font-size: 18px;
-}
-
-.mi-tareas-vacio p {
-  max-width: 420px;
-  margin: 7px auto 18px;
-  color: #667085;
   font-size: 13px;
+  color: #6e7c90;
+  font-weight: 700;
 }
 
 /* =========================================================
    LOADING
-========================================================= */
+   ========================================================= */
 
 .mi-tareas-loading {
-  min-height: 350px;
+  min-height: 300px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-}
-
-.mi-tareas-loader {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #074a7b;
-  border-radius: 50%;
-  animation: miTareasSpin 0.8s linear infinite;
+  flex-direction: column;
+  gap: 13px;
+  color: #708096;
 }
 
 .mi-tareas-loading p {
-  color: #667085;
-  font-size: 13px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.loader {
+  width: 35px;
+  height: 35px;
+  border: 3px solid #dfe8f1;
+  border-top-color: #074a7b;
+  border-radius: 50%;
+  animation: miTareasSpin 0.8s linear infinite;
 }
 
 @keyframes miTareasSpin {
@@ -607,10 +530,293 @@
 }
 
 /* =========================================================
-   RESPONSIVE
-========================================================= */
+   POPUP GENERAL
+   ========================================================= */
 
-@media (max-width: 800px) {
+.pausa-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  box-sizing: border-box;
+  background: rgba(12, 28, 48, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+/* =========================================================
+   POPUP PAUSA
+   ========================================================= */
+
+.pausa-modal {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 25px 80px rgba(7, 24, 44, 0.25);
+}
+
+.pausa-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 25px 26px 18px;
+}
+
+.pausa-modal-header > div > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #074a7b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+}
+
+.pausa-modal-header h2 {
+  margin: 0;
+  color: #152a43;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.pausa-modal-header p {
+  margin: 8px 0 0;
+  color: #77869a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pausa-cerrar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #f1f4f7;
+  color: #526277;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pausa-opciones {
+  display: grid;
+  gap: 10px;
+  padding: 7px 26px 22px;
+}
+
+.pausa-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e1e8ef;
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.pausa-opcion:hover {
+  background: #f8fbfd;
+}
+
+.pausa-opcion.seleccionada {
+  border-color: #0b66a3;
+  background: #f1f8fc;
+}
+
+.pausa-opcion input {
+  margin-top: 3px;
+  accent-color: #074a7b;
+}
+
+.pausa-opcion strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #263b54;
+  font-size: 14px;
+}
+
+.pausa-opcion span {
+  display: block;
+  color: #7b899c;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.pausa-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 18px 26px 24px;
+  border-top: 1px solid #e8edf2;
+}
+
+/* =========================================================
+   BOTONES POPUP
+   ========================================================= */
+
+.editar-tarea-btn {
+  min-height: 40px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.editar-tarea-btn.cancelar {
+  background: #f1f4f7;
+  border: 1px solid #dce4ec;
+  color: #4c5e73;
+}
+
+.editar-tarea-btn.pausar {
+  background: #102b49;
+  color: #ffffff;
+}
+
+.editar-tarea-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   POPUP DÍA ANTERIOR
+   ========================================================= */
+
+.dia-anterior-modal {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 28px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 25px;
+  box-shadow: 0 25px 80px rgba(7, 24, 44, 0.27);
+}
+
+.dia-anterior-icono {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 17px;
+  border-radius: 15px;
+  background: #fff4df;
+  color: #d47a00;
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.dia-anterior-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #074a7b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.dia-anterior-contenido h2 {
+  margin: 0;
+  color: #152a43;
+  font-size: 23px;
+  line-height: 1.3;
+}
+
+.dia-anterior-contenido > p {
+  margin: 10px 0 18px;
+  color: #69788c;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.dia-anterior-lista {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 17px;
+}
+
+.dia-anterior-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 13px 15px;
+  border: 1px solid #e3e9ef;
+  border-radius: 13px;
+  background: #fafcfd;
+}
+
+.dia-anterior-item strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #263b54;
+  font-size: 13px;
+}
+
+.dia-anterior-item span {
+  display: block;
+  color: #7d8b9d;
+  font-size: 12px;
+}
+
+.dia-anterior-estado {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #b96a00 !important;
+  font-size: 11px !important;
+  font-weight: 800;
+}
+
+.dia-anterior-nota {
+  display: flex;
+  gap: 6px;
+  padding: 13px 15px;
+  margin-bottom: 20px;
+  border-radius: 13px;
+  background: #f3f8fc;
+  color: #66778b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dia-anterior-nota strong {
+  color: #27445f;
+}
+
+.dia-anterior-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .mi-tareas-page {
+    padding: 25px;
+  }
+
+  .mi-tareas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
   .mi-tareas-page {
     padding: 18px;
   }
@@ -623,7 +829,7 @@
     width: 100%;
   }
 
-  .mi-tareas-header-actions button {
+  .mi-tareas-header-actions .mi-tareas-btn {
     flex: 1;
   }
 
@@ -631,33 +837,12 @@
     grid-template-columns: 1fr;
   }
 
-  .mi-tareas-contenedor {
-    padding: 16px;
-  }
-
-  .mi-tareas-info {
-    grid-template-columns: 1fr;
-  }
-
-  .mi-tarea-info {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-  .mi-tareas-slider {
-    gap: 5px;
-  }
-
-  .mi-tareas-slider-btn {
-    width: 30px;
-    height: 30px;
-    flex-basis: 30px;
-    font-size: 22px;
+  .mi-tarea-card {
+    padding: 19px;
+    border-radius: 20px;
   }
 
   .mi-tarea-card-top {
-    align-items: flex-start;
     flex-direction: column;
   }
 
@@ -665,25 +850,60 @@
     align-self: flex-start;
   }
 
-  .mi-tarea-info {
+  .mi-tarea-meta {
     grid-template-columns: 1fr 1fr;
   }
 
-  .mi-tarea-info-item.tiempo-real {
-    grid-column: 1 / -1;
+  .mi-tarea-actions button {
+    flex: 1;
   }
 
-  .mi-tarea-footer {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+  .pausa-modal-header,
+  .pausa-opciones,
+  .pausa-modal-actions {
+    padding-left: 19px;
+    padding-right: 19px;
   }
 
-  .mi-tareas-lista-header {
+  .dia-anterior-modal {
+    padding: 21px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mi-tareas-header h1 {
+    font-size: 29px;
+  }
+
+  .mi-tarea-meta {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .mi-tarea-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mi-tarea-actions button {
+    width: 100%;
+  }
+
+  .pausa-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .pausa-modal-actions button {
+    width: 100%;
+  }
+
+  .dia-anterior-item {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .mi-tareas-paginacion {
-    flex-wrap: wrap;
+  .dia-anterior-estado {
+    align-self: flex-start;
   }
 }
