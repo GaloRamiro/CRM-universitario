@@ -6,6 +6,10 @@
   box-sizing: border-box;
 }
 
+/* =========================
+   ENCABEZADO
+========================= */
+
 .departamentos-header {
   margin-bottom: 24px;
 }
@@ -79,10 +83,6 @@
   gap: 18px;
 }
 
-/* IMPORTANTE:
-   El JSX usa .form-group
-*/
-
 .form-group {
   width: 100%;
   display: flex;
@@ -124,15 +124,15 @@
   resize: vertical;
 }
 
-.form-group input::placeholder,
-.form-group textarea::placeholder {
-  color: #a1aec0;
-}
-
 .form-group input:focus,
 .form-group textarea:focus {
   border-color: #074a7b;
   box-shadow: 0 0 0 3px rgba(7, 74, 123, 0.1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #a1aec0;
 }
 
 /* =========================
@@ -163,12 +163,8 @@
 }
 
 /* =========================
-   BOTÓN
+   BOTÓN CREAR
 ========================= */
-
-/* IMPORTANTE:
-   El JSX usa .departamentos-actions
-*/
 
 .departamentos-actions {
   width: 100%;
@@ -215,7 +211,7 @@
 
 .departamento-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 18px 0;
@@ -224,6 +220,11 @@
 
 .departamento-item:first-child {
   border-top: none;
+}
+
+.departamento-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .departamento-item strong {
@@ -240,6 +241,44 @@
   line-height: 1.5;
 }
 
+/* =========================
+   ACCIONES DEL DEPARTAMENTO
+========================= */
+
+.departamento-item-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.departamento-btn-editar {
+  min-height: 40px;
+  padding: 0 17px;
+  border: 1px solid #d5deea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #074a7b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.departamento-btn-editar:hover {
+  background: #f1f6fa;
+  border-color: #074a7b;
+  color: #063f69;
+  transform: translateY(-1px);
+}
+
+/* =========================
+   MENSAJE LISTA
+========================= */
+
 .departamentos-lista > p {
   margin: 0;
   padding: 10px 0;
@@ -252,6 +291,7 @@
 ========================= */
 
 @media (max-width: 800px) {
+
   .departamentos-page {
     padding: 24px 20px;
   }
@@ -279,6 +319,7 @@
   .departamentos-btn {
     min-height: 46px;
   }
+
 }
 
 /* =========================
@@ -286,6 +327,7 @@
 ========================= */
 
 @media (max-width: 520px) {
+
   .departamentos-page {
     width: 100%;
     max-width: 100%;
@@ -372,7 +414,8 @@
 
   .departamento-item {
     flex-direction: column;
-    gap: 8px;
+    align-items: stretch;
+    gap: 12px;
     padding: 16px 0;
   }
 
@@ -383,5 +426,14 @@
   .departamento-item p {
     font-size: 13px;
   }
-}
 
+  .departamento-item-actions {
+    width: 100%;
+  }
+
+  .departamento-btn-editar {
+    width: 100%;
+    min-height: 44px;
+  }
+
+}
