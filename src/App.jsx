@@ -1,54 +1,163 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+
 import MainLayout from "./layouts/MainLayout";
+
 import Dashboard from "./pages/Dashboard";
+
 import Tareas from "./pages/Tareas";
+
 import NuevaTarea from "./pages/NuevaTarea";
+
 import NuevoUsuario from "./pages/NuevoUsuario";
+
 import Usuarios from "./pages/Usuarios";
+
 import Departamentos from "./pages/Departamentos";
+
 import Reportes from "./pages/Reportes";
+
 import Login from "./pages/Login";
+
 import ProtectedRoute from "./components/ProtectedRoute";
+
 import RoleRoute from "./components/RoleRoute";
+
 import EditarUsuario from "./pages/EditarUsuario";
+
 import EditarTarea from "./pages/EditarTarea";
+
+import EditarDepartamento from "./pages/EditarDepartamento";
+
 import CargaEquipo from "./pages/CargaEquipo";
+
 import TareaOlvidada from "./pages/TareaOlvidada";
+
 import MisTareas from "./pages/MisTareas";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         {/* Página pública */}
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
         {/* Páginas protegidas */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<MainLayout />}>
+
+          <Route
+            path="/"
+            element={<MainLayout />}
+          >
+
             {/* Inicio */}
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route
+              index
+              element={
+                <Navigate
+                  to="/dashboard"
+                  replace
+                />
+              }
+            />
 
             {/* Accesibles para usuarios autenticados */}
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="tareas" element={<Tareas />} />
-            <Route path="mis-tareas" element={<MisTareas />} />
-            <Route path="tareas/nueva" element={<NuevaTarea />} />
-            <Route path="tareas/olvidada" element={<TareaOlvidada />} />
-            <Route path="tareas/:id/editar" element={<EditarTarea />} />
-            <Route path="carga-equipo" element={<CargaEquipo />} />
+
+            <Route
+              path="dashboard"
+              element={<Dashboard />}
+            />
+
+            <Route
+              path="tareas"
+              element={<Tareas />}
+            />
+
+            <Route
+              path="mis-tareas"
+              element={<MisTareas />}
+            />
+
+            <Route
+              path="tareas/nueva"
+              element={<NuevaTarea />}
+            />
+
+            <Route
+              path="tareas/olvidada"
+              element={<TareaOlvidada />}
+            />
+
+            <Route
+              path="tareas/:id/editar"
+              element={<EditarTarea />}
+            />
+
+            <Route
+              path="carga-equipo"
+              element={<CargaEquipo />}
+            />
+
             {/* Solo administradores */}
-            <Route element={<RoleRoute allowedRoles={["admin"]} />}>
-              <Route path="usuarios" element={<Usuarios />} />
-              <Route path="usuarios/nuevo" element={<NuevoUsuario />} />
-              <Route path="usuarios/:id/editar" element={<EditarUsuario />} />
-              <Route path="departamentos" element={<Departamentos />} />
-              <Route path="reportes" element={<Reportes />} />
+            <Route
+              element={
+                <RoleRoute
+                  allowedRoles={["admin"]}
+                />
+              }
+            >
+
+              <Route
+                path="usuarios"
+                element={<Usuarios />}
+              />
+
+              <Route
+                path="usuarios/nuevo"
+                element={<NuevoUsuario />}
+              />
+
+              <Route
+                path="usuarios/:id/editar"
+                element={<EditarUsuario />}
+              />
+
+              <Route
+                path="departamentos"
+                element={<Departamentos />}
+              />
+
+              {/* NUEVA RUTA PARA EDITAR DEPARTAMENTOS */}
+              <Route
+                path="departamentos/:id/editar"
+                element={<EditarDepartamento />}
+              />
+
+              <Route
+                path="reportes"
+                element={<Reportes />}
+              />
+
             </Route>
+
           </Route>
+
         </Route>
 
         {/* Ruta desconocida */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
+        />
+
       </Routes>
     </BrowserRouter>
   );
