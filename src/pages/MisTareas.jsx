@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import "./MisTareas.css";
@@ -6,88 +6,170 @@ import "./MisTareas.css";
 function MisTareas() {
   const navigate = useNavigate();
 
-  const [usuarioActual, setUsuarioActual] = useState(null);
+  // =========================================================
+  // ESTADOS
+  // =========================================================
+
+  const [usuario, setUsuario] = useState(null);
   const [tareas, setTareas] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [procesando, setProcesando] = useState(null);
-  const [error, setError] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
   const [mensaje, setMensaje] = useState("");
+  const [error, setError] = useState("");
+
+  const [horaActual, setHoraActual] = useState(new Date());
+
+  const [pagina, setPagina] = useState(1);
+  const TAREAS_POR_PAGINA = 6;
 
   // =========================================================
-  // CONTADORES ANIMADOS
+  // POPUP — MOTIVO DE PAUSA
   // =========================================================
 
-  const [contadorPendientes, setContadorPendientes] = useState(0);
-  const [contadorProceso, setContadorProceso] = useState(0);
-  const [contadorPausadas, setContadorPausadas] = useState(0);
+  const [mostrarPausa, setMostrarPausa] = useState(false);
+  const [motivoPausa, setMotivoPausa] = useState("");
+  const [tareaParaPausar, setTareaParaPausar] = useState(null);
 
   // =========================================================
-  // SLIDER
+  // POPUP — TAREAS AUTO-PAUSADAS DEL DÍA ANTERIOR
   // =========================================================
 
-  const TAREAS_POR_PAGINA = 5;
-  const [paginaActual, setPaginaActual] = useState(1);
+  const [mostrarAvisoDiaAnterior, setMostrarAvisoDiaAnterior] =
+    useState(false);
+
+  const [tareasAutoPausadasAyer, setTareasAutoPausadasAyer] = useState([]);
 
   // =========================================================
-  // CARGAR INFORMACIÓN
+  // REF PARA EVITAR EJECUCIONES DUPLICADAS
+  // =========================================================
+
+  const procesandoAutoPausa = useRef(false);
+
+  // =========================================================
+  // CARGAR HORA
   // =========================================================
 
   useEffect(() => {
-    cargarMisTareas();
+    const intervalo = setInterval(() => {
+      setHoraActual(new Date());
+    }, 1000);
+
+    return () => clearInterval(intervalo);
   }, []);
 
-  const cargarMisTareas = async () => {
-    setCargando(true);
-    setError("");
-    setMensaje("");
+  // =========================================================
+  // OBTENER FECHA ACTUAL
+  // =========================================================
 
+  const obtenerFechaActual = (fecha = new Date()) => {
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+    const dia = String(fecha.getDate()).padStart(2, "0");
+
+    return `${año}-${mes}-${dia}`;
+  };
+
+  // =========================================================
+  // OBTENER FECHA ANTERIOR
+  // =========================================================
+
+  const obtenerFechaAnterior = () => {
+    const fecha = new Date();
+    fecha.setDate(fecha.getDate() - 1);
+
+    return obtenerFechaActual(fecha);
+  };
+
+  // =========================================================
+  // OBTENER HORA ACTUAL
+  // =========================================================
+
+  const obtenerHoraActual = (fecha = new Date()) => {
+    const horas = String(fecha.getHours()).padStart(2, "0");
+    const minutos = String(fecha.getMinutes()).padStart(2, "0");
+    const segundos = String(fecha.getSeconds()).padStart(2, "0");
+
+    return `${horas}:${minutos}:${segundos}`;
+  };
+
+  // =========================================================
+  // OBTENER HORA EN FORMATO HH:MM
+  // =========================================================
+
+  const obtenerHoraCorta = (fecha = new Date()) => {
+    return obtenerHoraActual(fecha).substring(0, 5);
+  };
+
+  // =========================================================
+  // CARGAR USUARIO
+  // =========================================================
+
+  useEffect(() => {
+    cargarUsuario();
+  }, []);
+
+  const cargarUsuario = async () => {
     try {
-      // -------------------------------------------------------
-      // 1. OBTENER USUARIO AUTENTICADO
-      // -------------------------------------------------------
-
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
 
       if (authError) {
-        throw new Error("No se pudo verificar la sesión.");
+        throw authError;
       }
 
-      if (!user) {
-        throw new Error("No existe una sesión activa.");
+      if (!authData?.user) {
+        navigate("/login");
+        return;
       }
-
-      // -------------------------------------------------------
-      // 2. BUSCAR EL USUARIO EN LA TABLA usuarios
-      // -------------------------------------------------------
 
       const { data: usuarioData, error: usuarioError } = await supabase
         .from("usuarios")
-        .select("id, nombre, apellido, email, activo, auth_user_id")
-        .eq("auth_user_id", user.id)
+        .select(`
+          id,
+          nombre,
+          apellido,
+          email,
+          activo,
+          auth_user_id
+        `)
+        .eq("auth_user_id", authData.user.id)
         .single();
 
       if (usuarioError) {
-        console.error("Error buscando usuario:", usuarioError);
-
-        throw new Error(
-          "No se encontró el usuario asociado a la sesión actual."
-        );
+        throw usuarioError;
       }
 
-      if (!usuarioData) {
-        throw new Error("No se encontró información del usuario.");
-      }
+      setUsuario(usuarioData);
+    } catch (err) {
+      console.error("Error cargando usuario:", err);
 
-      setUsuarioActual(usuarioData);
+      setError(
+        "No se pudo cargar la información del usuario."
+      );
 
-      // -------------------------------------------------------
-      // 3. CARGAR TAREAS DEL USUARIO
-      // -------------------------------------------------------
+      setCargando(false);
+    }
+  };
 
-      const { data: tareasData, error: tareasError } = await supabase
+  // =========================================================
+  // CARGAR TAREAS
+  // =========================================================
+
+  useEffect(() => {
+    if (!usuario?.id) {
+      return;
+    }
+
+    cargarTareas();
+  }, [usuario?.id]);
+
+  const cargarTareas = async () => {
+    setCargando(true);
+    setError("");
+
+    try {
+      const { data, error: tareasError } = await supabase
         .from("tareas")
         .select(`
           id,
@@ -106,623 +188,1297 @@ function MisTareas() {
           inicio_real,
           fin_real,
           tiempo_trabajado_min,
-          estado_ejecucion,
-          created_at,
-          updated_at
+          estado_ejecucion
         `)
-        .eq("responsable_id", usuarioData.id)
-        .order("fecha_inicio", { ascending: true })
-        .order("hora_inicio", { ascending: true });
+        .eq("responsable_id", usuario.id)
+        .order("fecha_inicio", {
+          ascending: true,
+        })
+        .order("hora_inicio", {
+          ascending: true,
+        });
 
       if (tareasError) {
-        console.error("Error cargando mis tareas:", tareasError);
-        throw new Error("No se pudieron cargar tus tareas.");
+        throw tareasError;
       }
 
-      setTareas(tareasData || []);
-      setPaginaActual(1);
+      setTareas(data || []);
     } catch (err) {
-      console.error(err);
-      setError(err.message || "No se pudieron cargar tus tareas.");
+      console.error("Error cargando tareas:", err);
+
+      setError(
+        err.message || "No se pudieron cargar tus tareas."
+      );
     } finally {
       setCargando(false);
     }
   };
 
   // =========================================================
-  // DETECTAR TAREA PAUSADA
+  // TAREAS ACTIVAS
   // =========================================================
 
-  const estaPausada = (tarea) => {
-    if (!tarea) {
-      return false;
-    }
-
-    if (tarea.estado !== "pendiente") {
-      return false;
-    }
-
-    return Boolean(localStorage.getItem(`tarea_pausa_${tarea.id}`));
-  };
-
-  // =========================================================
-  // ESTADO VISUAL DE LA TAREA
-  // =========================================================
-
-  const obtenerEstadoVisual = (tarea) => {
-    if (estaPausada(tarea)) {
-      return "pausada";
-    }
-
-    if (tarea.estado === "en_proceso") {
-      return "en_proceso";
-    }
-
-    if (tarea.estado === "completada") {
-      return "completada";
-    }
-
-    if (
-      tarea.estado === "cancelada" ||
-      tarea.estado === "cancelado"
-    ) {
-      return "cancelada";
-    }
-
-    return "pendiente";
-  };
-
-  // =========================================================
-  // SOLO TAREAS ACTIVAS
-  // =========================================================
-
-  const misTareasActivas = useMemo(() => {
-    return tareas.filter((tarea) => {
-      const estado = obtenerEstadoVisual(tarea);
-
-      return (
-        estado === "pendiente" ||
-        estado === "en_proceso" ||
-        estado === "pausada"
-      );
-    });
+  const tareasActivas = useMemo(() => {
+    return tareas.filter(
+      (tarea) => tarea.estado !== "completada"
+    );
   }, [tareas]);
 
   // =========================================================
-  // CONTADORES
+  // TAREAS EN PROCESO
   // =========================================================
 
-  const cantidades = useMemo(() => {
-    const pendientes = misTareasActivas.filter(
-      (tarea) => obtenerEstadoVisual(tarea) === "pendiente"
-    ).length;
-
-    const enProceso = misTareasActivas.filter(
-      (tarea) => obtenerEstadoVisual(tarea) === "en_proceso"
-    ).length;
-
-    const pausadas = misTareasActivas.filter(
-      (tarea) => obtenerEstadoVisual(tarea) === "pausada"
-    ).length;
-
-    return {
-      pendientes,
-      enProceso,
-      pausadas,
-    };
-  }, [misTareasActivas]);
-
-  // =========================================================
-  // ANIMACIÓN DE CONTADORES
-  // =========================================================
-
-  useEffect(() => {
-    const animarContador = (
-      valorFinal,
-      setter,
-      duracion = 700
-    ) => {
-      let inicio = 0;
-
-      if (valorFinal === 0) {
-        setter(0);
-        return;
-      }
-
-      const incremento = valorFinal / (duracion / 20);
-
-      const intervalo = setInterval(() => {
-        inicio += incremento;
-
-        if (inicio >= valorFinal) {
-          setter(valorFinal);
-          clearInterval(intervalo);
-          return;
-        }
-
-        setter(Math.floor(inicio));
-      }, 20);
-
-      return () => clearInterval(intervalo);
-    };
-
-    const limpiarPendientes = animarContador(
-      cantidades.pendientes,
-      setContadorPendientes
+  const tareasEnProceso = useMemo(() => {
+    return tareas.filter(
+      (tarea) => tarea.estado === "en_proceso"
     );
-
-    const limpiarProceso = animarContador(
-      cantidades.enProceso,
-      setContadorProceso
-    );
-
-    const limpiarPausadas = animarContador(
-      cantidades.pausadas,
-      setContadorPausadas
-    );
-
-    return () => {
-      if (limpiarPendientes) limpiarPendientes();
-      if (limpiarProceso) limpiarProceso();
-      if (limpiarPausadas) limpiarPausadas();
-    };
-  }, [
-    cantidades.pendientes,
-    cantidades.enProceso,
-    cantidades.pausadas,
-  ]);
+  }, [tareas]);
 
   // =========================================================
-  // PAGINACIÓN / SLIDER
+  // PAGINACIÓN
   // =========================================================
 
   const totalPaginas = Math.max(
     1,
     Math.ceil(
-      misTareasActivas.length / TAREAS_POR_PAGINA
+      tareasActivas.length / TAREAS_POR_PAGINA
     )
   );
 
-  useEffect(() => {
-    if (paginaActual > totalPaginas) {
-      setPaginaActual(totalPaginas);
-    }
-  }, [paginaActual, totalPaginas]);
-
   const tareasVisibles = useMemo(() => {
     const inicio =
-      (paginaActual - 1) * TAREAS_POR_PAGINA;
+      (pagina - 1) * TAREAS_POR_PAGINA;
 
-    const fin = inicio + TAREAS_POR_PAGINA;
-
-    return misTareasActivas.slice(inicio, fin);
-  }, [misTareasActivas, paginaActual]);
-
-  const irPaginaAnterior = () => {
-    setPaginaActual((pagina) =>
-      Math.max(1, pagina - 1)
+    return tareasActivas.slice(
+      inicio,
+      inicio + TAREAS_POR_PAGINA
     );
-  };
+  }, [tareasActivas, pagina]);
 
-  const irPaginaSiguiente = () => {
-    setPaginaActual((pagina) =>
-      Math.min(totalPaginas, pagina + 1)
+  useEffect(() => {
+    if (pagina > totalPaginas) {
+      setPagina(totalPaginas);
+    }
+  }, [pagina, totalPaginas]);
+
+  // =========================================================
+  // FORMATEAR DURACIÓN
+  // =========================================================
+
+  const formatearDuracion = (minutos) => {
+    const valor = Math.max(
+      0,
+      Number(minutos) || 0
     );
+
+    const totalSegundos = Math.round(valor * 60);
+
+    const horas = Math.floor(
+      totalSegundos / 3600
+    );
+
+    const minutosRestantes = Math.floor(
+      (totalSegundos % 3600) / 60
+    );
+
+    const segundos = totalSegundos % 60;
+
+    const hh = String(horas).padStart(2, "0");
+    const mm = String(minutosRestantes).padStart(
+      2,
+      "0"
+    );
+    const ss = String(segundos).padStart(2, "0");
+
+    return `${hh}:${mm}:${ss}`;
   };
 
   // =========================================================
-  // FECHAS
+  // FORMATEAR FECHA
   // =========================================================
 
-  const formatearFecha = (fechaTexto) => {
-    if (!fechaTexto) {
+  const formatearFecha = (fecha) => {
+    if (!fecha) {
       return "Sin fecha";
     }
 
-    const fecha = new Date(`${fechaTexto}T00:00:00`);
+    const partes = String(fecha).split("-");
 
-    if (Number.isNaN(fecha.getTime())) {
+    if (partes.length !== 3) {
       return "Sin fecha";
     }
 
-    return fecha.toLocaleDateString("es-EC", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
+    const fechaLocal = new Date(
+      Number(partes[0]),
+      Number(partes[1]) - 1,
+      Number(partes[2])
+    );
+
+    return fechaLocal.toLocaleDateString(
+      "es-EC",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }
+    );
   };
 
   // =========================================================
-  // TEXTOS
+  // FORMATEAR HORA
   // =========================================================
 
-  const obtenerNombreEstado = (tarea) => {
-    const estado = obtenerEstadoVisual(tarea);
+  const formatearHora = (hora) => {
+    if (!hora) {
+      return "--:--";
+    }
 
-    const estados = {
-      pendiente: "Pendiente",
-      en_proceso: "En proceso",
-      pausada: "Pausada",
-      completada: "Completada",
-      cancelada: "Cancelada",
+    return String(hora).substring(0, 5);
+  };
+
+  // =========================================================
+  // ESTADO HUMANO
+  // =========================================================
+
+  const obtenerTextoEstado = (estado) => {
+    if (estado === "en_proceso") {
+      return "En proceso";
+    }
+
+    if (estado === "completada") {
+      return "Completada";
+    }
+
+    return "Pendiente";
+  };
+
+  // =========================================================
+  // PRIORIDAD HUMANA
+  // =========================================================
+
+  const obtenerTextoPrioridad = (prioridad) => {
+    if (prioridad === "alta") {
+      return "Alta";
+    }
+
+    if (prioridad === "baja") {
+      return "Baja";
+    }
+
+    return "Media";
+  };
+
+  // =========================================================
+  // TIEMPO ACUMULADO
+  //
+  // NO SE REINICIA AL PAUSAR.
+  // =========================================================
+
+  const obtenerTiempoAcumulado = (tarea) => {
+    return Math.max(
+      0,
+      Number(
+        tarea?.tiempo_trabajado_min
+      ) || 0
+    );
+  };
+
+  // =========================================================
+  // TIEMPO VISUAL
+  //
+  // EN PROCESO:
+  // acumulado + sesión actual.
+  //
+  // PAUSADA:
+  // solamente acumulado.
+  //
+  // Se actualiza cada segundo porque horaActual
+  // cambia cada segundo.
+  // =========================================================
+
+  const obtenerTiempoVisual = (tarea) => {
+    const acumulado =
+      obtenerTiempoAcumulado(tarea);
+
+    if (
+      tarea.estado !== "en_proceso" ||
+      !tarea.inicio_real
+    ) {
+      return acumulado;
+    }
+
+    const inicio = new Date(
+      tarea.inicio_real
+    );
+
+    if (Number.isNaN(inicio.getTime())) {
+      return acumulado;
+    }
+
+    const ahora = new Date();
+
+    const diferencia =
+      Math.max(
+        0,
+        ahora.getTime() -
+          inicio.getTime()
+      ) / 60000;
+
+    return acumulado + diferencia;
+  };
+
+  // =========================================================
+  // PAUSAR UNA TAREA INTERNAMENTE
+  //
+  // Esta función se utiliza para:
+  //
+  // 1. Exclusividad
+  // 2. Pausa automática de las 17:00
+  //
+  // NO REINICIA EL TIEMPO.
+  // =========================================================
+
+  const pausarTareaInternamente = async (
+    tarea,
+    fechaHoraPausa = new Date(),
+    motivo = "otra_tarea"
+  ) => {
+    if (!tarea) {
+      return null;
+    }
+
+    const ahora = fechaHoraPausa;
+
+    const inicio = tarea.inicio_real
+      ? new Date(tarea.inicio_real)
+      : null;
+
+    const acumuladoAnterior = Math.max(
+      0,
+      Number(
+        tarea.tiempo_trabajado_min
+      ) || 0
+    );
+
+    let minutosSesion = 0;
+
+    if (
+      inicio &&
+      !Number.isNaN(inicio.getTime())
+    ) {
+      minutosSesion =
+        Math.max(
+          0,
+          ahora.getTime() -
+            inicio.getTime()
+        ) / 60000;
+    }
+
+    const nuevoAcumulado = Math.round(
+      acumuladoAnterior +
+        minutosSesion
+    );
+
+    const { error: updateError } =
+      await supabase
+        .from("tareas")
+        .update({
+          estado: "pendiente",
+          tiempo_trabajado_min:
+            nuevoAcumulado,
+          fin_real:
+            ahora.toISOString(),
+          estado_ejecucion:
+            "pausada",
+        })
+        .eq("id", tarea.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return {
+      ...tarea,
+      estado: "pendiente",
+      tiempo_trabajado_min:
+        nuevoAcumulado,
+      fin_real:
+        ahora.toISOString(),
+      estado_ejecucion:
+        "pausada",
+      motivo,
     };
-
-    return estados[estado] || "Pendiente";
-  };
-
-  const obtenerNombrePrioridad = (prioridad) => {
-    const prioridades = {
-      alta: "Alta",
-      media: "Media",
-      baja: "Baja",
-    };
-
-    return prioridades[prioridad] || "Media";
   };
 
   // =========================================================
-  // HORA ACTUAL
+  // EXCLUSIVIDAD
+  //
+  // Si existe otra tarea ejecutándose,
+  // se pausa automáticamente.
+  //
+  // De esta manera SOLO puede existir
+  // UNA tarea en proceso.
   // =========================================================
 
-  const obtenerHoraActual = () => {
-    const fecha = new Date();
+  const pausarOtrasTareasEnProceso = async (
+    tareaActual,
+    fechaHoraPausa = new Date()
+  ) => {
+    const otrasTareas =
+      tareasEnProceso.filter(
+        (tarea) =>
+          String(tarea.id) !==
+          String(tareaActual.id)
+      );
 
-    const horas = String(fecha.getHours()).padStart(2, "0");
-    const minutos = String(fecha.getMinutes()).padStart(2, "0");
+    if (otrasTareas.length === 0) {
+      return [];
+    }
 
-    return `${horas}:${minutos}`;
-  };
+    const tareasPausadas = [];
 
-  // =========================================================
-  // FECHA ACTUAL
-  // =========================================================
+    for (const tarea of otrasTareas) {
+      const tareaPausada =
+        await pausarTareaInternamente(
+          tarea,
+          fechaHoraPausa,
+          "cambio_tarea"
+        );
 
-  const obtenerFechaActual = () => {
-    const fecha = new Date();
+      if (tareaPausada) {
+        tareasPausadas.push(
+          tareaPausada
+        );
 
-    const año = fecha.getFullYear();
-    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-    const dia = String(fecha.getDate()).padStart(2, "0");
+        localStorage.setItem(
+          `tarea_pausa_${tarea.id}`,
+          JSON.stringify({
+            tarea_id: tarea.id,
+            motivo: "cambio_tarea",
+            hora: obtenerHoraActual(
+              fechaHoraPausa
+            ),
+            fecha: obtenerFechaActual(
+              fechaHoraPausa
+            ),
+            minutos_acumulados:
+              tareaPausada.tiempo_trabajado_min,
+          })
+        );
 
-    return `${año}-${mes}-${dia}`;
+        localStorage.removeItem(
+          `tarea_reanudacion_${tarea.id}`
+        );
+      }
+    }
+
+    return tareasPausadas;
   };
 
   // =========================================================
   // INICIAR TAREA
+  //
+  // Si existe otra en proceso:
+  // SE PAUSA AUTOMÁTICAMENTE.
   // =========================================================
 
   const iniciarTarea = async (tarea) => {
-    setProcesando(tarea.id);
-    setError("");
+    if (!tarea || guardando) {
+      return;
+    }
+
     setMensaje("");
+    setError("");
+
+    setGuardando(true);
 
     try {
-      const fechaActual = obtenerFechaActual();
-      const horaActual = obtenerHoraActual();
+      const ahora = new Date();
 
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "en_proceso",
-          fecha_inicio: fechaActual,
-          fecha: fechaActual,
-          hora_inicio: horaActual,
-          hora_fin: null,
-          fecha_fin: null,
-        })
-        .eq("id", tarea.id)
-        .eq("responsable_id", usuarioActual.id);
+      const otrasTareas =
+        tareasEnProceso.filter(
+          (item) =>
+            String(item.id) !==
+            String(tarea.id)
+        );
 
-      if (updateError) {
-        throw new Error(
-          updateError.message ||
-            "No se pudo iniciar la tarea."
+      if (otrasTareas.length > 0) {
+        await pausarOtrasTareasEnProceso(
+          tarea,
+          ahora
         );
       }
 
-      setTareas((actuales) =>
-        actuales.map((item) =>
-          item.id === tarea.id
-            ? {
-                ...item,
-                estado: "en_proceso",
-                fecha_inicio: fechaActual,
-                fecha: fechaActual,
-                hora_inicio: horaActual,
-                hora_fin: null,
-                fecha_fin: null,
-              }
-            : item
-        )
+      const fechaActual =
+        obtenerFechaActual(ahora);
+
+      const horaActual =
+        obtenerHoraActual(ahora);
+
+      const { error: updateError } =
+        await supabase
+          .from("tareas")
+          .update({
+            estado: "en_proceso",
+            fecha_inicio:
+              tarea.fecha_inicio ||
+              fechaActual,
+            fecha:
+              tarea.fecha ||
+              fechaActual,
+            hora_inicio:
+              tarea.hora_inicio ||
+              horaActual,
+            inicio_real:
+              ahora.toISOString(),
+            fin_real: null,
+            estado_ejecucion:
+              "en_proceso",
+          })
+          .eq("id", tarea.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      localStorage.removeItem(
+        `tarea_pausa_${tarea.id}`
       );
 
-      setMensaje(
-        `"${tarea.titulo}" iniciada a las ${horaActual}.`
+      localStorage.setItem(
+        `tarea_reanudacion_${tarea.id}`,
+        JSON.stringify({
+          tarea_id: tarea.id,
+          fecha: fechaActual,
+          hora: horaActual,
+        })
       );
+
+      await cargarTareas();
+
+      if (otrasTareas.length > 0) {
+        setMensaje(
+          `Tarea "${tarea.titulo}" iniciada. Las otras tareas en proceso fueron pausadas automáticamente.`
+        );
+      } else {
+        setMensaje(
+          `Tarea "${tarea.titulo}" iniciada a las ${horaActual.substring(
+            0,
+            5
+          )}.`
+        );
+      }
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Error iniciando tarea:",
+        err
+      );
+
       setError(
-        err.message || "No se pudo iniciar la tarea."
+        err.message ||
+          "No se pudo iniciar la tarea."
       );
     } finally {
-      setProcesando(null);
+      setGuardando(false);
     }
   };
 
   // =========================================================
-  // REANUDAR TAREA
+  // ABRIR POPUP DE PAUSA
+  // =========================================================
+
+  const abrirPausa = (tarea) => {
+    if (!tarea) {
+      return;
+    }
+
+    setTareaParaPausar(tarea);
+    setMotivoPausa("");
+    setError("");
+    setMensaje("");
+    setMostrarPausa(true);
+  };
+
+  // =========================================================
+  // CERRAR POPUP DE PAUSA
+  // =========================================================
+
+  const cerrarPausa = () => {
+    if (guardando) {
+      return;
+    }
+
+    setMostrarPausa(false);
+    setMotivoPausa("");
+    setTareaParaPausar(null);
+  };
+
+  // =========================================================
+  // CONFIRMAR PAUSA MANUAL
+  //
+  // CONSERVA EL TIEMPO.
+  // =========================================================
+
+  const confirmarPausa = async () => {
+    if (!tareaParaPausar) {
+      return;
+    }
+
+    if (!motivoPausa) {
+      setError(
+        "Selecciona el motivo de la pausa."
+      );
+      return;
+    }
+
+    setGuardando(true);
+    setError("");
+    setMensaje("");
+
+    try {
+      const ahora = new Date();
+
+      const tareaPausada =
+        await pausarTareaInternamente(
+          tareaParaPausar,
+          ahora,
+          motivoPausa
+        );
+
+      if (!tareaPausada) {
+        return;
+      }
+
+      const horaPausa =
+        obtenerHoraActual(ahora);
+
+      const fechaPausa =
+        obtenerFechaActual(ahora);
+
+      // -------------------------------------------------------
+      // REGISTRO TEMPORAL DE PAUSA
+      // -------------------------------------------------------
+
+      localStorage.setItem(
+        `tarea_pausa_${tareaParaPausar.id}`,
+        JSON.stringify({
+          tarea_id:
+            tareaParaPausar.id,
+          motivo: motivoPausa,
+          hora: horaPausa,
+          fecha: fechaPausa,
+          minutos_acumulados:
+            tareaPausada.tiempo_trabajado_min,
+        })
+      );
+
+      localStorage.removeItem(
+        `tarea_reanudacion_${tareaParaPausar.id}`
+      );
+
+      const titulo =
+        tareaParaPausar.titulo;
+
+      const tiempoFinal =
+        tareaPausada.tiempo_trabajado_min;
+
+      setMostrarPausa(false);
+      setTareaParaPausar(null);
+      setMotivoPausa("");
+
+      await cargarTareas();
+
+      setMensaje(
+        `Tarea "${titulo}" pausada a las ${horaPausa.substring(
+          0,
+          5
+        )}. Tiempo acumulado: ${formatearDuracion(
+          tiempoFinal
+        )}.`
+      );
+
+      // -------------------------------------------------------
+      // SI ES OTRA TAREA / URGENTE
+      // SE MANTIENE LA LÓGICA ANTERIOR
+      // -------------------------------------------------------
+
+      if (
+        motivoPausa === "otra_tarea" ||
+        motivoPausa ===
+          "tarea_urgente"
+      ) {
+        navigate("/tareas/nueva");
+        return;
+      }
+    } catch (err) {
+      console.error(
+        "Error pausando tarea:",
+        err
+      );
+
+      setError(
+        err.message ||
+          "No se pudo pausar la tarea."
+      );
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  // =========================================================
+  // REANUDAR
+  //
+  // ANTES DE REANUDAR:
+  // PAUSA AUTOMÁTICAMENTE LAS OTRAS.
   // =========================================================
 
   const reanudarTarea = async (tarea) => {
-    setProcesando(tarea.id);
+    if (!tarea || guardando) {
+      return;
+    }
+
+    setGuardando(true);
     setError("");
     setMensaje("");
 
     try {
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "en_proceso",
-        })
-        .eq("id", tarea.id)
-        .eq("responsable_id", usuarioActual.id);
+      const ahora = new Date();
 
-      if (updateError) {
-        throw new Error(
-          updateError.message ||
-            "No se pudo reanudar la tarea."
+      const otrasTareas =
+        tareasEnProceso.filter(
+          (item) =>
+            String(item.id) !==
+            String(tarea.id)
+        );
+
+      if (otrasTareas.length > 0) {
+        await pausarOtrasTareasEnProceso(
+          tarea,
+          ahora
         );
       }
 
-      localStorage.removeItem(`tarea_pausa_${tarea.id}`);
+      const horaActual =
+        obtenerHoraActual(ahora);
 
-      setTareas((actuales) =>
-        actuales.map((item) =>
-          item.id === tarea.id
-            ? {
-                ...item,
-                estado: "en_proceso",
-              }
-            : item
-        )
+      const { error: updateError } =
+        await supabase
+          .from("tareas")
+          .update({
+            estado: "en_proceso",
+            inicio_real:
+              ahora.toISOString(),
+            fin_real: null,
+            estado_ejecucion:
+              "en_proceso",
+          })
+          .eq("id", tarea.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      localStorage.setItem(
+        `tarea_reanudacion_${tarea.id}`,
+        JSON.stringify({
+          tarea_id: tarea.id,
+          fecha:
+            obtenerFechaActual(ahora),
+          hora: horaActual,
+        })
       );
 
-      setMensaje(`"${tarea.titulo}" reanudada.`);
+      localStorage.removeItem(
+        `tarea_pausa_${tarea.id}`
+      );
+
+      await cargarTareas();
+
+      if (otrasTareas.length > 0) {
+        setMensaje(
+          `Tarea "${tarea.titulo}" reanudada. Las otras tareas fueron pausadas automáticamente.`
+        );
+      } else {
+        setMensaje(
+          `Tarea "${tarea.titulo}" reanudada a las ${horaActual.substring(
+            0,
+            5
+          )}.`
+        );
+      }
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Error reanudando tarea:",
+        err
+      );
+
       setError(
-        err.message || "No se pudo reanudar la tarea."
+        err.message ||
+          "No se pudo reanudar la tarea."
       );
     } finally {
-      setProcesando(null);
+      setGuardando(false);
     }
   };
 
   // =========================================================
-  // CANCELAR TAREA
+  // TERMINAR TAREA
   // =========================================================
 
-  const cancelarTarea = async (tarea) => {
+  const terminarTarea = async (tarea) => {
+    if (!tarea || guardando) {
+      return;
+    }
+
     const confirmar = window.confirm(
-      `¿Deseas cancelar la tarea "${tarea.titulo}"?\n\nLa tarea dejará de aparecer en "Mis tareas".`
+      "¿Confirmas que esta tarea ya está terminada?"
     );
 
     if (!confirmar) {
       return;
     }
 
-    setProcesando(tarea.id);
+    setGuardando(true);
     setError("");
     setMensaje("");
 
     try {
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "cancelada",
-        })
-        .eq("id", tarea.id)
-        .eq("responsable_id", usuarioActual.id);
+      const ahora = new Date();
 
-      if (updateError) {
-        throw new Error(
-          updateError.message ||
-            "No se pudo cancelar la tarea."
+      const inicio = tarea.inicio_real
+        ? new Date(tarea.inicio_real)
+        : null;
+
+      const acumuladoAnterior =
+        Math.max(
+          0,
+          Number(
+            tarea.tiempo_trabajado_min
+          ) || 0
         );
+
+      let minutosSesion = 0;
+
+      if (
+        inicio &&
+        !Number.isNaN(
+          inicio.getTime()
+        )
+      ) {
+        minutosSesion =
+          Math.max(
+            0,
+            ahora.getTime() -
+              inicio.getTime()
+          ) / 60000;
       }
 
-      localStorage.removeItem(`tarea_pausa_${tarea.id}`);
+      const totalFinal = Math.round(
+        acumuladoAnterior +
+          minutosSesion
+      );
+
+      const fechaActual =
+        obtenerFechaActual(ahora);
+
+      const horaActual =
+        obtenerHoraActual(ahora);
+
+      const { error: updateError } =
+        await supabase
+          .from("tareas")
+          .update({
+            estado: "completada",
+            fecha_fin: fechaActual,
+            hora_fin: horaActual,
+            fin_real:
+              ahora.toISOString(),
+            tiempo_trabajado_min:
+              totalFinal,
+            estado_ejecucion:
+              "finalizada",
+          })
+          .eq("id", tarea.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      localStorage.removeItem(
+        `tarea_pausa_${tarea.id}`
+      );
+
       localStorage.removeItem(
         `tarea_reanudacion_${tarea.id}`
       );
 
-      setTareas((actuales) =>
-        actuales.filter(
-          (item) => item.id !== tarea.id
-        )
+      await cargarTareas();
+
+      setMensaje(
+        `Tarea terminada. Tiempo contabilizado: ${formatearDuracion(
+          totalFinal
+        )}.`
+      );
+    } catch (err) {
+      console.error(
+        "Error terminando tarea:",
+        err
       );
 
-      setMensaje(`"${tarea.titulo}" fue cancelada.`);
-    } catch (err) {
-      console.error(err);
       setError(
-        err.message || "No se pudo cancelar la tarea."
+        err.message ||
+          "No se pudo terminar la tarea."
       );
     } finally {
-      setProcesando(null);
+      setGuardando(false);
     }
   };
 
   // =========================================================
-  // ABRIR TAREA
+  // HORA DE CIERRE AUTOMÁTICO
   // =========================================================
 
-  const abrirTarea = (tarea) => {
-    navigate(`/tareas/${tarea.id}/editar`);
+  const obtenerFechaHoraCincoPM = () => {
+    const ahora = new Date();
+
+    const cincoPM = new Date(ahora);
+
+    cincoPM.setHours(17, 0, 0, 0);
+
+    return cincoPM;
   };
 
   // =========================================================
-  // TARJETA
+  // PAUSA AUTOMÁTICA A LAS 17:00
+  //
+  // IMPORTANTE:
+  // El tiempo se calcula hasta exactamente las 17:00.
+  //
+  // NO se contabiliza tiempo durante la noche.
+  // =========================================================
+
+  const ejecutarPausaAutomatica = async () => {
+    if (
+      !usuario?.id ||
+      procesandoAutoPausa.current
+    ) {
+      return;
+    }
+
+    const ahora = new Date();
+
+    const cincoPM =
+      obtenerFechaHoraCincoPM();
+
+    if (ahora < cincoPM) {
+      return;
+    }
+
+    const tareasProcesoActual =
+      tareas.filter(
+        (tarea) =>
+          tarea.estado ===
+            "en_proceso" &&
+          tarea.responsable_id ===
+            usuario.id
+      );
+
+    if (
+      tareasProcesoActual.length === 0
+    ) {
+      return;
+    }
+
+    procesandoAutoPausa.current = true;
+
+    try {
+      const tareasPausadas = [];
+
+      for (const tarea of tareasProcesoActual) {
+        const inicio = tarea.inicio_real
+          ? new Date(
+              tarea.inicio_real
+            )
+          : null;
+
+        let momentoPausa = cincoPM;
+
+        // Si por alguna razón el inicio
+        // fuera después de las 17:00,
+        // no usamos una fecha futura.
+        if (
+          inicio &&
+          !Number.isNaN(
+            inicio.getTime()
+          ) &&
+          inicio > cincoPM
+        ) {
+          momentoPausa = ahora;
+        }
+
+        const tareaPausada =
+          await pausarTareaInternamente(
+            tarea,
+            momentoPausa,
+            "cierre_jornada"
+          );
+
+        if (tareaPausada) {
+          tareasPausadas.push(
+            tareaPausada
+          );
+
+          localStorage.setItem(
+            `tarea_pausa_${tarea.id}`,
+            JSON.stringify({
+              tarea_id: tarea.id,
+              motivo:
+                "cierre_jornada",
+              hora: obtenerHoraActual(
+                momentoPausa
+              ),
+              fecha: obtenerFechaActual(
+                momentoPausa
+              ),
+              minutos_acumulados:
+                tareaPausada.tiempo_trabajado_min,
+              pausa_automatica: true,
+            })
+          );
+
+          localStorage.removeItem(
+            `tarea_reanudacion_${tarea.id}`
+          );
+        }
+      }
+
+      if (tareasPausadas.length > 0) {
+        const fechaCierre =
+          obtenerFechaActual(
+            cincoPM
+          );
+
+        const registro = {
+          fecha: fechaCierre,
+          hora: "17:00:00",
+          tareas:
+            tareasPausadas.map(
+              (tarea) => ({
+                id: tarea.id,
+                titulo:
+                  tarea.titulo,
+                tiempo:
+                  tarea.tiempo_trabajado_min,
+              })
+            ),
+        };
+
+        localStorage.setItem(
+          `tareas_auto_pausadas_${fechaCierre}`,
+          JSON.stringify(registro)
+        );
+
+        await cargarTareas();
+
+        setMensaje(
+          `La jornada terminó. ${tareasPausadas.length} ${
+            tareasPausadas.length ===
+            1
+              ? "tarea fue pausada"
+              : "tareas fueron pausadas"
+          } automáticamente a las 17:00.`
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Error en pausa automática:",
+        err
+      );
+
+      setError(
+        "No se pudieron pausar automáticamente las tareas."
+      );
+    } finally {
+      procesandoAutoPausa.current = false;
+    }
+  };
+
+  // =========================================================
+  // VIGILAR LAS 17:00
+  // =========================================================
+
+  useEffect(() => {
+    if (!usuario?.id) {
+      return;
+    }
+
+    ejecutarPausaAutomatica();
+
+    const intervalo =
+      setInterval(() => {
+        ejecutarPausaAutomatica();
+      }, 1000);
+
+    return () =>
+      clearInterval(intervalo);
+  }, [
+    usuario?.id,
+    tareas,
+  ]);
+
+  // =========================================================
+  // DETECTAR TAREAS AUTO-PAUSADAS DEL DÍA ANTERIOR
+  //
+  // SOLO SE MUESTRA SI REALMENTE EXISTIÓ
+  // UNA PAUSA AUTOMÁTICA.
+  // =========================================================
+
+  useEffect(() => {
+    if (!usuario?.id) {
+      return;
+    }
+
+    const ayer =
+      obtenerFechaAnterior();
+
+    const clave =
+      `tareas_auto_pausadas_${ayer}`;
+
+    const registro =
+      localStorage.getItem(clave);
+
+    if (!registro) {
+      return;
+    }
+
+    try {
+      const datos =
+        JSON.parse(registro);
+
+      if (
+        datos?.tareas &&
+        datos.tareas.length > 0
+      ) {
+        setTareasAutoPausadasAyer(
+          datos.tareas
+        );
+
+        setMostrarAvisoDiaAnterior(
+          true
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Error leyendo aviso del día anterior:",
+        err
+      );
+    }
+  }, [usuario?.id]);
+
+  // =========================================================
+  // CERRAR AVISO DEL DÍA ANTERIOR
+  // =========================================================
+
+  const cerrarAvisoDiaAnterior = () => {
+    const ayer =
+      obtenerFechaAnterior();
+
+    localStorage.removeItem(
+      `tareas_auto_pausadas_${ayer}`
+    );
+
+    setMostrarAvisoDiaAnterior(false);
+    setTareasAutoPausadasAyer([]);
+  };
+
+  // =========================================================
+  // RENDER TARJETA
   // =========================================================
 
   const renderTarea = (tarea) => {
-    const estado = obtenerEstadoVisual(tarea);
-    const estaProcesando = procesando === tarea.id;
+    const estaEnProceso =
+      tarea.estado ===
+      "en_proceso";
+
+    const estaCompletada =
+      tarea.estado ===
+      "completada";
+
+    const estaPausada =
+      !estaEnProceso &&
+      !estaCompletada &&
+      Boolean(
+        localStorage.getItem(
+          `tarea_pausa_${tarea.id}`
+        )
+      );
+
+    const tiempo =
+      obtenerTiempoVisual(tarea);
 
     return (
       <article
         key={tarea.id}
-        className={`mi-tarea-card estado-${estado} prioridad-${
-          tarea.prioridad || "media"
+        className={`mi-tarea-card ${
+          estaEnProceso
+            ? "mi-tarea-card-activa"
+            : ""
         }`}
       >
-        {/* PARTE SUPERIOR */}
-
         <div className="mi-tarea-card-top">
-          <div className="mi-tarea-card-titulo">
-            <span className="mi-tarea-etiqueta">
-              ACTIVIDAD
+          <div>
+            <span className="mi-tarea-card-label">
+              TAREA
             </span>
 
-            <h3>
-              {tarea.titulo || "Sin título"}
-            </h3>
-
-            {tarea.descripcion && (
-              <p>{tarea.descripcion}</p>
-            )}
+            <h3>{tarea.titulo}</h3>
           </div>
 
           <span
-            className={`mi-tarea-estado estado-${estado}`}
+            className={`mi-tarea-estado estado-${tarea.estado}`}
           >
-            {obtenerNombreEstado(tarea)}
+            {estaPausada
+              ? "Pausada"
+              : obtenerTextoEstado(
+                  tarea.estado
+                )}
           </span>
         </div>
 
-        {/* INFORMACIÓN */}
+        {tarea.descripcion && (
+          <p className="mi-tarea-card-description">
+            {tarea.descripcion}
+          </p>
+        )}
 
-        <div className="mi-tarea-info">
-          <div className="mi-tarea-info-item">
+        <div className="mi-tarea-meta">
+          <div className="mi-tarea-meta-item">
             <span>Fecha</span>
 
             <strong>
               {formatearFecha(
-                tarea.fecha_inicio || tarea.fecha
+                tarea.fecha_inicio ||
+                  tarea.fecha
               )}
             </strong>
           </div>
 
-          <div className="mi-tarea-info-item">
+          <div className="mi-tarea-meta-item">
             <span>Horario</span>
 
             <strong>
-              {tarea.hora_inicio || "--:--"}
+              {formatearHora(
+                tarea.hora_inicio
+              )}
 
               {tarea.hora_fin
-                ? ` - ${tarea.hora_fin}`
+                ? ` - ${formatearHora(
+                    tarea.hora_fin
+                  )}`
                 : ""}
             </strong>
           </div>
 
-          <div className="mi-tarea-info-item">
-            <span>Tiempo estimado</span>
+          <div className="mi-tarea-meta-item">
+            <span>
+              Tiempo trabajado
+            </span>
 
-            <strong>
-              {tarea.tiempo_estimado || 0} min
+            <strong
+              className={
+                estaEnProceso
+                  ? "tiempo-en-vivo"
+                  : ""
+              }
+            >
+              {formatearDuracion(
+                tiempo
+              )}
             </strong>
           </div>
 
-          <div className="mi-tarea-info-item">
+          <div className="mi-tarea-meta-item">
             <span>Prioridad</span>
 
-            <strong
-              className={`mi-tarea-prioridad prioridad-${
-                tarea.prioridad || "media"
-              }`}
-            >
-              {obtenerNombrePrioridad(
+            <strong>
+              {obtenerTextoPrioridad(
                 tarea.prioridad
               )}
             </strong>
           </div>
         </div>
 
-        {/* INFORMACIÓN PAUSA */}
+        <div className="mi-tarea-actions">
+          {!estaEnProceso &&
+            !estaCompletada &&
+            !estaPausada && (
+              <button
+                type="button"
+                className="mi-tarea-btn-iniciar"
+                onClick={() =>
+                  iniciarTarea(
+                    tarea
+                  )
+                }
+                disabled={guardando}
+              >
+                ▶ Iniciar
+              </button>
+            )}
 
-        {estado === "pausada" && (
-          <div className="mi-tarea-pausa-info">
-            <span className="mi-tarea-pausa-icono">
-              ⏸
-            </span>
-
-            <div>
-              <strong>Tarea pausada</strong>
-
-              <span>
-                Puedes reanudarla para continuar con el
-                trabajo.
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* ACCIONES */}
-
-        <div className="mi-tarea-footer">
-          <button
-            type="button"
-            className="mi-tarea-btn editar"
-            onClick={() => abrirTarea(tarea)}
-            disabled={estaProcesando}
-          >
-            ✎ Modificar
-          </button>
-
-          {estado === "pendiente" && (
+          {estaEnProceso && (
             <button
               type="button"
-              className="mi-tarea-btn iniciar"
-              onClick={() => iniciarTarea(tarea)}
-              disabled={estaProcesando}
+              className="mi-tarea-btn-pausar"
+              onClick={() =>
+                abrirPausa(tarea)
+              }
+              disabled={guardando}
             >
-              {estaProcesando
-                ? "Procesando..."
-                : "▶ Iniciar"}
+              ⏸ Pausar
             </button>
           )}
 
-          {estado === "pausada" && (
+          {estaPausada && (
             <button
               type="button"
-              className="mi-tarea-btn reanudar"
-              onClick={() => reanudarTarea(tarea)}
-              disabled={estaProcesando}
+              className="mi-tarea-btn-reanudar"
+              onClick={() =>
+                reanudarTarea(
+                  tarea
+                )
+              }
+              disabled={guardando}
             >
-              {estaProcesando
-                ? "Reanudando..."
-                : "▶ Reanudar"}
+              ▶ Reanudar
             </button>
           )}
 
-          {estado === "en_proceso" && (
+          {estaEnProceso && (
             <button
               type="button"
-              className="mi-tarea-btn continuar"
-              onClick={() => abrirTarea(tarea)}
-              disabled={estaProcesando}
+              className="mi-tarea-btn-terminar"
+              onClick={() =>
+                terminarTarea(
+                  tarea
+                )
+              }
+              disabled={guardando}
             >
-              ⏱ En proceso
+              ✓ Terminar
             </button>
           )}
 
           <button
             type="button"
-            className="mi-tarea-btn cancelar"
-            onClick={() => cancelarTarea(tarea)}
-            disabled={estaProcesando}
+            className="mi-tarea-btn-editar"
+            onClick={() =>
+              navigate(
+                `/tareas/${tarea.id}/editar`
+              )
+            }
           >
-            Cancelar
+            Editar
           </button>
         </div>
       </article>
@@ -737,8 +1493,11 @@ function MisTareas() {
     return (
       <section className="mi-tareas-page">
         <div className="mi-tareas-loading">
-          <span className="mi-tareas-loader" />
-          <p>Cargando tus tareas...</p>
+          <span className="loader" />
+
+          <p>
+            Cargando tus tareas...
+          </p>
         </div>
       </section>
     );
@@ -750,280 +1509,557 @@ function MisTareas() {
 
   return (
     <section className="mi-tareas-page">
-
-      {/* HEADER */}
+      {/* =====================================================
+          ENCABEZADO
+      ===================================================== */}
 
       <div className="mi-tareas-header">
         <div>
           <span className="mi-tareas-eyebrow">
-            MI ESPACIO DE TRABAJO
+            CONTROL DE ACTIVIDAD
           </span>
 
           <h1>Mis tareas</h1>
 
           <p>
-            Consulta, inicia y administra las actividades
-            que tienes asignadas.
+            Administra tus actividades y
+            registra correctamente el
+            tiempo trabajado.
           </p>
-
-          {usuarioActual && (
-            <div className="mi-tareas-usuario">
-              <span className="mi-tareas-avatar">
-                {(
-                  (usuarioActual.nombre?.charAt(0) || "") +
-                  (usuarioActual.apellido?.charAt(0) || "")
-                ).toUpperCase()}
-              </span>
-
-              <div>
-                <small>Usuario</small>
-
-                <strong>
-                  {usuarioActual.nombre}{" "}
-                  {usuarioActual.apellido}
-                </strong>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="mi-tareas-header-actions">
           <button
             type="button"
-            className="mi-tareas-btn-secundario"
-            onClick={cargarMisTareas}
+            className="mi-tareas-btn mi-tareas-btn-secundario"
+            onClick={() =>
+              cargarTareas()
+            }
           >
-            ↻ Actualizar
+            Actualizar
           </button>
 
           <button
             type="button"
-            className="mi-tareas-btn-principal"
-            onClick={() => navigate("/tareas")}
+            className="mi-tareas-btn mi-tareas-btn-secundario"
+            onClick={() =>
+              navigate("/tareas")
+            }
           >
-            Ver calendario
+            Ver tareas
           </button>
         </div>
       </div>
 
-      {/* MENSAJES */}
+      {/* =====================================================
+          USUARIO
+      ===================================================== */}
+
+      {usuario && (
+        <div className="mi-tareas-usuario">
+          <div className="mi-tareas-avatar">
+            {(
+              (usuario.nombre?.charAt(
+                0
+              ) || "") +
+              (usuario.apellido?.charAt(
+                0
+              ) || "")
+            ).toUpperCase()}
+          </div>
+
+          <div>
+            <span>
+              Usuario actual
+            </span>
+
+            <strong>
+              {usuario.nombre}{" "}
+              {usuario.apellido}
+            </strong>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          CONTADORES
+      ===================================================== */}
+
+      <div className="mi-tareas-resumen">
+        <div className="mi-tareas-stat">
+          <span className="mi-tareas-stat-label">
+            Mis tareas
+          </span>
+
+          <strong className="mi-tareas-stat-number">
+            {tareasActivas.length}
+          </strong>
+
+          <span className="mi-tareas-stat-text">
+            Actividades activas
+          </span>
+        </div>
+
+        <div className="mi-tareas-stat">
+          <span className="mi-tareas-stat-label">
+            En proceso
+          </span>
+
+          <strong className="mi-tareas-stat-number">
+            {tareasEnProceso.length}
+          </strong>
+
+          <span className="mi-tareas-stat-text">
+            Actividades iniciadas
+          </span>
+        </div>
+
+        <div className="mi-tareas-stat">
+          <span className="mi-tareas-stat-label">
+            Hora actual
+          </span>
+
+          <strong className="mi-tareas-stat-number reloj-actual">
+            {horaActual.toLocaleTimeString(
+              "es-EC",
+              {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              }
+            )}
+          </strong>
+
+          <span className="mi-tareas-stat-text">
+            Tiempo local
+          </span>
+        </div>
+      </div>
+
+      {/* =====================================================
+          MENSAJES
+      ===================================================== */}
 
       {mensaje && (
-        <div className="mi-tareas-mensaje">
-          <span>✓</span>
+        <div className="editar-tarea-mensaje">
           {mensaje}
         </div>
       )}
 
       {error && (
-        <div className="mi-tareas-error">
-          <strong>
-            No se pudo completar la operación
-          </strong>
-
-          <span>{error}</span>
-
-          <button
-            type="button"
-            onClick={cargarMisTareas}
-          >
-            Reintentar
-          </button>
+        <div className="editar-tarea-error">
+          {error}
         </div>
       )}
 
-      {/* CONTADORES */}
+      {/* =====================================================
+          TAREAS
+      ===================================================== */}
 
-      <div className="mi-tareas-resumen">
-        <div className="mi-tareas-metrica pendiente">
-          <div className="mi-tareas-metrica-top">
-            <span>PENDIENTES</span>
+      <div className="mi-tareas-section-header">
+        <div>
+          <span>
+            ACTIVIDADES
+          </span>
 
-            <span className="mi-tareas-metrica-icono">
-              ○
-            </span>
-          </div>
-
-          <strong className="mi-tareas-numero">
-            {contadorPendientes}
-          </strong>
+          <h2>
+            Tus tareas
+          </h2>
 
           <p>
-            Tareas que todavía no has iniciado
-          </p>
-        </div>
-
-        <div className="mi-tareas-metrica proceso">
-          <div className="mi-tareas-metrica-top">
-            <span>EN PROCESO</span>
-
-            <span className="mi-tareas-metrica-icono">
-              ◉
-            </span>
-          </div>
-
-          <strong className="mi-tareas-numero">
-            {contadorProceso}
-          </strong>
-
-          <p>
-            Actividades actualmente en ejecución
-          </p>
-        </div>
-
-        <div className="mi-tareas-metrica pausada">
-          <div className="mi-tareas-metrica-top">
-            <span>PAUSADAS</span>
-
-            <span className="mi-tareas-metrica-icono">
-              ⏸
-            </span>
-          </div>
-
-          <strong className="mi-tareas-numero">
-            {contadorPausadas}
-          </strong>
-
-          <p>
-            Actividades pendientes de reanudación
+            Controla el inicio, pausa,
+            reanudación y finalización.
           </p>
         </div>
       </div>
 
-      {/* LISTADO */}
+      {tareasVisibles.length === 0 ? (
+        <div className="mi-tareas-empty">
+          <strong>
+            No tienes tareas activas
+          </strong>
 
-      <div className="mi-tareas-contenedor">
-
-        <div className="mi-tareas-lista-header">
-          <div>
-            <span className="mi-tareas-eyebrow">
-              ACTIVIDADES ASIGNADAS
-            </span>
-
-            <h2>Trabajo pendiente</h2>
-          </div>
-
-          <span className="mi-tareas-total">
-            {misTareasActivas.length}{" "}
-            {misTareasActivas.length === 1
-              ? "tarea"
-              : "tareas"}
-          </span>
+          <p>
+            Las tareas completadas se
+            conservan en el sistema.
+          </p>
         </div>
-
-        {misTareasActivas.length === 0 ? (
-          <div className="mi-tareas-vacio">
-            <div className="mi-tareas-vacio-icono">
-              ✓
-            </div>
-
-            <h3>No tienes tareas pendientes</h3>
-
-            <p>
-              En este momento no tienes actividades
-              pendientes, pausadas o en proceso.
-            </p>
-
-            <button
-              type="button"
-              className="mi-tareas-btn-principal"
-              onClick={() => navigate("/tareas")}
-            >
-              Ver todas las tareas
-            </button>
+      ) : (
+        <>
+          <div className="mi-tareas-grid">
+            {tareasVisibles.map(
+              (tarea) =>
+                renderTarea(tarea)
+            )}
           </div>
-        ) : (
-          <>
-            {/* SLIDER DE TAREAS */}
 
-            <div className="mi-tareas-slider">
+          {totalPaginas > 1 && (
+            <div className="mi-tareas-paginacion">
+              <button
+                type="button"
+                onClick={() =>
+                  setPagina(
+                    (actual) =>
+                      Math.max(
+                        1,
+                        actual - 1
+                      )
+                  )
+                }
+                disabled={pagina === 1}
+              >
+                Anterior
+              </button>
 
-              <div className="mi-tareas-lista">
-                {tareasVisibles.map((tarea) =>
-                  renderTarea(tarea)
-                )}
+              <span>
+                Página {pagina} de{" "}
+                {totalPaginas}
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPagina(
+                    (actual) =>
+                      Math.min(
+                        totalPaginas,
+                        actual + 1
+                      )
+                  )
+                }
+                disabled={
+                  pagina ===
+                  totalPaginas
+                }
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* =====================================================
+          POPUP — MOTIVO DE PAUSA
+      ===================================================== */}
+
+      {mostrarPausa && (
+        <div className="pausa-overlay">
+          <div className="pausa-modal">
+            <div className="pausa-modal-header">
+              <div>
+                <span>
+                  CONTROL DE ACTIVIDAD
+                </span>
+
+                <h2>
+                  ¿Por qué estás
+                  pausando esta
+                  tarea?
+                </h2>
+
+                <p>
+                  Selecciona el
+                  motivo para
+                  registrar
+                  correctamente la
+                  interrupción.
+                </p>
               </div>
 
+              <button
+                type="button"
+                className="pausa-cerrar"
+                onClick={
+                  cerrarPausa
+                }
+                disabled={
+                  guardando
+                }
+              >
+                ×
+              </button>
             </div>
 
-            {/* CONTROLES DEL SLIDER */}
+            <div className="pausa-opciones">
+              <label
+                className={
+                  motivoPausa ===
+                  "otra_tarea"
+                    ? "pausa-opcion seleccionada"
+                    : "pausa-opcion"
+                }
+              >
+                <input
+                  type="radio"
+                  name="motivoPausaMisTareas"
+                  value="otra_tarea"
+                  checked={
+                    motivoPausa ===
+                    "otra_tarea"
+                  }
+                  onChange={(e) =>
+                    setMotivoPausa(
+                      e.target.value
+                    )
+                  }
+                />
 
-            {totalPaginas > 1 && (
-              <div className="mi-tareas-paginacion">
+                <div>
+                  <strong>
+                    Para realizar otra
+                    tarea
+                  </strong>
 
-                <button
-                  type="button"
-                  className="mi-tareas-paginacion-btn"
-                  onClick={irPaginaAnterior}
-                  disabled={paginaActual === 1}
-                  aria-label="Ver tareas anteriores"
-                >
-                  <span>‹</span>
-                  Anterior
-                </button>
-
-                <div className="mi-tareas-paginacion-centro">
-                  <span className="mi-tareas-pagina-actual">
-                    {paginaActual}
-                  </span>
-
-                  <span className="mi-tareas-pagina-separador">
-                    /
-                  </span>
-
-                  <span className="mi-tareas-pagina-total">
-                    {totalPaginas}
-                  </span>
-
-                  <span className="mi-tareas-pagina-texto">
-                    página
-                    {totalPaginas !== 1 ? "s" : ""}
+                  <span>
+                    Voy a dejar esta
+                    actividad
+                    temporalmente
+                    para atender
+                    otra tarea.
                   </span>
                 </div>
+              </label>
 
-                <button
-                  type="button"
-                  className="mi-tareas-paginacion-btn"
-                  onClick={irPaginaSiguiente}
-                  disabled={paginaActual === totalPaginas}
-                  aria-label="Ver siguientes tareas"
-                >
-                  Siguiente
-                  <span>›</span>
-                </button>
+              <label
+                className={
+                  motivoPausa ===
+                  "almuerzo"
+                    ? "pausa-opcion seleccionada"
+                    : "pausa-opcion"
+                }
+              >
+                <input
+                  type="radio"
+                  name="motivoPausaMisTareas"
+                  value="almuerzo"
+                  checked={
+                    motivoPausa ===
+                    "almuerzo"
+                  }
+                  onChange={(e) =>
+                    setMotivoPausa(
+                      e.target.value
+                    )
+                  }
+                />
 
+                <div>
+                  <strong>
+                    Almuerzo
+                  </strong>
+
+                  <span>
+                    Pausa
+                    correspondiente
+                    al horario de
+                    alimentación.
+                  </span>
+                </div>
+              </label>
+
+              <label
+                className={
+                  motivoPausa ===
+                  "tarea_urgente"
+                    ? "pausa-opcion seleccionada"
+                    : "pausa-opcion"
+                }
+              >
+                <input
+                  type="radio"
+                  name="motivoPausaMisTareas"
+                  value="tarea_urgente"
+                  checked={
+                    motivoPausa ===
+                    "tarea_urgente"
+                  }
+                  onChange={(e) =>
+                    setMotivoPausa(
+                      e.target.value
+                    )
+                  }
+                />
+
+                <div>
+                  <strong>
+                    Tarea urgente
+                  </strong>
+
+                  <span>
+                    Debo atender una
+                    actividad
+                    urgente antes de
+                    continuar.
+                  </span>
+                </div>
+              </label>
+
+              <label
+                className={
+                  motivoPausa === "otro"
+                    ? "pausa-opcion seleccionada"
+                    : "pausa-opcion"
+                }
+              >
+                <input
+                  type="radio"
+                  name="motivoPausaMisTareas"
+                  value="otro"
+                  checked={
+                    motivoPausa ===
+                    "otro"
+                  }
+                  onChange={(e) =>
+                    setMotivoPausa(
+                      e.target.value
+                    )
+                  }
+                />
+
+                <div>
+                  <strong>
+                    Otro motivo
+                  </strong>
+
+                  <span>
+                    La interrupción se
+                    debe a una
+                    situación
+                    diferente.
+                  </span>
+                </div>
+              </label>
+            </div>
+
+            {error && (
+              <div className="editar-tarea-error">
+                {error}
               </div>
             )}
 
-            {/* INDICADORES */}
+            <div className="pausa-modal-actions">
+              <button
+                type="button"
+                className="editar-tarea-btn cancelar"
+                onClick={
+                  cerrarPausa
+                }
+                disabled={
+                  guardando
+                }
+              >
+                Cancelar
+              </button>
 
-            {totalPaginas > 1 && (
-              <div className="mi-tareas-dots">
-                {Array.from(
-                  { length: totalPaginas },
-                  (_, indice) => (
-                    <button
-                      key={indice}
-                      type="button"
-                      className={`mi-tareas-dot ${
-                        paginaActual === indice + 1
-                          ? "activo"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        setPaginaActual(indice + 1)
-                      }
-                      aria-label={`Ir a la página ${
-                        indice + 1
-                      }`}
-                    />
+              <button
+                type="button"
+                className="editar-tarea-btn pausar"
+                onClick={
+                  confirmarPausa
+                }
+                disabled={
+                  guardando
+                }
+              >
+                {guardando
+                  ? "Pausando..."
+                  : "Confirmar pausa"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          POPUP — AVISO DEL DÍA ANTERIOR
+      ===================================================== */}
+
+      {mostrarAvisoDiaAnterior && (
+        <div className="pausa-overlay">
+          <div className="dia-anterior-modal">
+            <div className="dia-anterior-icono">
+              ⚠
+            </div>
+
+            <div className="dia-anterior-contenido">
+              <span className="dia-anterior-eyebrow">
+                CONTROL DE JORNADA
+              </span>
+
+              <h2>
+                Tienes tareas del día
+                anterior
+              </h2>
+
+              <p>
+                Ayer quedaron tareas en
+                proceso sin ser pausadas
+                o finalizadas. El sistema
+                las pausó automáticamente
+                a las <strong>17:00</strong>{" "}
+                para evitar que el tiempo
+                continuara contabilizándose
+                durante la noche.
+              </p>
+
+              <div className="dia-anterior-lista">
+                {tareasAutoPausadasAyer.map(
+                  (tarea) => (
+                    <div
+                      className="dia-anterior-item"
+                      key={tarea.id}
+                    >
+                      <div>
+                        <strong>
+                          {tarea.titulo}
+                        </strong>
+
+                        <span>
+                          Tiempo acumulado:{" "}
+                          {formatearDuracion(
+                            tarea.tiempo
+                          )}
+                        </span>
+                      </div>
+
+                      <span className="dia-anterior-estado">
+                        Pausada
+                      </span>
+                    </div>
                   )
                 )}
               </div>
-            )}
-          </>
-        )}
-      </div>
+
+              <div className="dia-anterior-nota">
+                <strong>
+                  Recuerda:
+                </strong>
+
+                <span>
+                  Al finalizar tu jornada,
+                  pausa o termina tus
+                  tareas para mantener un
+                  registro correcto del
+                  tiempo trabajado.
+                </span>
+              </div>
+            </div>
+
+            <div className="dia-anterior-actions">
+              <button
+                type="button"
+                className="editar-tarea-btn pausar"
+                onClick={
+                  cerrarAvisoDiaAnterior
+                }
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

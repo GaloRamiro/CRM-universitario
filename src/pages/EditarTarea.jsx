@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+
 import { useNavigate, useParams } from "react-router-dom";
+
 import { supabase } from "../lib/supabase";
+
 import "./EditarTarea.css";
 
 function EditarTarea() {
@@ -9,13 +12,14 @@ function EditarTarea() {
 
   const [tarea, setTarea] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
-
   const [usuarios, setUsuarios] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [cargandoUsuarios, setCargandoUsuarios] = useState(true);
-  const [cargandoDepartamentos, setCargandoDepartamentos] = useState(true);
+  const [cargandoUsuarios, setCargandoUsuarios] =
+    useState(true);
+  const [cargandoDepartamentos, setCargandoDepartamentos] =
+    useState(true);
 
   const [guardando, setGuardando] = useState(false);
   const [eliminando, setEliminando] = useState(false);
@@ -33,7 +37,8 @@ function EditarTarea() {
     departamento_id: "",
   });
 
-  const [puedeModificar, setPuedeModificar] = useState(false);
+  const [puedeModificar, setPuedeModificar] =
+    useState(false);
 
   // =========================================================
   // CARGAR USUARIO ACTUAL
@@ -59,21 +64,30 @@ function EditarTarea() {
         return;
       }
 
-      const { data, error: errorUsuario } = await supabase
-        .from("usuarios")
-        .select("*")
-        .eq("auth_user_id", user.id)
-        .single();
+      const { data, error: errorUsuario } =
+        await supabase
+          .from("usuarios")
+          .select("*")
+          .eq("auth_user_id", user.id)
+          .single();
 
       if (errorUsuario) {
-        console.error("Error obteniendo usuario actual:", errorUsuario);
+        console.error(
+          "Error obteniendo usuario actual:",
+          errorUsuario
+        );
+
         setUsuarioActual(null);
         return;
       }
 
       setUsuarioActual(data);
     } catch (err) {
-      console.error("Error cargando usuario actual:", err);
+      console.error(
+        "Error cargando usuario actual:",
+        err
+      );
+
       setUsuarioActual(null);
     }
   };
@@ -92,18 +106,21 @@ function EditarTarea() {
       setError("");
       setMensaje("");
 
-      const { data, error: errorConsulta } = await supabase
-        .from("tareas")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const { data, error: errorConsulta } =
+        await supabase
+          .from("tareas")
+          .select("*")
+          .eq("id", id)
+          .single();
 
       if (errorConsulta) {
         throw errorConsulta;
       }
 
       if (!data) {
-        throw new Error("No se encontró la tarea.");
+        throw new Error(
+          "No se encontró la tarea."
+        );
       }
 
       setTarea(data);
@@ -116,14 +133,20 @@ function EditarTarea() {
           : "",
         prioridad: data.prioridad || "media",
         estado: data.estado || "pendiente",
-        responsable_id: data.responsable_id || "",
-        departamento_id: data.departamento_id || "",
+        responsable_id:
+          data.responsable_id || "",
+        departamento_id:
+          data.departamento_id || "",
       });
     } catch (err) {
-      console.error("Error cargando tarea:", err);
+      console.error(
+        "Error cargando tarea:",
+        err
+      );
 
       setError(
-        err.message || "No fue posible cargar la tarea."
+        err.message ||
+          "No fue posible cargar la tarea."
       );
     } finally {
       setLoading(false);
@@ -146,15 +169,39 @@ function EditarTarea() {
     const rol = String(
       usuarioActual.rol ||
         usuarioActual.role ||
+        usuarioActual.perfil ||
         ""
-    ).toLowerCase();
+    )
+      .trim()
+      .toLowerCase();
 
-    const esEditor =
-      rol === "editor" ||
+    const esAdministrador =
       rol === "admin" ||
       rol === "administrador";
 
-    setPuedeModificar(esPropietario || esEditor);
+    const esEditor = rol === "editor";
+
+    /*
+     * REGLA:
+     *
+     * - Si la tarea está completada:
+     *   solamente ADMIN puede modificarla.
+     *
+     * - Si la tarea NO está completada:
+     *   se mantiene la lógica anterior:
+     *   propietario, editor o administrador.
+     */
+
+    if (tarea.estado === "completada") {
+      setPuedeModificar(esAdministrador);
+      return;
+    }
+
+    setPuedeModificar(
+      esPropietario ||
+        esEditor ||
+        esAdministrador
+    );
   }, [tarea, usuarioActual]);
 
   // =========================================================
@@ -166,11 +213,14 @@ function EditarTarea() {
       try {
         setCargandoUsuarios(true);
 
-        const { data, error } = await supabase
-          .from("usuarios")
-          .select("id, nombre, apellido, email, rol")
-          .eq("activo", true)
-          .order("nombre");
+        const { data, error } =
+          await supabase
+            .from("usuarios")
+            .select(
+              "id, nombre, apellido, email, rol"
+            )
+            .eq("activo", true)
+            .order("nombre");
 
         if (error) {
           console.error(
@@ -207,10 +257,11 @@ function EditarTarea() {
       try {
         setCargandoDepartamentos(true);
 
-        const { data, error } = await supabase
-          .from("departamentos")
-          .select("id, nombre")
-          .order("nombre");
+        const { data, error } =
+          await supabase
+            .from("departamentos")
+            .select("id, nombre")
+            .order("nombre");
 
         if (error) {
           console.error(
@@ -271,9 +322,13 @@ function EditarTarea() {
     const horas = Math.floor(total / 60);
     const mins = total % 60;
 
-    return `${String(horas).padStart(2, "0")}:${String(
-      mins
-    ).padStart(2, "0")}:00`;
+    return `${String(horas).padStart(
+      2,
+      "0"
+    )}:${String(mins).padStart(
+      2,
+      "0"
+    )}:00`;
   };
 
   // =========================================================
@@ -332,6 +387,7 @@ function EditarTarea() {
       setError(
         "No tienes permisos para modificar esta tarea."
       );
+
       return;
     }
 
@@ -339,6 +395,7 @@ function EditarTarea() {
       setError(
         "El título de la tarea es obligatorio."
       );
+
       return;
     }
 
@@ -346,36 +403,35 @@ function EditarTarea() {
       setError(
         "La fecha programada es obligatoria."
       );
+
       return;
     }
 
     try {
       setGuardando(true);
 
-      const { data, error: errorUpdate } =
-        await supabase
-          .from("tareas")
-          .update({
-            titulo: formulario.titulo.trim(),
-
-            descripcion:
-              formulario.descripcion.trim() || null,
-
-            fecha_inicio:
-              formulario.fecha_inicio || null,
-
-            prioridad:
-              formulario.prioridad || null,
-
-            responsable_id:
-              formulario.responsable_id || null,
-
-            departamento_id:
-              formulario.departamento_id || null,
-          })
-          .eq("id", id)
-          .select()
-          .single();
+      const {
+        data,
+        error: errorUpdate,
+      } = await supabase
+        .from("tareas")
+        .update({
+          titulo: formulario.titulo.trim(),
+          descripcion:
+            formulario.descripcion.trim() ||
+            null,
+          fecha_inicio:
+            formulario.fecha_inicio || null,
+          prioridad:
+            formulario.prioridad || null,
+          responsable_id:
+            formulario.responsable_id || null,
+          departamento_id:
+            formulario.departamento_id || null,
+        })
+        .eq("id", id)
+        .select()
+        .single();
 
       if (errorUpdate) {
         throw errorUpdate;
@@ -385,24 +441,14 @@ function EditarTarea() {
 
       setFormulario({
         titulo: data.titulo || "",
-
-        descripcion:
-          data.descripcion || "",
-
-        fecha_inicio:
-          data.fecha_inicio
-            ? data.fecha_inicio.substring(0, 10)
-            : "",
-
-        prioridad:
-          data.prioridad || "media",
-
-        estado:
-          data.estado || "pendiente",
-
+        descripcion: data.descripcion || "",
+        fecha_inicio: data.fecha_inicio
+          ? data.fecha_inicio.substring(0, 10)
+          : "",
+        prioridad: data.prioridad || "media",
+        estado: data.estado || "pendiente",
         responsable_id:
           data.responsable_id || "",
-
         departamento_id:
           data.departamento_id || "",
       });
@@ -439,6 +485,7 @@ function EditarTarea() {
       setError(
         "No tienes permisos para eliminar esta tarea."
       );
+
       return;
     }
 
@@ -455,12 +502,11 @@ function EditarTarea() {
       setError("");
       setMensaje("");
 
-      const {
-        error: errorDelete,
-      } = await supabase
-        .from("tareas")
-        .delete()
-        .eq("id", id);
+      const { error: errorDelete } =
+        await supabase
+          .from("tareas")
+          .delete()
+          .eq("id", id);
 
       if (errorDelete) {
         throw errorDelete;
@@ -491,7 +537,10 @@ function EditarTarea() {
       <div className="editar-tarea-page">
         <div className="editar-tarea-loading">
           <div className="loader"></div>
-          <span>Cargando tarea...</span>
+
+          <span>
+            Cargando tarea...
+          </span>
         </div>
       </div>
     );
@@ -505,17 +554,21 @@ function EditarTarea() {
     return (
       <div className="editar-tarea-page">
         <div className="editar-tarea-error-box">
-          <h2>No se encontró la tarea</h2>
+          <h2>
+            No se encontró la tarea
+          </h2>
 
           <p>
-            La tarea que intentas editar no existe
-            o ya no está disponible.
+            La tarea que intentas editar no
+            existe o ya no está disponible.
           </p>
 
           <button
             type="button"
             className="editar-tarea-btn secundario"
-            onClick={() => navigate("/tareas")}
+            onClick={() =>
+              navigate("/tareas")
+            }
           >
             Volver a tareas
           </button>
@@ -540,13 +593,9 @@ function EditarTarea() {
 
   return (
     <section className="editar-tarea-page">
-
-      {/* =====================================================
-          HEADER
-      ====================================================== */}
+      {/* HEADER */}
 
       <div className="editar-tarea-header">
-
         <div>
           <span className="editar-tarea-eyebrow">
             GESTIÓN
@@ -555,40 +604,38 @@ function EditarTarea() {
           <h1>Editar tarea</h1>
 
           <p>
-            Modifica la información de la tarea.
+            Modifica la información de la
+            tarea.
           </p>
         </div>
 
         <button
           type="button"
           className="editar-tarea-btn secundario"
-          onClick={() => navigate("/tareas")}
+          onClick={() =>
+            navigate("/tareas")
+          }
         >
           Volver
         </button>
-
       </div>
 
-      {/* =====================================================
-          INFORMACIÓN SUPERIOR
-      ====================================================== */}
+      {/* INFORMACIÓN SUPERIOR */}
 
       <div className="editar-tarea-tiempo-top">
-
         <div className="editar-tarea-tiempo-item">
-
           <span>
             TIEMPO DE LA TAREA
           </span>
 
           <strong>
-            {formatearTiempo(tiempoActual)}
+            {formatearTiempo(
+              tiempoActual
+            )}
           </strong>
-
         </div>
 
         <div className="editar-tarea-tiempo-item">
-
           <span>
             QUIÉN ESTÁ HACIENDO LA TAREA
           </span>
@@ -596,14 +643,10 @@ function EditarTarea() {
           <strong>
             {obtenerNombreResponsable()}
           </strong>
-
         </div>
 
         <div className="editar-tarea-tiempo-item">
-
-          <span>
-            ESTADO
-          </span>
+          <span>ESTADO</span>
 
           <strong
             className={`estado-texto estado-${estadoActual}`}
@@ -612,33 +655,26 @@ function EditarTarea() {
               estadoActual
             )}
           </strong>
-
         </div>
-
       </div>
 
-      {/* =====================================================
-          MENSAJE SIN PERMISOS
-      ====================================================== */}
+      {/* MENSAJE SIN PERMISOS */}
 
       {usuarioActual && !puedeModificar && (
         <div className="editar-tarea-permiso-denegado">
-
           <strong>
-            🔒 Esta tarea no puede ser modificada
+            🔒 Esta tarea no puede ser
+            modificada
           </strong>
 
           <span>
             No eres el responsable de esta tarea
             y no tienes permisos de editor.
           </span>
-
         </div>
       )}
 
-      {/* =====================================================
-          MENSAJE DE ÉXITO
-      ====================================================== */}
+      {/* MENSAJE DE ÉXITO */}
 
       {mensaje && (
         <div className="editar-tarea-mensaje">
@@ -646,9 +682,7 @@ function EditarTarea() {
         </div>
       )}
 
-      {/* =====================================================
-          ERROR
-      ====================================================== */}
+      {/* ERROR */}
 
       {error && (
         <div className="editar-tarea-error">
@@ -656,21 +690,15 @@ function EditarTarea() {
         </div>
       )}
 
-      {/* =====================================================
-          FORMULARIO
-      ====================================================== */}
+      {/* FORMULARIO */}
 
       <form
         className="editar-tarea-card"
         onSubmit={guardarCambios}
       >
-
-        {/* =================================================
-            INFORMACIÓN
-        ================================================== */}
+        {/* INFORMACIÓN */}
 
         <div className="editar-tarea-section">
-
           <h2>
             Información de la tarea
           </h2>
@@ -681,11 +709,9 @@ function EditarTarea() {
           </p>
 
           <div className="editar-tarea-grid">
-
             {/* TÍTULO */}
 
             <div className="editar-tarea-group full">
-
               <label htmlFor="titulo">
                 Título de la tarea
               </label>
@@ -703,13 +729,11 @@ function EditarTarea() {
                   eliminando
                 }
               />
-
             </div>
 
             {/* DESCRIPCIÓN */}
 
             <div className="editar-tarea-group full">
-
               <label htmlFor="descripcion">
                 Descripción
               </label>
@@ -717,7 +741,9 @@ function EditarTarea() {
               <textarea
                 id="descripcion"
                 name="descripcion"
-                value={formulario.descripcion}
+                value={
+                  formulario.descripcion
+                }
                 onChange={handleChange}
                 placeholder="Describe qué se debe realizar..."
                 rows="5"
@@ -727,31 +753,22 @@ function EditarTarea() {
                   eliminando
                 }
               />
-
             </div>
-
           </div>
         </div>
 
-        {/* =================================================
-            FECHA
-        ================================================== */}
+        {/* FECHA */}
 
         <div className="editar-tarea-section">
-
-          <h2>
-            Fecha
-          </h2>
+          <h2>Fecha</h2>
 
           <p>
-            Modifica el día programado
-            para la actividad.
+            Modifica el día programado para la
+            actividad.
           </p>
 
           <div className="editar-tarea-grid">
-
             <div className="editar-tarea-group">
-
               <label htmlFor="fecha_inicio">
                 Fecha programada
               </label>
@@ -770,33 +787,24 @@ function EditarTarea() {
                   eliminando
                 }
               />
-
             </div>
-
           </div>
         </div>
 
-        {/* =================================================
-            ASIGNACIÓN
-        ================================================== */}
+        {/* ASIGNACIÓN */}
 
         <div className="editar-tarea-section">
-
-          <h2>
-            Asignación
-          </h2>
+          <h2>Asignación</h2>
 
           <p>
-            Modifica prioridad,
-            departamento y responsable.
+            Modifica prioridad, departamento y
+            responsable.
           </p>
 
           <div className="editar-tarea-grid">
-
             {/* PRIORIDAD */}
 
             <div className="editar-tarea-group">
-
               <label htmlFor="prioridad">
                 Prioridad
               </label>
@@ -814,7 +822,6 @@ function EditarTarea() {
                   eliminando
                 }
               >
-
                 <option value="baja">
                   Baja
                 </option>
@@ -830,15 +837,12 @@ function EditarTarea() {
                 <option value="urgente">
                   Urgente
                 </option>
-
               </select>
-
             </div>
 
             {/* ESTADO BLOQUEADO */}
 
             <div className="editar-tarea-group">
-
               <label htmlFor="estado">
                 Estado
               </label>
@@ -846,12 +850,9 @@ function EditarTarea() {
               <select
                 id="estado"
                 name="estado"
-                value={
-                  formulario.estado
-                }
+                value={formulario.estado}
                 disabled
               >
-
                 <option value="pendiente">
                   Pendiente
                 </option>
@@ -863,20 +864,17 @@ function EditarTarea() {
                 <option value="completada">
                   Completada
                 </option>
-
               </select>
 
               <small className="editar-tarea-help">
-                El estado se controla desde
-                la ejecución de la tarea.
+                El estado se controla desde la
+                ejecución de la tarea.
               </small>
-
             </div>
 
             {/* DEPARTAMENTO */}
 
             <div className="editar-tarea-group">
-
               <label htmlFor="departamento_id">
                 Departamento
               </label>
@@ -895,7 +893,6 @@ function EditarTarea() {
                   eliminando
                 }
               >
-
                 <option value="">
                   Sin departamento
                 </option>
@@ -912,15 +909,12 @@ function EditarTarea() {
                     </option>
                   )
                 )}
-
               </select>
-
             </div>
 
             {/* RESPONSABLE */}
 
             <div className="editar-tarea-group">
-
               <label htmlFor="responsable_id">
                 Responsable
               </label>
@@ -939,42 +933,31 @@ function EditarTarea() {
                   eliminando
                 }
               >
-
                 <option value="">
                   Sin responsable
                 </option>
 
-                {usuarios.map(
-                  (usuario) => (
-                    <option
-                      key={usuario.id}
-                      value={usuario.id}
-                    >
-                      {usuario.nombre}{" "}
-                      {usuario.apellido}
-
-                      {usuario.email
-                        ? ` — ${usuario.email}`
-                        : ""}
-                    </option>
-                  )
-                )}
-
+                {usuarios.map((usuario) => (
+                  <option
+                    key={usuario.id}
+                    value={usuario.id}
+                  >
+                    {usuario.nombre}{" "}
+                    {usuario.apellido}
+                    {usuario.email
+                      ? ` — ${usuario.email}`
+                      : ""}
+                  </option>
+                ))}
               </select>
-
             </div>
-
           </div>
         </div>
 
-        {/* =================================================
-            TIEMPO INFORMATIVO
-        ================================================== */}
+        {/* TIEMPO INFORMATIVO */}
 
         <div className="editar-tarea-tiempo-info">
-
           <div>
-
             <span>
               TIEMPO REGISTRADO
             </span>
@@ -984,11 +967,9 @@ function EditarTarea() {
                 tarea.tiempo_trabajado_min
               )}
             </strong>
-
           </div>
 
           <div>
-
             <span>
               ESTADO ACTUAL
             </span>
@@ -998,17 +979,12 @@ function EditarTarea() {
                 estadoActual
               )}
             </strong>
-
           </div>
-
         </div>
 
-        {/* =================================================
-            ACCIONES
-        ================================================== */}
+        {/* ACCIONES */}
 
         <div className="editar-tarea-actions">
-
           <button
             type="button"
             className="editar-tarea-btn cancelar"
@@ -1016,8 +992,7 @@ function EditarTarea() {
               navigate("/tareas")
             }
             disabled={
-              guardando ||
-              eliminando
+              guardando || eliminando
             }
           >
             Cancelar
@@ -1051,21 +1026,16 @@ function EditarTarea() {
               ? "Guardando..."
               : "Guardar cambios"}
           </button>
-
         </div>
-
       </form>
 
-      {/* =====================================================
-          MENSAJE FINAL
-      ====================================================== */}
+      {/* MENSAJE FINAL */}
 
       {mensaje && (
         <div className="editar-tarea-mensaje-final">
           ✓ {mensaje}
         </div>
       )}
-
     </section>
   );
 }
