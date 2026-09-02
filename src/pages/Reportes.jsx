@@ -88,6 +88,7 @@ function Reportes() {
             tarea_id,
             empleado_id,
             departamento_id,
+            tarea_interrumpidora_id,
             motivo,
             fecha,
             hora,
@@ -430,6 +431,33 @@ function Reportes() {
     ]);
 
   // =========================================================
+  // DEPARTAMENTO QUE GENERÓ LA INTERRUPCIÓN
+  // =========================================================
+
+  const obtenerDepartamentoInterrupcion = (interrupcion) => {
+    if (!interrupcion) {
+      return null;
+    }
+
+    // Para registros nuevos, el departamento se obtiene desde
+    // la tarea que realmente provocó la interrupción.
+    if (interrupcion.tarea_interrumpidora_id) {
+      const tareaInterrumpidora = tareas.find(
+        (item) =>
+          String(item.id) ===
+          String(interrupcion.tarea_interrumpidora_id)
+      );
+
+      if (tareaInterrumpidora?.departamento_id) {
+        return tareaInterrumpidora.departamento_id;
+      }
+    }
+
+    // Compatibilidad con registros históricos anteriores a este cambio.
+    return interrupcion.departamento_id || null;
+  };
+
+  // =========================================================
   // MÉTRICAS GENERALES
   // =========================================================
 
@@ -600,7 +628,9 @@ function Reportes() {
       interrupcionesFiltradas.forEach(
         (interrupcion) => {
           const id =
-            interrupcion.departamento_id;
+            obtenerDepartamentoInterrupcion(
+              interrupcion
+            );
 
           const nombre =
             obtenerNombreDepartamento(
@@ -713,14 +743,19 @@ function Reportes() {
             );
           }
 
+          const departamentoInterrupcion =
+            obtenerDepartamentoInterrupcion(
+              interrupcion
+            );
+
           if (
-            interrupcion.departamento_id
+            departamentoInterrupcion
           ) {
             mapa[
               id
             ].departamentos.add(
               String(
-                interrupcion.departamento_id
+                departamentoInterrupcion
               )
             );
           }
@@ -873,7 +908,9 @@ function Reportes() {
               ),
             departamento:
               obtenerNombreDepartamento(
-                interrupcion.departamento_id
+                obtenerDepartamentoInterrupcion(
+                  interrupcion
+                )
               ),
           };
         })
