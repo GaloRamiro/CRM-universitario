@@ -206,6 +206,60 @@ function NuevaTarea() {
       console.log("Tarea creada:", data);
 
       // ==========================================
+      // COMPLETAR INTERRUPCIÓN PENDIENTE
+      // ==========================================
+      // Cuando el usuario pausó una tarea para crear otra,
+      // aquí ya conocemos el departamento de la nueva tarea.
+      // Ese es el departamento que debe aparecer en Reportes
+      // como causante de la interrupción.
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const usuarioAuthId = authData?.user?.id;
+
+        if (usuarioAuthId) {
+          const { data: usuarioActual } = await supabase
+            .from("usuarios")
+            .select("id")
+            .eq("auth_user_id", usuarioAuthId)
+            .single();
+
+          if (usuarioActual?.id) {
+            const clavePendiente = `interrupcion_pendiente_${usuarioActual.id}`;
+            const pendienteGuardado = localStorage.getItem(clavePendiente);
+
+            if (pendienteGuardado) {
+              const pendiente = JSON.parse(pendienteGuardado);
+
+              const { error: interrupcionError } = await supabase
+                .from("historial_interrupciones")
+                .insert({
+                  tarea_id: pendiente.tarea_id,
+                  empleado_id: usuarioActual.id,
+                  departamento_id: formulario.departamento_id || null,
+                  motivo: pendiente.motivo || "otra_tarea",
+                  fecha: pendiente.fecha,
+                  hora: pendiente.hora,
+                });
+
+              if (interrupcionError) {
+                console.error(
+                  "Error registrando interrupción pendiente:",
+                  interrupcionError
+                );
+              } else {
+                localStorage.removeItem(clavePendiente);
+              }
+            }
+          }
+        }
+      } catch (interrupcionError) {
+        console.error(
+          "No se pudo completar la interrupción pendiente:",
+          interrupcionError
+        );
+      }
+
+      // ==========================================
       // CREAR NOTIFICACIÓN
       // ==========================================
 

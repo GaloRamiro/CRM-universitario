@@ -489,15 +489,38 @@ function MisTareas() {
         tareasPausadas.push(tareaPausada);
 
         // -----------------------------------------------------
-        // 2. REGISTRAR LA INTERRUPCIÓN EN SUPABASE
+        // 2. OBTENER EL DEPARTAMENTO REAL DE LA TAREA NUEVA
+        //    DIRECTAMENTE DESDE SUPABASE
+        // -----------------------------------------------------
+        // No usamos únicamente el objeto que está en memoria,
+        // porque puede estar desactualizado si el departamento
+        // fue editado recientemente.
+        const { data: tareaActualizada, error: tareaActualError } =
+          await supabase
+            .from("tareas")
+            .select("departamento_id")
+            .eq("id", tareaActual.id)
+            .single();
+
+        if (tareaActualError) {
+          throw tareaActualError;
+        }
+
+        const departamentoInterrupcion =
+          tareaActualizada?.departamento_id ||
+          tareaActual.departamento_id ||
+          null;
+
+        // -----------------------------------------------------
+        // 3. REGISTRAR LA INTERRUPCIÓN EN SUPABASE
         // -----------------------------------------------------
         const { error: interrupcionError } = await supabase
           .from("historial_interrupciones")
           .insert({
             tarea_id: tarea.id,
             empleado_id: usuario.id,
-            departamento_id:
-              tareaActual.departamento_id || tarea.departamento_id || null,
+            // Departamento de la TAREA QUE PROVOCA LA INTERRUPCIÓN.
+            departamento_id: departamentoInterrupcion,
             motivo: "cambio_tarea",
             fecha: obtenerFechaActual(fechaHoraPausa),
             hora: obtenerHoraActual(fechaHoraPausa),
@@ -676,6 +699,41 @@ function MisTareas() {
       const horaPausa = obtenerHoraActual(ahora);
 
       const fechaPausa = obtenerFechaActual(ahora);
+
+      // -------------------------------------------------------
+      // SI LA PAUSA GENERARÁ UNA NUEVA TAREA, GUARDAMOS
+      // TEMPORALMENTE LA RELACIÓN.
+      // El departamento correcto se obtiene después de crear
+      // la nueva tarea, porque aquí todavía no existe.
+      // -------------------------------------------------------
+      if (motivoPausa === "otra_tarea" || motivoPausa === "tarea_urgente") {
+        localStorage.setItem(
+          `interrupcion_pendiente_${usuario.id}`,
+          JSON.stringify({
+            tarea_id: tareaParaPausar.id,
+            motivo: motivoPausa,
+            fecha: fechaPausa,
+            hora: horaPausa,
+          }),
+        );
+      } else {
+        // Una pausa que no genera otra tarea no tiene un
+        // departamento interrup­tor.
+        const { error: interrupcionError } = await supabase
+          .from("historial_interrupciones")
+          .insert({
+            tarea_id: tareaParaPausar.id,
+            empleado_id: usuario.id,
+            departamento_id: null,
+            motivo: motivoPausa,
+            fecha: fechaPausa,
+            hora: horaPausa,
+          });
+
+        if (interrupcionError) {
+          throw interrupcionError;
+        }
+      }
 
       // -------------------------------------------------------
       // REGISTRO TEMPORAL DE PAUSA
