@@ -235,6 +235,10 @@ function NuevaTarea() {
                 .insert({
                   tarea_id: pendiente.tarea_id,
                   empleado_id: usuarioActual.id,
+                  // La tarea recién creada es la que generó la interrupción.
+                  // tarea_id = tarea afectada
+                  // tarea_interrumpidora_id = tarea que reemplazó/interrumpió
+                  tarea_interrumpidora_id: data.id,
                   departamento_id: formulario.departamento_id || null,
                   motivo: pendiente.motivo || "otra_tarea",
                   fecha: pendiente.fecha,

@@ -431,7 +431,24 @@ function Reportes() {
     ]);
 
   // =========================================================
-  // DEPARTAMENTO QUE GENERÓ LA INTERRUPCIÓN
+  // TRAZABILIDAD OPERATIVA
+  //
+  // La trazabilidad muestra únicamente interrupciones causadas
+  // por una nueva tarea: cambio de tarea o tarea urgente.
+  // Almuerzo, otros motivos y cierre de jornada no representan
+  // una interrupción entre departamentos y por eso no aparecen aquí.
+  // =========================================================
+
+  const interrupcionesOperativas = useMemo(() => {
+    return interrupcionesFiltradas.filter(
+      (interrupcion) =>
+        interrupcion.motivo === "cambio_tarea" ||
+        interrupcion.motivo === "tarea_urgente"
+    );
+  }, [interrupcionesFiltradas]);
+
+  // =========================================================
+  // DEPARTAMENTO DE LA TAREA AFECTADA
   // =========================================================
 
   const obtenerDepartamentoInterrupcion = (interrupcion) => {
@@ -439,22 +456,77 @@ function Reportes() {
       return null;
     }
 
-    // Para registros nuevos, el departamento se obtiene desde
-    // la tarea que realmente provocó la interrupción.
-    if (interrupcion.tarea_interrumpidora_id) {
-      const tareaInterrumpidora = tareas.find(
+    // El departamento mostrado en los reportes debe corresponder
+    // a la tarea que fue afectada/interrumpida.
+    // tarea_id identifica la tarea que estaba ejecutándose.
+    if (interrupcion.tarea_id) {
+      const tareaAfectada = tareas.find(
         (item) =>
           String(item.id) ===
-          String(interrupcion.tarea_interrumpidora_id)
+          String(interrupcion.tarea_id)
       );
 
-      if (tareaInterrumpidora?.departamento_id) {
-        return tareaInterrumpidora.departamento_id;
+      if (tareaAfectada?.departamento_id) {
+        return tareaAfectada.departamento_id;
       }
     }
 
-    // Compatibilidad con registros históricos anteriores a este cambio.
+    // Compatibilidad con registros históricos donde el departamento
+    // sí quedó almacenado directamente en historial_interrupciones.
     return interrupcion.departamento_id || null;
+  };
+
+  // =========================================================
+  // DEPARTAMENTO QUE GENERÓ LA INTERRUPCIÓN
+  // =========================================================
+
+  const obtenerDepartamentoGeneradorInterrupcion = (interrupcion) => {
+    if (!interrupcion) {
+      return null;
+    }
+
+    // En trazabilidad solo se consideran interrupciones operativas:
+    // cambio de tarea y tarea urgente.
+    // Para estos eventos, departamento_id representa el departamento
+    // de la nueva tarea que provocó la interrupción.
+    if (
+      interrupcion.motivo === "cambio_tarea" ||
+      interrupcion.motivo === "tarea_urgente"
+    ) {
+      if (interrupcion.tarea_interrumpidora_id) {
+        const tareaInterrumpidora = tareas.find(
+          (item) =>
+            String(item.id) ===
+            String(interrupcion.tarea_interrumpidora_id)
+        );
+
+        if (tareaInterrumpidora?.departamento_id) {
+          return tareaInterrumpidora.departamento_id;
+        }
+      }
+
+      return interrupcion.departamento_id || null;
+    }
+
+    return null;
+  };
+
+  // =========================================================
+  // TAREA QUE GENERÓ LA INTERRUPCIÓN
+  // =========================================================
+
+  const obtenerTareaGeneradoraInterrupcion = (interrupcion) => {
+    if (!interrupcion?.tarea_interrumpidora_id) {
+      return null;
+    }
+
+    return (
+      tareas.find(
+        (item) =>
+          String(item.id) ===
+          String(interrupcion.tarea_interrumpidora_id)
+      ) || null
+    );
   };
 
   // =========================================================
@@ -618,14 +690,14 @@ function Reportes() {
     ]);
 
   // =========================================================
-  // INTERRUPCIONES POR DEPARTAMENTO
+  // INTERRUPCIONES POR DEPARTAMENTO AFECTADO
   // =========================================================
 
   const interrupcionesPorDepartamento =
     useMemo(() => {
       const mapa = {};
 
-      interrupcionesFiltradas.forEach(
+      interrupcionesOperativas.forEach(
         (interrupcion) => {
           const id =
             obtenerDepartamentoInterrupcion(
@@ -694,7 +766,7 @@ function Reportes() {
             a.interrupciones
         );
     }, [
-      interrupcionesFiltradas,
+      interrupcionesOperativas,
       departamentos,
       usuarios,
     ]);
@@ -707,7 +779,7 @@ function Reportes() {
     useMemo(() => {
       const mapa = {};
 
-      interrupcionesFiltradas.forEach(
+      interrupcionesOperativas.forEach(
         (interrupcion) => {
           const id =
             interrupcion.empleado_id;
@@ -780,7 +852,7 @@ function Reportes() {
             a.interrupciones
         );
     }, [
-      interrupcionesFiltradas,
+      interrupcionesOperativas,
       usuarios,
     ]);
 
@@ -886,7 +958,7 @@ function Reportes() {
 
   const detalleInterrupciones =
     useMemo(() => {
-      return interrupcionesFiltradas
+      return interrupcionesOperativas
         .map((interrupcion) => {
           const tarea =
             tareas.find(
@@ -911,6 +983,16 @@ function Reportes() {
                 obtenerDepartamentoInterrupcion(
                   interrupcion
                 )
+              ),
+            departamentoGenerador:
+              obtenerNombreDepartamento(
+                obtenerDepartamentoGeneradorInterrupcion(
+                  interrupcion
+                )
+              ),
+            tareaGeneradora:
+              obtenerTareaGeneradoraInterrupcion(
+                interrupcion
               ),
           };
         })
@@ -939,7 +1021,7 @@ function Reportes() {
           );
         });
     }, [
-      interrupcionesFiltradas,
+      interrupcionesOperativas,
       tareas,
       usuarios,
       departamentos,
@@ -1318,7 +1400,7 @@ function Reportes() {
       doc.setFontSize(14);
 
       doc.text(
-        "4. Interrupciones por departamento solicitante",
+        "4. Interrupciones por departamento afectado",
         20,
         20
       );
@@ -1331,7 +1413,7 @@ function Reportes() {
       doc.setFontSize(9);
 
       doc.text(
-        "El análisis identifica qué departamentos generaron interrupciones durante la ejecución de las actividades.",
+        "El análisis identifica qué departamentos fueron afectados por interrupciones durante la ejecución de las actividades.",
         20,
         27
       );
@@ -1435,8 +1517,10 @@ function Reportes() {
       // -------------------------------------------------------
       // DETALLE DE INTERRUPCIONES
       // -------------------------------------------------------
+      // Esta sección usa A4 horizontal porque contiene 8 columnas.
+      // Así evitamos que el texto se comprima verticalmente en el PDF.
 
-      doc.addPage();
+      doc.addPage("a4", "landscape");
 
       doc.setFont(
         "helvetica",
@@ -1446,7 +1530,7 @@ function Reportes() {
       doc.setFontSize(14);
 
       doc.text(
-        "6. Detalle de interrupciones",
+        "6. Trazabilidad de interrupciones operativas",
         20,
         20
       );
@@ -1459,7 +1543,7 @@ function Reportes() {
       doc.setFontSize(9);
 
       doc.text(
-        "Se detalla cuándo ocurrió la interrupción, qué departamento la generó, qué empleado fue afectado y qué tarea estaba ejecutando.",
+        "Se detallan únicamente cambios de tarea y solicitudes urgentes: origen de la nueva tarea, departamento afectado, empleado y tarea interrumpida.",
         20,
         27
       );
@@ -1471,7 +1555,9 @@ function Reportes() {
           [
             "Fecha",
             "Hora",
-            "Departamento",
+            "Departamento de origen",
+            "Tarea que generó",
+            "Departamento afectado",
             "Empleado",
             "Tarea afectada",
             "Motivo",
@@ -1489,12 +1575,18 @@ function Reportes() {
               item.hora ||
                 "Sin hora",
 
+              item.departamentoGenerador ||
+                "No identificado",
+
+              item.tareaGeneradora?.titulo ||
+                "Tarea generadora no registrada",
+
               item.departamento,
 
               item.empleado,
 
               item.tarea?.titulo ||
-                "Tarea no identificada",
+                "Tarea afectada no identificada",
 
               item.motivo ||
                 "Sin motivo registrado",
@@ -1502,46 +1594,78 @@ function Reportes() {
           ),
 
         styles: {
-          fontSize: 7,
-          cellPadding: 2,
+          fontSize: 8,
+          cellPadding: 2.2,
+          overflow: "linebreak",
+          valign: "middle",
         },
 
         headStyles: {
           fontStyle: "bold",
+          valign: "middle",
+        },
+
+        bodyStyles: {
+          valign: "middle",
         },
 
         columnStyles: {
+          // A4 horizontal: 297 mm de ancho.
+          // Márgenes de 20 mm => 257 mm disponibles.
+          // Las columnas suman exactamente 257 mm.
           0: {
-            cellWidth: 20,
+            cellWidth: 18,
           },
 
           1: {
-            cellWidth: 15,
+            cellWidth: 14,
           },
 
           2: {
-            cellWidth: 28,
+            cellWidth: 32,
           },
 
           3: {
-            cellWidth: 30,
+            cellWidth: 48,
           },
 
           4: {
-            cellWidth: 38,
+            cellWidth: 32,
           },
 
           5: {
-            cellWidth: 40,
+            cellWidth: 30,
           },
+
+          6: {
+            cellWidth: 55,
+          },
+
+          7: {
+            cellWidth: 28,
+          },
+        },
+
+        margin: {
+          left: 20,
+          right: 20,
+        },
+
+        tableWidth: "wrap",
+
+        didParseCell: (data) => {
+          if (data.section === "body") {
+            data.cell.styles.minCellHeight = 10;
+          }
         },
       });
 
       // -------------------------------------------------------
       // CARGA POR EMPLEADO
       // -------------------------------------------------------
+      // Regresamos a A4 vertical para el resto del informe.
 
-      doc.addPage();
+      doc.addPage("a4", "portrait");
 
       doc.setFont(
         "helvetica",
@@ -1817,6 +1941,13 @@ function Reportes() {
           pagina
         );
 
+        // Cada página puede tener orientación diferente.
+        const anchoPaginaActual =
+          doc.internal.pageSize.getWidth();
+
+        const altoPaginaActual =
+          doc.internal.pageSize.getHeight();
+
         doc.setFont(
           "helvetica",
           "normal"
@@ -1827,13 +1958,13 @@ function Reportes() {
         doc.text(
           "Informe ejecutivo de gestión — Sistema interno de tareas",
           20,
-          altoPagina - 12
+          altoPaginaActual - 12
         );
 
         doc.text(
           `Página ${pagina} de ${totalPaginas}`,
-          anchoPagina - 42,
-          altoPagina - 12
+          anchoPaginaActual - 42,
+          altoPaginaActual - 12
         );
       }
 
@@ -2338,13 +2469,12 @@ function Reportes() {
               </span>
 
               <h2>
-                Interrupciones por departamento
+                Interrupciones operativas por departamento
               </h2>
 
               <p>
-                Departamentos que generaron
-                interrupciones sobre actividades
-                en ejecución.
+                Impacto de cambios de tarea y solicitudes
+                urgentes sobre los departamentos afectados.
               </p>
             </div>
           </div>
@@ -2404,8 +2534,8 @@ function Reportes() {
               </h2>
 
               <p>
-                Personas ejecutoras cuyo trabajo
-                recibió interrupciones.
+                Personas cuyo trabajo fue interrumpido
+                por otra tarea o por una solicitud urgente.
               </p>
             </div>
           </div>
@@ -2469,10 +2599,9 @@ function Reportes() {
             </h2>
 
             <p>
-              Permite identificar cuándo ocurrió
-              cada interferencia, quién la generó,
-              quién fue afectado y qué tarea se
-              encontraba ejecutando.
+              Esta trazabilidad registra únicamente cambios de tarea y tareas urgentes.
+              Permite ver las dos partes del evento: qué tarea generó la interrupción
+              y qué tarea estaba ejecutando la persona cuando tuvo que cambiar de actividad.
             </p>
           </div>
         </div>
@@ -2480,8 +2609,8 @@ function Reportes() {
         {detalleInterrupciones.length ===
         0 ? (
           <div className="reportes-vacio">
-            No existen interrupciones para
-            mostrar en el período seleccionado.
+            No existen interrupciones operativas
+            para mostrar en el período seleccionado.
           </div>
         ) : (
           <div className="reportes-table-wrapper">
@@ -2499,7 +2628,15 @@ function Reportes() {
                   </th>
 
                   <th>
-                    Departamento
+                    Departamento de origen
+                  </th>
+
+                  <th>
+                    Tarea que generó
+                  </th>
+
+                  <th>
+                    Departamento afectado
                   </th>
 
                   <th>
@@ -2536,6 +2673,22 @@ function Reportes() {
                         <td>
                           {
                             item.hora
+                          }
+                        </td>
+
+                        <td>
+                          <strong>
+                            {
+                              item.departamentoGenerador ||
+                              "No identificado"
+                            }
+                          </strong>
+                        </td>
+
+                        <td>
+                          {
+                            item.tareaGeneradora?.titulo ||
+                            "Tarea generadora no registrada"
                           }
                         </td>
 
