@@ -30,6 +30,8 @@ function MisTareas() {
   const [mostrarPausa, setMostrarPausa] = useState(false);
   const [motivoPausa, setMotivoPausa] = useState("");
   const [tareaParaPausar, setTareaParaPausar] = useState(null);
+  const [mostrarSelectorOtraTarea, setMostrarSelectorOtraTarea] = useState(false);
+  const [tareaSeleccionadaOtra, setTareaSeleccionadaOtra] = useState(null);
 
   // =========================================================
   // POPUP — TAREAS AUTO-PAUSADAS DEL DÍA ANTERIOR
@@ -519,6 +521,10 @@ function MisTareas() {
           .insert({
             tarea_id: tarea.id,
             empleado_id: usuario.id,
+            // ID DE LA TAREA QUE REALMENTE PROVOCA LA INTERRUPCIÓN.
+            // tarea.id = tarea afectada
+            // tareaActual.id = tarea que se inicia y genera el cambio
+            tarea_interrumpidora_id: tareaActual.id,
             // Departamento de la TAREA QUE PROVOCA LA INTERRUPCIÓN.
             departamento_id: departamentoInterrupcion,
             motivo: "cambio_tarea",
@@ -701,12 +707,15 @@ function MisTareas() {
       const fechaPausa = obtenerFechaActual(ahora);
 
       // -------------------------------------------------------
-      // SI LA PAUSA GENERARÁ UNA NUEVA TAREA, GUARDAMOS
-      // TEMPORALMENTE LA RELACIÓN.
-      // El departamento correcto se obtiene después de crear
-      // la nueva tarea, porque aquí todavía no existe.
+      // TAREA URGENTE:
+      // La actividad todavía no existe, por eso se conserva
+      // temporalmente la relación para NuevaTarea.jsx.
+      //
+      // OTRA TAREA:
+      // NO crea una tarea nueva. Se seleccionará una tarea que
+      // ya existe en Mis tareas y esa será la generadora.
       // -------------------------------------------------------
-      if (motivoPausa === "otra_tarea" || motivoPausa === "tarea_urgente") {
+      if (motivoPausa === "tarea_urgente") {
         localStorage.setItem(
           `interrupcion_pendiente_${usuario.id}`,
           JSON.stringify({
@@ -716,6 +725,9 @@ function MisTareas() {
             hora: horaPausa,
           }),
         );
+      } else if (motivoPausa === "otra_tarea") {
+        // La relación se registra cuando el usuario seleccione
+        // la tarea existente que realmente va a ejecutar.
       } else {
         // Una pausa que no genera otra tarea no tiene un
         // departamento interrup­tor.
@@ -770,13 +782,23 @@ function MisTareas() {
       );
 
       // -------------------------------------------------------
-      // SI ES OTRA TAREA / URGENTE
-      // SE MANTIENE LA LÓGICA ANTERIOR
+      // TAREA URGENTE:
+      // Sí necesita crear una nueva tarea.
       // -------------------------------------------------------
-
-      if (motivoPausa === "otra_tarea" || motivoPausa === "tarea_urgente") {
+      if (motivoPausa === "tarea_urgente") {
         navigate("/tareas/nueva");
         return;
+      }
+
+      // -------------------------------------------------------
+      // OTRA TAREA:
+      // NO se crea una nueva tarea. Se muestra el listado de
+      // tareas existentes para elegir cuál va a interrumpir
+      // la actividad actual.
+      // -------------------------------------------------------
+      if (motivoPausa === "otra_tarea") {
+        setTareaSeleccionadaOtra(null);
+        setMostrarSelectorOtraTarea(true);
       }
     } catch (err) {
       console.error("Error pausando tarea:", err);
@@ -785,6 +807,140 @@ function MisTareas() {
     } finally {
       setGuardando(false);
     }
+  };
+
+  // =========================================================
+  // SELECCIONAR OTRA TAREA YA EXISTENTE
+  //
+  // Para "Para realizar otra tarea" NO se crea una tarea nueva.
+  // El usuario selecciona una tarea que ya existe en Mis tareas.
+  // Esa tarea será la que genera la interrupción.
+  // =========================================================
+  const seleccionarOtraTarea = async () => {
+    if (!tareaSeleccionadaOtra || !tareaParaPausar || guardando) {
+      setError("Selecciona la tarea que vas a realizar.");
+      return;
+    }
+
+    setGuardando(true);
+    setError("");
+    setMensaje("");
+
+    try {
+      const ahora = new Date();
+      const fechaActual = obtenerFechaActual(ahora);
+      const horaActual = obtenerHoraActual(ahora);
+
+      // -------------------------------------------------------
+      // OBTENER DATOS ACTUALES DE LA TAREA QUE GENERA
+      // -------------------------------------------------------
+      const { data: tareaGeneradora, error: tareaError } = await supabase
+        .from("tareas")
+        .select("id, titulo, departamento_id, responsable_id, estado")
+        .eq("id", tareaSeleccionadaOtra.id)
+        .single();
+
+      if (tareaError) {
+        throw tareaError;
+      }
+
+      if (!tareaGeneradora) {
+        throw new Error("No se encontró la tarea seleccionada.");
+      }
+
+      if (String(tareaGeneradora.id) === String(tareaParaPausar.id)) {
+        throw new Error("No puedes seleccionar la misma tarea que acabas de pausar.");
+      }
+
+      if (tareaGeneradora.estado === "completada") {
+        throw new Error("La tarea seleccionada ya está completada.");
+      }
+
+      // -------------------------------------------------------
+      // REGISTRAR LA TRAZABILIDAD COMPLETA
+      //
+      // tarea_id = tarea afectada
+      // tarea_interrumpidora_id = tarea que genera el cambio
+      // departamento_id = departamento de la tarea generadora
+      // -------------------------------------------------------
+      const { error: interrupcionError } = await supabase
+        .from("historial_interrupciones")
+        .insert({
+          tarea_id: tareaParaPausar.id,
+          empleado_id: usuario.id,
+          tarea_interrumpidora_id: tareaGeneradora.id,
+          departamento_id: tareaGeneradora.departamento_id || null,
+          motivo: "cambio_tarea",
+          fecha: fechaActual,
+          hora: horaActual,
+        });
+
+      if (interrupcionError) {
+        throw interrupcionError;
+      }
+
+      // -------------------------------------------------------
+      // INICIAR LA TAREA EXISTENTE SELECCIONADA
+      // -------------------------------------------------------
+      const { error: updateError } = await supabase
+        .from("tareas")
+        .update({
+          estado: "en_proceso",
+          fecha_inicio: tareaGeneradora.fecha_inicio || fechaActual,
+          fecha: tareaGeneradora.fecha || fechaActual,
+          hora_inicio: tareaGeneradora.hora_inicio || horaActual,
+          inicio_real: ahora.toISOString(),
+          fin_real: null,
+          estado_ejecucion: "en_proceso",
+        })
+        .eq("id", tareaGeneradora.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      localStorage.removeItem(`tarea_pausa_${tareaParaPausar.id}`);
+
+      localStorage.setItem(
+        `tarea_reanudacion_${tareaGeneradora.id}`,
+        JSON.stringify({
+          tarea_id: tareaGeneradora.id,
+          fecha: fechaActual,
+          hora: horaActual,
+        }),
+      );
+
+      setMostrarSelectorOtraTarea(false);
+      setTareaSeleccionadaOtra(null);
+      setTareaParaPausar(null);
+      setMotivoPausa("");
+
+      await cargarTareas();
+
+      setMensaje(
+        `Tarea "${tareaGeneradora.titulo}" iniciada. Se registró como interrupción de "${tareaParaPausar.titulo}".`,
+      );
+    } catch (err) {
+      console.error("Error seleccionando otra tarea:", err);
+      setError(err.message || "No se pudo iniciar la tarea seleccionada.");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  // =========================================================
+  // CANCELAR SELECCIÓN DE OTRA TAREA
+  // =========================================================
+  const cancelarSeleccionOtraTarea = () => {
+    if (guardando) {
+      return;
+    }
+
+    setMostrarSelectorOtraTarea(false);
+    setTareaSeleccionadaOtra(null);
+    setTareaParaPausar(null);
+    setMotivoPausa("");
+    setError("");
   };
 
   // =========================================================
@@ -1588,6 +1744,107 @@ function MisTareas() {
                 disabled={guardando}
               >
                 {guardando ? "Pausando..." : "Confirmar pausa"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          POPUP — SELECCIONAR OTRA TAREA EXISTENTE
+      ===================================================== */}
+
+      {mostrarSelectorOtraTarea && (
+        <div className="pausa-overlay">
+          <div className="pausa-modal">
+            <div className="pausa-modal-header">
+              <div>
+                <span>CAMBIO DE ACTIVIDAD</span>
+
+                <h2>¿Qué tarea vas a realizar ahora?</h2>
+
+                <p>
+                  Selecciona una tarea que ya existe en Mis tareas. No se creará
+                  una nueva actividad.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="pausa-cerrar"
+                onClick={cancelarSeleccionOtraTarea}
+                disabled={guardando}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="pausa-opciones">
+              {tareasActivas
+                .filter(
+                  (tarea) =>
+                    String(tarea.id) !== String(tareaParaPausar?.id) &&
+                    tarea.estado !== "completada",
+                )
+                .map((tarea) => (
+                  <label
+                    key={tarea.id}
+                    className={
+                      String(tareaSeleccionadaOtra?.id) === String(tarea.id)
+                        ? "pausa-opcion seleccionada"
+                        : "pausa-opcion"
+                    }
+                  >
+                    <input
+                      type="radio"
+                      name="tareaOtraMisTareas"
+                      value={tarea.id}
+                      checked={
+                        String(tareaSeleccionadaOtra?.id) === String(tarea.id)
+                      }
+                      onChange={() => setTareaSeleccionadaOtra(tarea)}
+                    />
+
+                    <div>
+                      <strong>{tarea.titulo}</strong>
+
+                      <span>
+                        {tarea.descripcion || "Tarea disponible para continuar."}
+                      </span>
+                    </div>
+                  </label>
+                ))}
+
+              {tareasActivas.filter(
+                (tarea) =>
+                  String(tarea.id) !== String(tareaParaPausar?.id) &&
+                  tarea.estado !== "completada",
+              ).length === 0 && (
+                <div className="editar-tarea-error">
+                  No tienes otra tarea disponible para seleccionar.
+                </div>
+              )}
+            </div>
+
+            {error && <div className="editar-tarea-error">{error}</div>}
+
+            <div className="pausa-modal-actions">
+              <button
+                type="button"
+                className="editar-tarea-btn cancelar"
+                onClick={cancelarSeleccionOtraTarea}
+                disabled={guardando}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="editar-tarea-btn pausar"
+                onClick={seleccionarOtraTarea}
+                disabled={guardando || !tareaSeleccionadaOtra}
+              >
+                {guardando ? "Iniciando..." : "Iniciar tarea"}
               </button>
             </div>
           </div>

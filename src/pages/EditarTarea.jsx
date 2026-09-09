@@ -502,6 +502,38 @@ function EditarTarea() {
       setError("");
       setMensaje("");
 
+      // -------------------------------------------------------
+      // LIMPIAR TRAZABILIDAD DE INTERRUPCIONES
+      // -------------------------------------------------------
+      // La tarea puede aparecer en el historial como:
+      // 1. tarea afectada -> tarea_id
+      // 2. tarea generadora -> tarea_interrumpidora_id
+      //
+      // Se hacen DOS eliminaciones independientes para evitar
+      // problemas con el filtro OR de PostgREST.
+      const { error: errorHistorialAfectada } =
+        await supabase
+          .from("historial_interrupciones")
+          .delete()
+          .eq("tarea_id", id);
+
+      if (errorHistorialAfectada) {
+        throw errorHistorialAfectada;
+      }
+
+      const { error: errorHistorialGeneradora } =
+        await supabase
+          .from("historial_interrupciones")
+          .delete()
+          .eq("tarea_interrumpidora_id", id);
+
+      if (errorHistorialGeneradora) {
+        throw errorHistorialGeneradora;
+      }
+
+      // -------------------------------------------------------
+      // ELIMINAR TAREA
+      // -------------------------------------------------------
       const { error: errorDelete } =
         await supabase
           .from("tareas")
@@ -511,6 +543,10 @@ function EditarTarea() {
       if (errorDelete) {
         throw errorDelete;
       }
+
+      // Limpiar datos temporales asociados a la tarea.
+      localStorage.removeItem(`tarea_pausa_${id}`);
+      localStorage.removeItem(`tarea_reanudacion_${id}`);
 
       navigate("/tareas");
     } catch (err) {
