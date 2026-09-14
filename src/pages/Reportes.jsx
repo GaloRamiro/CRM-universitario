@@ -41,7 +41,8 @@ function Reportes() {
       ] = await Promise.all([
         supabase
           .from("tareas")
-          .select(`
+          .select(
+            `
             id,
             titulo,
             descripcion,
@@ -59,31 +60,37 @@ function Reportes() {
             fin_real,
             tiempo_trabajado_min,
             estado_ejecucion
-          `)
+          `,
+          )
           .order("fecha_inicio", { ascending: true }),
 
         supabase
           .from("departamentos")
-          .select(`
+          .select(
+            `
             id,
             nombre
-          `)
+          `,
+          )
           .order("nombre", { ascending: true }),
 
         supabase
           .from("usuarios")
-          .select(`
+          .select(
+            `
             id,
             nombre,
             apellido,
             email,
             activo
-          `)
+          `,
+          )
           .order("nombre", { ascending: true }),
 
         supabase
           .from("historial_interrupciones")
-          .select(`
+          .select(
+            `
             id,
             tarea_id,
             empleado_id,
@@ -93,7 +100,8 @@ function Reportes() {
             fecha,
             hora,
             created_at
-          `)
+          `,
+          )
           .order("created_at", { ascending: true }),
       ]);
 
@@ -112,14 +120,12 @@ function Reportes() {
       if (interrupcionesResponse.error) {
         console.warn(
           "No se pudo cargar historial_interrupciones:",
-          interrupcionesResponse.error
+          interrupcionesResponse.error,
         );
 
         setInterrupciones([]);
       } else {
-        setInterrupciones(
-          interrupcionesResponse.data || []
-        );
+        setInterrupciones(interrupcionesResponse.data || []);
       }
 
       setTareas(tareasResponse.data || []);
@@ -128,10 +134,7 @@ function Reportes() {
     } catch (err) {
       console.error("Error cargando reportes:", err);
 
-      setError(
-        err.message ||
-          "No se pudieron cargar los datos de reportes."
-      );
+      setError(err.message || "No se pudieron cargar los datos de reportes.");
     } finally {
       setCargando(false);
     }
@@ -159,7 +162,7 @@ function Reportes() {
     return new Date(
       Number(partes[0]),
       Number(partes[1]) - 1,
-      Number(partes[2])
+      Number(partes[2]),
     );
   };
 
@@ -192,51 +195,35 @@ function Reportes() {
   };
 
   const formatearDuracion = (minutos) => {
-    const valor = Math.max(
-      0,
-      Number(minutos) || 0
-    );
+    const valor = Math.max(0, Number(minutos) || 0);
 
     const horas = Math.floor(valor / 60);
 
-    const minutosRestantes = Math.round(
-      valor % 60
-    );
+    const minutosRestantes = Math.round(valor % 60);
 
     if (horas === 0) {
       return `${minutosRestantes} min`;
     }
 
-    return `${horas} h ${String(
-      minutosRestantes
-    ).padStart(2, "0")} min`;
+    return `${horas} h ${String(minutosRestantes).padStart(2, "0")} min`;
   };
 
   const obtenerNombreUsuario = (id) => {
-    const usuario = usuarios.find(
-      (item) =>
-        String(item.id) === String(id)
-    );
+    const usuario = usuarios.find((item) => String(item.id) === String(id));
 
     if (!usuario) {
       return "Sin responsable";
     }
 
-    return `${usuario.nombre || ""} ${
-      usuario.apellido || ""
-    }`.trim();
+    return `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim();
   };
 
   const obtenerNombreDepartamento = (id) => {
     const departamento = departamentos.find(
-      (item) =>
-        String(item.id) === String(id)
+      (item) => String(item.id) === String(id),
     );
 
-    return (
-      departamento?.nombre ||
-      "Sin departamento"
-    );
+    return departamento?.nombre || "Sin departamento";
   };
 
   // =========================================================
@@ -244,18 +231,11 @@ function Reportes() {
   // =========================================================
 
   const obtenerRangoPeriodo = () => {
-    if (
-      fechaDesde ||
-      fechaHasta
-    ) {
+    if (fechaDesde || fechaHasta) {
       return {
-        inicio: fechaDesde
-          ? obtenerFecha(fechaDesde)
-          : null,
+        inicio: fechaDesde ? obtenerFecha(fechaDesde) : null,
 
-        fin: fechaHasta
-          ? obtenerFecha(fechaHasta)
-          : null,
+        fin: fechaHasta ? obtenerFecha(fechaHasta) : null,
       };
     }
 
@@ -268,65 +248,36 @@ function Reportes() {
 
     const hoy = new Date();
 
-    hoy.setHours(
-      23,
-      59,
-      59,
-      999
-    );
+    hoy.setHours(23, 59, 59, 999);
 
     const inicio = new Date(hoy);
 
     if (periodo === "mes") {
       inicio.setDate(1);
-      inicio.setHours(
-        0,
-        0,
-        0,
-        0
-      );
+      inicio.setHours(0, 0, 0, 0);
     }
 
     if (periodo === "trimestre") {
-      inicio.setMonth(
-        hoy.getMonth() - 2
-      );
+      inicio.setMonth(hoy.getMonth() - 2);
 
       inicio.setDate(1);
 
-      inicio.setHours(
-        0,
-        0,
-        0,
-        0
-      );
+      inicio.setHours(0, 0, 0, 0);
     }
 
     if (periodo === "semestre") {
-      inicio.setMonth(
-        hoy.getMonth() - 5
-      );
+      inicio.setMonth(hoy.getMonth() - 5);
 
       inicio.setDate(1);
 
-      inicio.setHours(
-        0,
-        0,
-        0,
-        0
-      );
+      inicio.setHours(0, 0, 0, 0);
     }
 
     if (periodo === "año") {
       inicio.setMonth(0);
       inicio.setDate(1);
 
-      inicio.setHours(
-        0,
-        0,
-        0,
-        0
-      );
+      inicio.setHours(0, 0, 0, 0);
     }
 
     return {
@@ -340,95 +291,60 @@ function Reportes() {
   // =========================================================
 
   const tareasFiltradas = useMemo(() => {
-    const { inicio, fin } =
-      obtenerRangoPeriodo();
+    const { inicio, fin } = obtenerRangoPeriodo();
 
     if (!inicio && !fin) {
       return tareas;
     }
 
     return tareas.filter((tarea) => {
-      const fecha =
-        obtenerFecha(
-          tarea.fecha_inicio ||
-            tarea.fecha
-        );
+      const fecha = obtenerFecha(tarea.fecha_inicio || tarea.fecha);
 
       if (!fecha) {
         return false;
       }
 
-      if (
-        inicio &&
-        fecha < inicio
-      ) {
+      if (inicio && fecha < inicio) {
         return false;
       }
 
-      if (
-        fin &&
-        fecha > fin
-      ) {
+      if (fin && fecha > fin) {
         return false;
       }
 
       return true;
     });
-  }, [
-    tareas,
-    periodo,
-    fechaDesde,
-    fechaHasta,
-  ]);
+  }, [tareas, periodo, fechaDesde, fechaHasta]);
 
   // =========================================================
   // FILTRO DE INTERRUPCIONES
   // =========================================================
 
-  const interrupcionesFiltradas =
-    useMemo(() => {
-      const { inicio, fin } =
-        obtenerRangoPeriodo();
+  const interrupcionesFiltradas = useMemo(() => {
+    const { inicio, fin } = obtenerRangoPeriodo();
 
-      if (!inicio && !fin) {
-        return interrupciones;
+    if (!inicio && !fin) {
+      return interrupciones;
+    }
+
+    return interrupciones.filter((item) => {
+      const fecha = obtenerFecha(item.fecha || item.created_at);
+
+      if (!fecha) {
+        return false;
       }
 
-      return interrupciones.filter(
-        (item) => {
-          const fecha =
-            obtenerFecha(
-              item.fecha ||
-                item.created_at
-            );
+      if (inicio && fecha < inicio) {
+        return false;
+      }
 
-          if (!fecha) {
-            return false;
-          }
+      if (fin && fecha > fin) {
+        return false;
+      }
 
-          if (
-            inicio &&
-            fecha < inicio
-          ) {
-            return false;
-          }
-
-          if (
-            fin &&
-            fecha > fin
-          ) {
-            return false;
-          }
-
-          return true;
-        }
-      );
-    }, [
-      interrupciones,
-      periodo,
-      fechaDesde,
-      fechaHasta,
-    ]);
+      return true;
+    });
+  }, [interrupciones, periodo, fechaDesde, fechaHasta]);
 
   // =========================================================
   // TRAZABILIDAD OPERATIVA
@@ -443,7 +359,7 @@ function Reportes() {
     return interrupcionesFiltradas.filter(
       (interrupcion) =>
         interrupcion.motivo === "cambio_tarea" ||
-        interrupcion.motivo === "tarea_urgente"
+        interrupcion.motivo === "tarea_urgente",
     );
   }, [interrupcionesFiltradas]);
 
@@ -461,9 +377,7 @@ function Reportes() {
     // tarea_id identifica la tarea que estaba ejecutándose.
     if (interrupcion.tarea_id) {
       const tareaAfectada = tareas.find(
-        (item) =>
-          String(item.id) ===
-          String(interrupcion.tarea_id)
+        (item) => String(item.id) === String(interrupcion.tarea_id),
       );
 
       if (tareaAfectada?.departamento_id) {
@@ -496,8 +410,7 @@ function Reportes() {
       if (interrupcion.tarea_interrumpidora_id) {
         const tareaInterrumpidora = tareas.find(
           (item) =>
-            String(item.id) ===
-            String(interrupcion.tarea_interrumpidora_id)
+            String(item.id) === String(interrupcion.tarea_interrumpidora_id),
         );
 
         if (tareaInterrumpidora?.departamento_id) {
@@ -523,8 +436,7 @@ function Reportes() {
     return (
       tareas.find(
         (item) =>
-          String(item.id) ===
-          String(interrupcion.tarea_interrumpidora_id)
+          String(item.id) === String(interrupcion.tarea_interrumpidora_id),
       ) || null
     );
   };
@@ -534,66 +446,34 @@ function Reportes() {
   // =========================================================
 
   const metricas = useMemo(() => {
-    const total =
-      tareasFiltradas.length;
+    const total = tareasFiltradas.length;
 
-    const completadas =
-      tareasFiltradas.filter(
-        (tarea) =>
-          tarea.estado ===
-          "completada"
-      ).length;
+    const completadas = tareasFiltradas.filter(
+      (tarea) => tarea.estado === "completada",
+    ).length;
 
-    const enProceso =
-      tareasFiltradas.filter(
-        (tarea) =>
-          tarea.estado ===
-          "en_proceso"
-      ).length;
+    const enProceso = tareasFiltradas.filter(
+      (tarea) => tarea.estado === "en_proceso",
+    ).length;
 
-    const pendientes =
-      tareasFiltradas.filter(
-        (tarea) =>
-          tarea.estado !==
-            "completada" &&
-          tarea.estado !==
-            "en_proceso"
-      ).length;
+    const pendientes = tareasFiltradas.filter(
+      (tarea) => tarea.estado !== "completada" && tarea.estado !== "en_proceso",
+    ).length;
 
-    const minutosTrabajados =
-      tareasFiltradas.reduce(
-        (
-          totalMinutos,
-          tarea
-        ) =>
-          totalMinutos +
-          (Number(
-            tarea.tiempo_trabajado_min
-          ) || 0),
-        0
-      );
+    const minutosTrabajados = tareasFiltradas.reduce(
+      (totalMinutos, tarea) =>
+        totalMinutos + (Number(tarea.tiempo_trabajado_min) || 0),
+      0,
+    );
 
-    const tiempoEstimado =
-      tareasFiltradas.reduce(
-        (
-          totalMinutos,
-          tarea
-        ) =>
-          totalMinutos +
-          (Number(
-            tarea.tiempo_estimado
-          ) || 0),
-        0
-      );
+    const tiempoEstimado = tareasFiltradas.reduce(
+      (totalMinutos, tarea) =>
+        totalMinutos + (Number(tarea.tiempo_estimado) || 0),
+      0,
+    );
 
     const porcentajeCompletado =
-      total > 0
-        ? Math.round(
-            (completadas /
-              total) *
-              100
-          )
-        : 0;
+      total > 0 ? Math.round((completadas / total) * 100) : 0;
 
     return {
       total,
@@ -603,459 +483,257 @@ function Reportes() {
       minutosTrabajados,
       tiempoEstimado,
       porcentajeCompletado,
-      interrupciones:
-        interrupcionesFiltradas.length,
+      interrupciones: interrupcionesFiltradas.length,
     };
-  }, [
-    tareasFiltradas,
-    interrupcionesFiltradas,
-  ]);
+  }, [tareasFiltradas, interrupcionesFiltradas]);
 
   // =========================================================
   // TAREAS POR DEPARTAMENTO SOLICITANTE
   // =========================================================
 
-  const tareasPorDepartamento =
-    useMemo(() => {
-      const mapa = {};
+  const tareasPorDepartamento = useMemo(() => {
+    const mapa = {};
 
-      tareasFiltradas.forEach(
-        (tarea) => {
-          const nombre =
-            obtenerNombreDepartamento(
-              tarea.departamento_id
-            );
+    tareasFiltradas.forEach((tarea) => {
+      const nombre = obtenerNombreDepartamento(tarea.departamento_id);
 
-          if (!mapa[nombre]) {
-            mapa[nombre] = {
-              nombre,
-              total: 0,
-              completadas: 0,
-              pendientes: 0,
-              enProceso: 0,
-              minutos: 0,
-              prioridadAlta: 0,
-            };
-          }
+      if (!mapa[nombre]) {
+        mapa[nombre] = {
+          nombre,
+          total: 0,
+          completadas: 0,
+          pendientes: 0,
+          enProceso: 0,
+          minutos: 0,
+          prioridadBaja: 0,
+          prioridadMedia: 0,
+          prioridadAlta: 0,
+        };
+      }
 
-          mapa[nombre].total += 1;
+      mapa[nombre].total += 1;
 
-          if (
-            tarea.estado ===
-            "completada"
-          ) {
-            mapa[
-              nombre
-            ].completadas += 1;
-          } else if (
-            tarea.estado ===
-            "en_proceso"
-          ) {
-            mapa[
-              nombre
-            ].enProceso += 1;
-          } else {
-            mapa[
-              nombre
-            ].pendientes += 1;
-          }
+      if (tarea.estado === "completada") {
+        mapa[nombre].completadas += 1;
+      } else if (tarea.estado === "en_proceso") {
+        mapa[nombre].enProceso += 1;
+      } else {
+        mapa[nombre].pendientes += 1;
+      }
 
-          mapa[
-            nombre
-          ].minutos +=
-            Number(
-              tarea.tiempo_trabajado_min
-            ) || 0;
+      mapa[nombre].minutos += Number(tarea.tiempo_trabajado_min) || 0;
 
-          if (
-            tarea.prioridad ===
-            "alta"
-          ) {
-            mapa[
-              nombre
-            ].prioridadAlta += 1;
-          }
-        }
-      );
+      if (tarea.prioridad === "baja") {
+        mapa[nombre].prioridadBaja += 1;
+      }
 
-      return Object.values(
-        mapa
-      ).sort(
-        (a, b) =>
-          b.total - a.total
-      );
-    }, [
-      tareasFiltradas,
-      departamentos,
-    ]);
+      if (tarea.prioridad === "media") {
+        mapa[nombre].prioridadMedia += 1;
+      }
+
+      if (tarea.prioridad === "alta") {
+        mapa[nombre].prioridadAlta += 1;
+      }
+    });
+
+    return Object.values(mapa).sort((a, b) => b.total - a.total);
+  }, [tareasFiltradas, departamentos]);
 
   // =========================================================
   // INTERRUPCIONES POR DEPARTAMENTO AFECTADO
   // =========================================================
 
-  const interrupcionesPorDepartamento =
-    useMemo(() => {
-      const mapa = {};
+  const interrupcionesPorDepartamento = useMemo(() => {
+    const mapa = {};
 
-      interrupcionesOperativas.forEach(
-        (interrupcion) => {
-          const id =
-            obtenerDepartamentoInterrupcion(
-              interrupcion
-            );
+    interrupcionesOperativas.forEach((interrupcion) => {
+      const id = obtenerDepartamentoInterrupcion(interrupcion);
 
-          const nombre =
-            obtenerNombreDepartamento(
-              id
-            );
+      const nombre = obtenerNombreDepartamento(id);
 
-          if (!mapa[id]) {
-            mapa[id] = {
-              id,
-              nombre,
-              interrupciones: 0,
-              tareasAfectadas:
-                new Set(),
-              empleados:
-                new Set(),
-            };
-          }
+      if (!mapa[id]) {
+        mapa[id] = {
+          id,
+          nombre,
+          interrupciones: 0,
+          tareasAfectadas: new Set(),
+          empleados: new Set(),
+        };
+      }
 
-          mapa[id].interrupciones += 1;
+      mapa[id].interrupciones += 1;
 
-          if (
-            interrupcion.tarea_id
-          ) {
-            mapa[
-              id
-            ].tareasAfectadas.add(
-              String(
-                interrupcion.tarea_id
-              )
-            );
-          }
+      if (interrupcion.tarea_id) {
+        mapa[id].tareasAfectadas.add(String(interrupcion.tarea_id));
+      }
 
-          if (
-            interrupcion.empleado_id
-          ) {
-            mapa[
-              id
-            ].empleados.add(
-              String(
-                interrupcion.empleado_id
-              )
-            );
-          }
-        }
-      );
+      if (interrupcion.empleado_id) {
+        mapa[id].empleados.add(String(interrupcion.empleado_id));
+      }
+    });
 
-      return Object.values(
-        mapa
-      )
-        .map((item) => ({
-          ...item,
-          tareasAfectadas:
-            item.tareasAfectadas
-              .size,
-          empleados:
-            item.empleados.size,
-        }))
-        .sort(
-          (a, b) =>
-            b.interrupciones -
-            a.interrupciones
-        );
-    }, [
-      interrupcionesOperativas,
-      departamentos,
-      usuarios,
-    ]);
+    return Object.values(mapa)
+      .map((item) => ({
+        ...item,
+        tareasAfectadas: item.tareasAfectadas.size,
+        empleados: item.empleados.size,
+      }))
+      .sort((a, b) => b.interrupciones - a.interrupciones);
+  }, [interrupcionesOperativas, departamentos, usuarios]);
 
   // =========================================================
   // INTERRUPCIONES POR EMPLEADO EJECUTOR
   // =========================================================
 
-  const interrupcionesPorEmpleado =
-    useMemo(() => {
-      const mapa = {};
+  const interrupcionesPorEmpleado = useMemo(() => {
+    const mapa = {};
 
-      interrupcionesOperativas.forEach(
-        (interrupcion) => {
-          const id =
-            interrupcion.empleado_id;
+    interrupcionesOperativas.forEach((interrupcion) => {
+      const id = interrupcion.empleado_id;
 
-          const nombre =
-            obtenerNombreUsuario(
-              id
-            );
+      const nombre = obtenerNombreUsuario(id);
 
-          if (!mapa[id]) {
-            mapa[id] = {
-              id,
-              nombre,
-              interrupciones: 0,
-              tareasAfectadas:
-                new Set(),
-              departamentos:
-                new Set(),
-            };
-          }
+      if (!mapa[id]) {
+        mapa[id] = {
+          id,
+          nombre,
+          interrupciones: 0,
+          tareasAfectadas: new Set(),
+          departamentos: new Set(),
+        };
+      }
 
-          mapa[id].interrupciones += 1;
+      mapa[id].interrupciones += 1;
 
-          if (
-            interrupcion.tarea_id
-          ) {
-            mapa[
-              id
-            ].tareasAfectadas.add(
-              String(
-                interrupcion.tarea_id
-              )
-            );
-          }
+      if (interrupcion.tarea_id) {
+        mapa[id].tareasAfectadas.add(String(interrupcion.tarea_id));
+      }
 
-          const departamentoInterrupcion =
-            obtenerDepartamentoInterrupcion(
-              interrupcion
-            );
+      const departamentoInterrupcion =
+        obtenerDepartamentoInterrupcion(interrupcion);
 
-          if (
-            departamentoInterrupcion
-          ) {
-            mapa[
-              id
-            ].departamentos.add(
-              String(
-                departamentoInterrupcion
-              )
-            );
-          }
-        }
-      );
+      if (departamentoInterrupcion) {
+        mapa[id].departamentos.add(String(departamentoInterrupcion));
+      }
+    });
 
-      return Object.values(
-        mapa
-      )
-        .map((item) => ({
-          ...item,
-          tareasAfectadas:
-            item.tareasAfectadas
-              .size,
-          departamentos:
-            item.departamentos
-              .size,
-        }))
-        .sort(
-          (a, b) =>
-            b.interrupciones -
-            a.interrupciones
-        );
-    }, [
-      interrupcionesOperativas,
-      usuarios,
-    ]);
+    return Object.values(mapa)
+      .map((item) => ({
+        ...item,
+        tareasAfectadas: item.tareasAfectadas.size,
+        departamentos: item.departamentos.size,
+      }))
+      .sort((a, b) => b.interrupciones - a.interrupciones);
+  }, [interrupcionesOperativas, usuarios]);
 
   // =========================================================
   // CARGA DE TRABAJO POR EMPLEADO
   // =========================================================
 
-  const cargaPorEmpleado =
-    useMemo(() => {
-      const mapa = {};
+  const cargaPorEmpleado = useMemo(() => {
+    const mapa = {};
 
-      tareasFiltradas.forEach(
-        (tarea) => {
-          const id =
-            tarea.responsable_id;
+    tareasFiltradas.forEach((tarea) => {
+      const id = tarea.responsable_id;
 
-          const nombre =
-            obtenerNombreUsuario(
-              id
-            );
+      const nombre = obtenerNombreUsuario(id);
 
-          if (!mapa[id]) {
-            mapa[id] = {
-              id,
-              nombre,
-              tareas: 0,
-              completadas: 0,
-              pendientes: 0,
-              minutos: 0,
-            };
-          }
+      if (!mapa[id]) {
+        mapa[id] = {
+          id,
+          nombre,
+          tareas: 0,
+          completadas: 0,
+          pendientes: 0,
+          minutos: 0,
+        };
+      }
 
-          mapa[id].tareas += 1;
+      mapa[id].tareas += 1;
 
-          if (
-            tarea.estado ===
-            "completada"
-          ) {
-            mapa[
-              id
-            ].completadas += 1;
-          } else {
-            mapa[
-              id
-            ].pendientes += 1;
-          }
+      if (tarea.estado === "completada") {
+        mapa[id].completadas += 1;
+      } else {
+        mapa[id].pendientes += 1;
+      }
 
-          mapa[
-            id
-          ].minutos +=
-            Number(
-              tarea.tiempo_trabajado_min
-            ) || 0;
-        }
-      );
+      mapa[id].minutos += Number(tarea.tiempo_trabajado_min) || 0;
+    });
 
-      return Object.values(
-        mapa
-      ).sort(
-        (a, b) =>
-          b.tareas - a.tareas
-      );
-    }, [
-      tareasFiltradas,
-      usuarios,
-    ]);
+    return Object.values(mapa).sort((a, b) => b.tareas - a.tareas);
+  }, [tareasFiltradas, usuarios]);
 
   // =========================================================
   // TAREAS PRIORITARIAS
   // =========================================================
 
-  const tareasPrioritarias =
-    useMemo(() => {
-      return tareasFiltradas
-        .filter(
-          (tarea) =>
-            tarea.prioridad ===
-            "alta"
-        )
-        .sort((a, b) => {
-          const estadoA =
-            a.estado ===
-            "completada"
-              ? 0
-              : 1;
+  const tareasPrioritarias = useMemo(() => {
+    return tareasFiltradas
+      .filter((tarea) => tarea.prioridad === "alta")
+      .sort((a, b) => {
+        const estadoA = a.estado === "completada" ? 0 : 1;
 
-          const estadoB =
-            b.estado ===
-            "completada"
-              ? 0
-              : 1;
+        const estadoB = b.estado === "completada" ? 0 : 1;
 
-          return (
-            estadoB - estadoA
-          );
-        })
-        .slice(0, 10);
-    }, [tareasFiltradas]);
+        return estadoB - estadoA;
+      })
+      .slice(0, 10);
+  }, [tareasFiltradas]);
 
   // =========================================================
   // DETALLE DE INTERRUPCIONES
   // =========================================================
 
-  const detalleInterrupciones =
-    useMemo(() => {
-      return interrupcionesOperativas
-        .map((interrupcion) => {
-          const tarea =
-            tareas.find(
-              (item) =>
-                String(
-                  item.id
-                ) ===
-                String(
-                  interrupcion.tarea_id
-                )
-            );
+  const detalleInterrupciones = useMemo(() => {
+    return interrupcionesOperativas
+      .map((interrupcion) => {
+        const tarea = tareas.find(
+          (item) => String(item.id) === String(interrupcion.tarea_id),
+        );
 
-          return {
-            ...interrupcion,
-            tarea,
-            empleado:
-              obtenerNombreUsuario(
-                interrupcion.empleado_id
-              ),
-            departamento:
-              obtenerNombreDepartamento(
-                obtenerDepartamentoInterrupcion(
-                  interrupcion
-                )
-              ),
-            departamentoGenerador:
-              obtenerNombreDepartamento(
-                obtenerDepartamentoGeneradorInterrupcion(
-                  interrupcion
-                )
-              ),
-            tareaGeneradora:
-              obtenerTareaGeneradoraInterrupcion(
-                interrupcion
-              ),
-          };
-        })
-        .sort((a, b) => {
-          const fechaA =
-            obtenerFecha(
-              a.fecha ||
-                a.created_at
-            );
+        return {
+          ...interrupcion,
+          tarea,
+          empleado: obtenerNombreUsuario(interrupcion.empleado_id),
+          departamento: obtenerNombreDepartamento(
+            obtenerDepartamentoInterrupcion(interrupcion),
+          ),
+          departamentoGenerador: obtenerNombreDepartamento(
+            obtenerDepartamentoGeneradorInterrupcion(interrupcion),
+          ),
+          tareaGeneradora: obtenerTareaGeneradoraInterrupcion(interrupcion),
+        };
+      })
+      .sort((a, b) => {
+        const fechaA = obtenerFecha(a.fecha || a.created_at);
 
-          const fechaB =
-            obtenerFecha(
-              b.fecha ||
-                b.created_at
-            );
+        const fechaB = obtenerFecha(b.fecha || b.created_at);
 
-          if (
-            !fechaA ||
-            !fechaB
-          ) {
-            return 0;
-          }
+        if (!fechaA || !fechaB) {
+          return 0;
+        }
 
-          return (
-            fechaB - fechaA
-          );
-        });
-    }, [
-      interrupcionesOperativas,
-      tareas,
-      usuarios,
-      departamentos,
-    ]);
+        return fechaB - fechaA;
+      });
+  }, [interrupcionesOperativas, tareas, usuarios, departamentos]);
 
   // =========================================================
   // PERÍODO HUMANO
   // =========================================================
 
   const obtenerPeriodoTexto = () => {
-    if (
-      fechaDesde ||
-      fechaHasta
-    ) {
-      if (
-        fechaDesde &&
-        fechaHasta
-      ) {
-        return `Del ${formatearFecha(
-          fechaDesde
-        )} al ${formatearFecha(
-          fechaHasta
+    if (fechaDesde || fechaHasta) {
+      if (fechaDesde && fechaHasta) {
+        return `Del ${formatearFecha(fechaDesde)} al ${formatearFecha(
+          fechaHasta,
         )}`;
       }
 
       if (fechaDesde) {
-        return `Desde ${formatearFecha(
-          fechaDesde
-        )}`;
+        return `Desde ${formatearFecha(fechaDesde)}`;
       }
 
-      return `Hasta ${formatearFecha(
-        fechaHasta
-      )}`;
+      return `Hasta ${formatearFecha(fechaHasta)}`;
     }
 
     if (periodo === "mes") {
@@ -1101,16 +779,11 @@ function Reportes() {
         format: "a4",
       });
 
-      const anchoPagina =
-        doc.internal.pageSize.getWidth();
+      const anchoPagina = doc.internal.pageSize.getWidth();
 
-      const altoPagina =
-        doc.internal.pageSize.getHeight();
+      const altoPagina = doc.internal.pageSize.getHeight();
 
-      const fechaGeneracion =
-        new Date().toLocaleString(
-          "es-EC"
-        );
+      const fechaGeneracion = new Date().toLocaleString("es-EC");
 
       let pagina = 1;
 
@@ -1118,76 +791,39 @@ function Reportes() {
       // ENCABEZADO
       // -------------------------------------------------------
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(20);
 
-      doc.text(
-        "INFORME EJECUTIVO DE GESTIÓN",
-        20,
-        24
-      );
+      doc.text("INFORME EJECUTIVO DE GESTIÓN", 20, 24);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(10);
 
-      doc.text(
-        "Análisis de tareas, carga operativa e interrupciones",
-        20,
-        31
-      );
+      doc.text("Análisis de tareas, carga operativa e interrupciones", 20, 31);
 
       doc.setFontSize(9);
 
-      doc.text(
-        `Período: ${obtenerPeriodoTexto()}`,
-        20,
-        39
-      );
+      doc.text(`Período: ${obtenerPeriodoTexto()}`, 20, 39);
 
-      doc.text(
-        `Generado: ${fechaGeneracion}`,
-        20,
-        45
-      );
+      doc.text(`Generado: ${fechaGeneracion}`, 20, 45);
 
       doc.setLineWidth(0.5);
 
-      doc.line(
-        20,
-        50,
-        anchoPagina - 20,
-        50
-      );
+      doc.line(20, 50, anchoPagina - 20, 50);
 
       // -------------------------------------------------------
       // RESUMEN EJECUTIVO
       // -------------------------------------------------------
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "1. Resumen ejecutivo",
-        20,
-        61
-      );
+      doc.text("1. Resumen ejecutivo", 20, 61);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(10);
 
@@ -1200,108 +836,50 @@ function Reportes() {
 
       resumen +=
         `El tiempo de trabajo registrado asciende a ` +
-        `${formatearDuracion(
-          metricas.minutosTrabajados
-        )}. `;
+        `${formatearDuracion(metricas.minutosTrabajados)}. `;
 
       resumen +=
         `Se identificaron ${metricas.interrupciones} ` +
         `interrupciones registradas durante la ejecución ` +
         `de las actividades. `;
 
-      if (
-        interrupcionesPorDepartamento.length >
-        0
-      ) {
+      if (interrupcionesPorDepartamento.length > 0) {
         resumen +=
           `El departamento con mayor número de interrupciones fue ` +
           `${interrupcionesPorDepartamento[0].nombre}, ` +
           `con ${interrupcionesPorDepartamento[0].interrupciones} registros.`;
       }
 
-      const resumenLineas =
-        doc.splitTextToSize(
-          resumen,
-          anchoPagina - 40
-        );
+      const resumenLineas = doc.splitTextToSize(resumen, anchoPagina - 40);
 
-      doc.text(
-        resumenLineas,
-        20,
-        70
-      );
+      doc.text(resumenLineas, 20, 70);
 
       // -------------------------------------------------------
       // INDICADORES
       // -------------------------------------------------------
 
-      const yIndicadores =
-        70 +
-        resumenLineas.length *
-          5 +
-        10;
+      const yIndicadores = 70 + resumenLineas.length * 5 + 10;
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "2. Indicadores generales",
-        20,
-        yIndicadores
-      );
+      doc.text("2. Indicadores generales", 20, yIndicadores);
 
       autoTable(doc, {
-        startY:
-          yIndicadores + 6,
+        startY: yIndicadores + 6,
 
-        head: [
-          [
-            "Indicador",
-            "Resultado",
-          ],
-        ],
+        head: [["Indicador", "Resultado"]],
 
         body: [
-          [
-            "Total de tareas",
-            metricas.total,
-          ],
-          [
-            "Tareas completadas",
-            metricas.completadas,
-          ],
-          [
-            "Tareas en proceso",
-            metricas.enProceso,
-          ],
-          [
-            "Tareas pendientes",
-            metricas.pendientes,
-          ],
-          [
-            "Cumplimiento",
-            `${metricas.porcentajeCompletado}%`,
-          ],
-          [
-            "Tiempo trabajado",
-            formatearDuracion(
-              metricas.minutosTrabajados
-            ),
-          ],
-          [
-            "Tiempo estimado",
-            formatearDuracion(
-              metricas.tiempoEstimado
-            ),
-          ],
-          [
-            "Interrupciones",
-            metricas.interrupciones,
-          ],
+          ["Total de tareas", metricas.total],
+          ["Tareas completadas", metricas.completadas],
+          ["Tareas en proceso", metricas.enProceso],
+          ["Tareas pendientes", metricas.pendientes],
+          ["Cumplimiento", `${metricas.porcentajeCompletado}%`],
+          ["Tiempo trabajado", formatearDuracion(metricas.minutosTrabajados)],
+          ["Tiempo estimado", formatearDuracion(metricas.tiempoEstimado)],
+          ["Interrupciones", metricas.interrupciones],
         ],
 
         styles: {
@@ -1320,30 +898,20 @@ function Reportes() {
 
       doc.addPage();
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "3. Tareas por departamento solicitante",
-        20,
-        20
-      );
+      doc.text("3. Tareas por departamento solicitante", 20, 20);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(9);
 
       doc.text(
         "Este análisis identifica qué departamentos concentran la demanda de trabajo.",
         20,
-        27
+        27,
       );
 
       autoTable(doc, {
@@ -1356,25 +924,24 @@ function Reportes() {
             "Completadas",
             "Pendientes",
             "En proceso",
+            "Prioridad baja",
+            "Prioridad media",
             "Prioridad alta",
             "Tiempo",
           ],
         ],
 
-        body:
-          tareasPorDepartamento.map(
-            (item) => [
-              item.nombre,
-              item.total,
-              item.completadas,
-              item.pendientes,
-              item.enProceso,
-              item.prioridadAlta,
-              formatearDuracion(
-                item.minutos
-              ),
-            ]
-          ),
+        body: tareasPorDepartamento.map((item) => [
+          item.nombre,
+          item.total,
+          item.completadas,
+          item.pendientes,
+          item.enProceso,
+          item.prioridadBaja,
+          item.prioridadMedia,
+          item.prioridadAlta,
+          formatearDuracion(item.minutos),
+        ]),
 
         styles: {
           fontSize: 8,
@@ -1392,30 +959,20 @@ function Reportes() {
 
       doc.addPage();
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "4. Interrupciones por departamento afectado",
-        20,
-        20
-      );
+      doc.text("4. Interrupciones por departamento afectado", 20, 20);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(9);
 
       doc.text(
         "El análisis identifica qué departamentos fueron afectados por interrupciones durante la ejecución de las actividades.",
         20,
-        27
+        27,
       );
 
       autoTable(doc, {
@@ -1430,15 +987,12 @@ function Reportes() {
           ],
         ],
 
-        body:
-          interrupcionesPorDepartamento.map(
-            (item) => [
-              item.nombre,
-              item.interrupciones,
-              item.tareasAfectadas,
-              item.empleados,
-            ]
-          ),
+        body: interrupcionesPorDepartamento.map((item) => [
+          item.nombre,
+          item.interrupciones,
+          item.tareasAfectadas,
+          item.empleados,
+        ]),
 
         styles: {
           fontSize: 8,
@@ -1456,30 +1010,20 @@ function Reportes() {
 
       doc.addPage();
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "5. Empleados afectados por interrupciones",
-        20,
-        20
-      );
+      doc.text("5. Empleados afectados por interrupciones", 20, 20);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(9);
 
       doc.text(
         "Los empleados representan a las personas ejecutoras de las actividades y se mide cuántas interrupciones afectaron su trabajo.",
         20,
-        27
+        27,
       );
 
       autoTable(doc, {
@@ -1494,15 +1038,12 @@ function Reportes() {
           ],
         ],
 
-        body:
-          interrupcionesPorEmpleado.map(
-            (item) => [
-              item.nombre,
-              item.interrupciones,
-              item.tareasAfectadas,
-              item.departamentos,
-            ]
-          ),
+        body: interrupcionesPorEmpleado.map((item) => [
+          item.nombre,
+          item.interrupciones,
+          item.tareasAfectadas,
+          item.departamentos,
+        ]),
 
         styles: {
           fontSize: 8,
@@ -1522,30 +1063,20 @@ function Reportes() {
 
       doc.addPage("a4", "landscape");
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "6. Trazabilidad de interrupciones operativas",
-        20,
-        20
-      );
+      doc.text("6. Trazabilidad de interrupciones operativas", 20, 20);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(9);
 
       doc.text(
         "Se detallan únicamente cambios de tarea y solicitudes urgentes: origen de la nueva tarea, departamento afectado, empleado y tarea interrumpida.",
         20,
-        27
+        27,
       );
 
       autoTable(doc, {
@@ -1564,34 +1095,23 @@ function Reportes() {
           ],
         ],
 
-        body:
-          detalleInterrupciones.map(
-            (item) => [
-              formatearFecha(
-                item.fecha ||
-                  item.created_at
-              ),
+        body: detalleInterrupciones.map((item) => [
+          formatearFecha(item.fecha || item.created_at),
 
-              item.hora ||
-                "Sin hora",
+          item.hora || "Sin hora",
 
-              item.departamentoGenerador ||
-                "No identificado",
+          item.departamentoGenerador || "No identificado",
 
-              item.tareaGeneradora?.titulo ||
-                "Tarea generadora no registrada",
+          item.tareaGeneradora?.titulo || "Tarea generadora no registrada",
 
-              item.departamento,
+          item.departamento,
 
-              item.empleado,
+          item.empleado,
 
-              item.tarea?.titulo ||
-                "Tarea afectada no identificada",
+          item.tarea?.titulo || "Tarea afectada no identificada",
 
-              item.motivo ||
-                "Sin motivo registrado",
-            ]
-          ),
+          item.motivo || "Sin motivo registrado",
+        ]),
 
         styles: {
           fontSize: 8,
@@ -1667,30 +1187,20 @@ function Reportes() {
 
       doc.addPage("a4", "portrait");
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "7. Carga operativa por empleado",
-        20,
-        20
-      );
+      doc.text("7. Carga operativa por empleado", 20, 20);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(9);
 
       doc.text(
         "Los empleados representan a las personas ejecutoras de las actividades.",
         20,
-        27
+        27,
       );
 
       autoTable(doc, {
@@ -1706,18 +1216,13 @@ function Reportes() {
           ],
         ],
 
-        body:
-          cargaPorEmpleado.map(
-            (item) => [
-              item.nombre,
-              item.tareas,
-              item.completadas,
-              item.pendientes,
-              formatearDuracion(
-                item.minutos
-              ),
-            ]
-          ),
+        body: cargaPorEmpleado.map((item) => [
+          item.nombre,
+          item.tareas,
+          item.completadas,
+          item.pendientes,
+          formatearDuracion(item.minutos),
+        ]),
 
         styles: {
           fontSize: 8,
@@ -1735,18 +1240,11 @@ function Reportes() {
 
       doc.addPage();
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "8. Actividades prioritarias",
-        20,
-        20
-      );
+      doc.text("8. Actividades prioritarias", 20, 20);
 
       autoTable(doc, {
         startY: 28,
@@ -1761,32 +1259,21 @@ function Reportes() {
           ],
         ],
 
-        body:
-          tareasPrioritarias.map(
-            (tarea) => [
-              tarea.titulo,
+        body: tareasPrioritarias.map((tarea) => [
+          tarea.titulo,
 
-              obtenerNombreDepartamento(
-                tarea.departamento_id
-              ),
+          obtenerNombreDepartamento(tarea.departamento_id),
 
-              obtenerNombreUsuario(
-                tarea.responsable_id
-              ),
+          obtenerNombreUsuario(tarea.responsable_id),
 
-              tarea.estado ===
-              "completada"
-                ? "Completada"
-                : tarea.estado ===
-                  "en_proceso"
-                ? "En proceso"
-                : "Pendiente",
+          tarea.estado === "completada"
+            ? "Completada"
+            : tarea.estado === "en_proceso"
+              ? "En proceso"
+              : "Pendiente",
 
-              formatearDuracion(
-                tarea.tiempo_trabajado_min
-              ),
-            ]
-          ),
+          formatearDuracion(tarea.tiempo_trabajado_min),
+        ]),
 
         styles: {
           fontSize: 8,
@@ -1804,34 +1291,21 @@ function Reportes() {
 
       doc.addPage();
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(14);
 
-      doc.text(
-        "9. Conclusiones ejecutivas",
-        20,
-        20
-      );
+      doc.text("9. Conclusiones ejecutivas", 20, 20);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(10);
 
-      const departamentoMayor =
-        tareasPorDepartamento[0];
+      const departamentoMayor = tareasPorDepartamento[0];
 
-      const departamentoMayorInterrupciones =
-        interrupcionesPorDepartamento[0];
+      const departamentoMayorInterrupciones = interrupcionesPorDepartamento[0];
 
-      const empleadoMayorInterrupciones =
-        interrupcionesPorEmpleado[0];
+      const empleadoMayorInterrupciones = interrupcionesPorEmpleado[0];
 
       const conclusiones = [
         `La organización registró ${metricas.total} tareas durante el período analizado.`,
@@ -1851,35 +1325,22 @@ function Reportes() {
           : "No existen interrupciones registradas suficientes para identificar un empleado ejecutor con mayor nivel de interrupción.",
 
         `El tiempo total registrado de trabajo fue de ${formatearDuracion(
-          metricas.minutosTrabajados
+          metricas.minutosTrabajados,
         )}.`,
       ];
 
       let y = 32;
 
-      conclusiones.forEach(
-        (
-          conclusion,
-          index
-        ) => {
-          const lineas =
-            doc.splitTextToSize(
-              `${index + 1}. ${conclusion}`,
-              anchoPagina - 45
-            );
+      conclusiones.forEach((conclusion, index) => {
+        const lineas = doc.splitTextToSize(
+          `${index + 1}. ${conclusion}`,
+          anchoPagina - 45,
+        );
 
-          doc.text(
-            lineas,
-            23,
-            y
-          );
+        doc.text(lineas, 23, y);
 
-          y +=
-            lineas.length *
-              5 +
-            5;
-        }
-      );
+        y += lineas.length * 5 + 5;
+      });
 
       // -------------------------------------------------------
       // FUENTE DE DATOS
@@ -1887,23 +1348,13 @@ function Reportes() {
 
       y += 5;
 
-      doc.setFont(
-        "helvetica",
-        "bold"
-      );
+      doc.setFont("helvetica", "bold");
 
       doc.setFontSize(12);
 
-      doc.text(
-        "Fuente de información",
-        20,
-        y
-      );
+      doc.text("Fuente de información", 20, y);
 
-      doc.setFont(
-        "helvetica",
-        "normal"
-      );
+      doc.setFont("helvetica", "normal");
 
       doc.setFontSize(9);
 
@@ -1912,76 +1363,48 @@ function Reportes() {
       const fuente =
         "Los datos de este informe provienen del sistema interno de gestión de tareas, principalmente de las tablas de tareas, usuarios, departamentos e historial de interrupciones de Supabase. El informe se genera automáticamente a partir de los registros disponibles en el período seleccionado.";
 
-      const fuenteLineas =
-        doc.splitTextToSize(
-          fuente,
-          anchoPagina - 40
-        );
+      const fuenteLineas = doc.splitTextToSize(fuente, anchoPagina - 40);
 
-      doc.text(
-        fuenteLineas,
-        20,
-        y
-      );
+      doc.text(fuenteLineas, 20, y);
 
       // -------------------------------------------------------
       // PIE DE PÁGINA
       // -------------------------------------------------------
 
-      const totalPaginas =
-        doc.internal.getNumberOfPages();
+      const totalPaginas = doc.internal.getNumberOfPages();
 
-      for (
-        pagina = 1;
-        pagina <=
-        totalPaginas;
-        pagina++
-      ) {
-        doc.setPage(
-          pagina
-        );
+      for (pagina = 1; pagina <= totalPaginas; pagina++) {
+        doc.setPage(pagina);
 
         // Cada página puede tener orientación diferente.
-        const anchoPaginaActual =
-          doc.internal.pageSize.getWidth();
+        const anchoPaginaActual = doc.internal.pageSize.getWidth();
 
-        const altoPaginaActual =
-          doc.internal.pageSize.getHeight();
+        const altoPaginaActual = doc.internal.pageSize.getHeight();
 
-        doc.setFont(
-          "helvetica",
-          "normal"
-        );
+        doc.setFont("helvetica", "normal");
 
         doc.setFontSize(8);
 
         doc.text(
           "Informe ejecutivo de gestión — Sistema interno de tareas",
           20,
-          altoPaginaActual - 12
+          altoPaginaActual - 12,
         );
 
         doc.text(
           `Página ${pagina} de ${totalPaginas}`,
           anchoPaginaActual - 42,
-          altoPaginaActual - 12
+          altoPaginaActual - 12,
         );
       }
 
       doc.save(
-        `informe-ejecutivo-${new Date()
-          .toISOString()
-          .slice(0, 10)}.pdf`
+        `informe-ejecutivo-${new Date().toISOString().slice(0, 10)}.pdf`,
       );
     } catch (err) {
-      console.error(
-        "Error generando PDF:",
-        err
-      );
+      console.error("Error generando PDF:", err);
 
-      setError(
-        "No se pudo generar el informe PDF."
-      );
+      setError("No se pudo generar el informe PDF.");
     } finally {
       setGenerandoPDF(false);
     }
@@ -1997,9 +1420,7 @@ function Reportes() {
         <div className="reportes-loading">
           <span className="reportes-loader" />
 
-          <p>
-            Analizando información de gestión...
-          </p>
+          <p>Analizando información de gestión...</p>
         </div>
       </section>
     );
@@ -2011,28 +1432,21 @@ function Reportes() {
 
   return (
     <section className="reportes-page">
-
       {/* ENCABEZADO */}
 
       <header className="reportes-header">
         <div>
-          <span className="reportes-eyebrow">
-            ANÁLISIS DE GESTIÓN
-          </span>
+          <span className="reportes-eyebrow">ANÁLISIS DE GESTIÓN</span>
 
           <h1>Reportes</h1>
 
           <p>
-            Analiza la carga de trabajo,
-            la demanda de los
-            departamentos y las
-            interrupciones durante la
-            ejecución de actividades.
+            Analiza la carga de trabajo, la demanda de los departamentos y las
+            interrupciones durante la ejecución de actividades.
           </p>
         </div>
 
         <div className="reportes-header-actions">
-
           <button
             type="button"
             className="reportes-btn reportes-btn-secundario"
@@ -2047,920 +1461,529 @@ function Reportes() {
             onClick={generarPDF}
             disabled={generandoPDF}
           >
-            {generandoPDF
-              ? "Generando informe..."
-              : "Generar informe PDF"}
+            {generandoPDF ? "Generando informe..." : "Generar informe PDF"}
           </button>
-
         </div>
       </header>
 
       {/* FILTROS */}
 
       <div className="reportes-filtros">
-
         <div className="reportes-filtro-periodo">
-
           <div>
-            <span>
-              Período de análisis
-            </span>
+            <span>Período de análisis</span>
 
-            <strong>
-              {obtenerPeriodoTexto()}
-            </strong>
+            <strong>{obtenerPeriodoTexto()}</strong>
           </div>
 
-          <select
-            value={periodo}
-            onChange={(e) =>
-              setPeriodo(
-                e.target.value
-              )
-            }
-          >
-            <option value="todo">
-              Todo el historial
-            </option>
+          <select value={periodo} onChange={(e) => setPeriodo(e.target.value)}>
+            <option value="todo">Todo el historial</option>
 
-            <option value="mes">
-              Mes actual
-            </option>
+            <option value="mes">Mes actual</option>
 
-            <option value="trimestre">
-              Últimos 3 meses
-            </option>
+            <option value="trimestre">Últimos 3 meses</option>
 
-            <option value="semestre">
-              Últimos 6 meses
-            </option>
+            <option value="semestre">Últimos 6 meses</option>
 
-            <option value="año">
-              Año actual
-            </option>
+            <option value="año">Año actual</option>
           </select>
-
         </div>
 
         <div className="reportes-fechas">
-
           <label>
-            <span>
-              Fecha desde
-            </span>
+            <span>Fecha desde</span>
 
             <input
               type="date"
               value={fechaDesde}
-              onChange={(e) =>
-                setFechaDesde(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setFechaDesde(e.target.value)}
             />
           </label>
 
           <label>
-            <span>
-              Fecha hasta
-            </span>
+            <span>Fecha hasta</span>
 
             <input
               type="date"
               value={fechaHasta}
-              onChange={(e) =>
-                setFechaHasta(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setFechaHasta(e.target.value)}
             />
           </label>
 
-          {(fechaDesde ||
-            fechaHasta ||
-            periodo !== "todo") && (
+          {(fechaDesde || fechaHasta || periodo !== "todo") && (
             <button
               type="button"
               className="reportes-btn-limpiar"
-              onClick={
-                limpiarFiltros
-              }
+              onClick={limpiarFiltros}
             >
               Limpiar filtros
             </button>
           )}
-
         </div>
-
       </div>
 
       {/* ERROR */}
 
-      {error && (
-        <div className="reportes-alerta">
-          {error}
-        </div>
-      )}
+      {error && <div className="reportes-alerta">{error}</div>}
 
       {/* INDICADORES */}
 
       <div className="reportes-stats">
-
         <article className="reportes-stat">
-          <span>
-            Tareas registradas
-          </span>
+          <span>Tareas registradas</span>
 
-          <strong>
-            {metricas.total}
-          </strong>
+          <strong>{metricas.total}</strong>
 
-          <small>
-            Actividades del período
-          </small>
+          <small>Actividades del período</small>
         </article>
 
         <article className="reportes-stat">
-          <span>
-            Completadas
-          </span>
+          <span>Completadas</span>
 
-          <strong>
-            {metricas.completadas}
-          </strong>
+          <strong>{metricas.completadas}</strong>
 
-          <small>
-            {
-              metricas.porcentajeCompletado
-            }
-            % de cumplimiento
-          </small>
+          <small>{metricas.porcentajeCompletado}% de cumplimiento</small>
         </article>
 
         <article className="reportes-stat">
-          <span>
-            Tiempo trabajado
-          </span>
+          <span>Tiempo trabajado</span>
 
           <strong className="reportes-stat-tiempo">
-            {formatearDuracion(
-              metricas.minutosTrabajados
-            )}
+            {formatearDuracion(metricas.minutosTrabajados)}
           </strong>
 
-          <small>
-            Tiempo registrado
-          </small>
+          <small>Tiempo registrado</small>
         </article>
 
         <article className="reportes-stat reportes-stat-interrupciones">
-          <span>
-            Interrupciones
-          </span>
+          <span>Interrupciones</span>
 
-          <strong>
-            {metricas.interrupciones}
-          </strong>
+          <strong>{metricas.interrupciones}</strong>
 
-          <small>
-            Registros de interrupción
-          </small>
+          <small>Registros de interrupción</small>
         </article>
-
       </div>
 
       {/* ESTADO GENERAL */}
 
       <div className="reportes-layout">
-
         <article className="reportes-panel">
-
           <div className="reportes-panel-header">
             <div>
-              <span>
-                ESTADO OPERATIVO
-              </span>
+              <span>ESTADO OPERATIVO</span>
 
-              <h2>
-                Situación de las tareas
-              </h2>
+              <h2>Situación de las tareas</h2>
             </div>
           </div>
 
           <div className="reportes-estado-grid">
-
             <div className="reportes-estado-item">
-              <span>
-                Completadas
-              </span>
+              <span>Completadas</span>
 
-              <strong>
-                {metricas.completadas}
-              </strong>
+              <strong>{metricas.completadas}</strong>
             </div>
 
             <div className="reportes-estado-item">
-              <span>
-                En proceso
-              </span>
+              <span>En proceso</span>
 
-              <strong>
-                {metricas.enProceso}
-              </strong>
+              <strong>{metricas.enProceso}</strong>
             </div>
 
             <div className="reportes-estado-item">
-              <span>
-                Pendientes
-              </span>
+              <span>Pendientes</span>
 
-              <strong>
-                {metricas.pendientes}
-              </strong>
+              <strong>{metricas.pendientes}</strong>
             </div>
-
           </div>
-
         </article>
 
         <article className="reportes-panel">
-
           <div className="reportes-panel-header">
             <div>
-              <span>
-                TIEMPO
-              </span>
+              <span>TIEMPO</span>
 
-              <h2>
-                Uso de jornada
-              </h2>
+              <h2>Uso de jornada</h2>
             </div>
           </div>
 
           <div className="reportes-tiempo">
-
             <div>
-              <span>
-                Registrado
-              </span>
+              <span>Registrado</span>
 
-              <strong>
-                {formatearDuracion(
-                  metricas.minutosTrabajados
-                )}
-              </strong>
+              <strong>{formatearDuracion(metricas.minutosTrabajados)}</strong>
             </div>
 
             <div>
-              <span>
-                Estimado
-              </span>
+              <span>Estimado</span>
 
-              <strong>
-                {formatearDuracion(
-                  metricas.tiempoEstimado
-                )}
-              </strong>
+              <strong>{formatearDuracion(metricas.tiempoEstimado)}</strong>
             </div>
-
           </div>
-
         </article>
-
       </div>
 
       {/* DEPARTAMENTOS */}
 
       <section className="reportes-panel reportes-panel-grande">
-
         <div className="reportes-panel-header">
           <div>
-            <span>
-              DEMANDA ORGANIZACIONAL
-            </span>
+            <span>DEMANDA ORGANIZACIONAL</span>
 
-            <h2>
-              Tareas por departamento
-            </h2>
+            <h2>Tareas por departamento</h2>
 
             <p>
-              Departamentos solicitantes y
-              volumen de actividades generadas.
+              Departamentos solicitantes y volumen de actividades generadas.
             </p>
           </div>
         </div>
 
-        {tareasPorDepartamento.length ===
-        0 ? (
+        {tareasPorDepartamento.length === 0 ? (
           <div className="reportes-vacio">
-            No existen tareas para el
-            período seleccionado.
+            No existen tareas para el período seleccionado.
           </div>
         ) : (
           <div className="reportes-table-wrapper">
-
             <table className="reportes-table">
-
               <thead>
                 <tr>
-                  <th>
-                    Departamento
-                  </th>
+                  <th>Departamento</th>
 
-                  <th>
-                    Tareas
-                  </th>
+                  <th>Tareas</th>
 
-                  <th>
-                    Completadas
-                  </th>
+                  <th>Completadas</th>
 
-                  <th>
-                    Pendientes
-                  </th>
+                  <th>Pendientes</th>
 
-                  <th>
-                    En proceso
-                  </th>
+                  <th>En proceso</th>
 
-                  <th>
-                    Prioridad alta
-                  </th>
+                  <th>Prioridad baja</th>
 
-                  <th>
-                    Tiempo
-                  </th>
+                  <th>Prioridad media</th>
+
+                  <th>Prioridad alta</th>
+
+                  <th>Tiempo</th>
                 </tr>
               </thead>
 
               <tbody>
-                {tareasPorDepartamento.map(
-                  (item) => (
-                    <tr
-                      key={
-                        item.nombre
-                      }
-                    >
-                      <td>
-                        <strong>
-                          {
-                            item.nombre
-                          }
-                        </strong>
-                      </td>
+                {tareasPorDepartamento.map((item) => (
+                  <tr key={item.nombre}>
+                    <td>
+                      <strong>{item.nombre}</strong>
+                    </td>
 
-                      <td>
-                        {
-                          item.total
-                        }
-                      </td>
+                    <td>{item.total}</td>
 
-                      <td>
-                        {
-                          item.completadas
-                        }
-                      </td>
+                    <td>{item.completadas}</td>
 
-                      <td>
-                        {
-                          item.pendientes
-                        }
-                      </td>
+                    <td>{item.pendientes}</td>
 
-                      <td>
-                        {
-                          item.enProceso
-                        }
-                      </td>
+                    <td>{item.enProceso}</td>
 
-                      <td>
-                        {
-                          item.prioridadAlta
-                        }
-                      </td>
+                    <td>{item.prioridadBaja}</td>
 
-                      <td>
-                        {formatearDuracion(
-                          item.minutos
-                        )}
-                      </td>
-                    </tr>
-                  )
-                )}
+                    <td>{item.prioridadMedia}</td>
+
+                    <td>{item.prioridadAlta}</td>
+
+                    <td>{formatearDuracion(item.minutos)}</td>
+                  </tr>
+                ))}
               </tbody>
-
             </table>
-
           </div>
         )}
-
       </section>
 
       {/* INTERRUPCIONES */}
 
       <div className="reportes-layout">
-
         <section className="reportes-panel">
-
           <div className="reportes-panel-header">
             <div>
-              <span>
-                INTERFERENCIAS
-              </span>
+              <span>INTERFERENCIAS</span>
 
-              <h2>
-                Interrupciones operativas por departamento
-              </h2>
+              <h2>Interrupciones operativas por departamento</h2>
 
               <p>
-                Impacto de cambios de tarea y solicitudes
-                urgentes sobre los departamentos afectados.
+                Impacto de cambios de tarea y solicitudes urgentes sobre los
+                departamentos afectados.
               </p>
             </div>
           </div>
 
-          {interrupcionesPorDepartamento.length ===
-          0 ? (
+          {interrupcionesPorDepartamento.length === 0 ? (
             <div className="reportes-vacio">
-              No existen interrupciones
-              registradas en este período.
+              No existen interrupciones registradas en este período.
             </div>
           ) : (
             <div className="reportes-lista">
+              {interrupcionesPorDepartamento.map((item) => (
+                <div className="reportes-lista-item" key={item.id}>
+                  <div>
+                    <strong>{item.nombre}</strong>
 
-              {interrupcionesPorDepartamento.map(
-                (item) => (
-                  <div
-                    className="reportes-lista-item"
-                    key={item.id}
-                  >
-                    <div>
-                      <strong>
-                        {item.nombre}
-                      </strong>
-
-                      <span>
-                        {
-                          item.tareasAfectadas
-                        }{" "}
-                        tareas afectadas
-                      </span>
-                    </div>
-
-                    <strong className="reportes-numero-alerta">
-                      {
-                        item.interrupciones
-                      }
-                    </strong>
+                    <span>{item.tareasAfectadas} tareas afectadas</span>
                   </div>
-                )
-              )}
 
+                  <strong className="reportes-numero-alerta">
+                    {item.interrupciones}
+                  </strong>
+                </div>
+              ))}
             </div>
           )}
-
         </section>
 
         <section className="reportes-panel">
-
           <div className="reportes-panel-header">
             <div>
-              <span>
-                IMPACTO OPERATIVO
-              </span>
+              <span>IMPACTO OPERATIVO</span>
 
-              <h2>
-                Empleados afectados
-              </h2>
+              <h2>Empleados afectados</h2>
 
               <p>
-                Personas cuyo trabajo fue interrumpido
-                por otra tarea o por una solicitud urgente.
+                Personas cuyo trabajo fue interrumpido por otra tarea o por una
+                solicitud urgente.
               </p>
             </div>
           </div>
 
-          {interrupcionesPorEmpleado.length ===
-          0 ? (
+          {interrupcionesPorEmpleado.length === 0 ? (
             <div className="reportes-vacio">
-              No existen interrupciones
-              registradas.
+              No existen interrupciones registradas.
             </div>
           ) : (
             <div className="reportes-lista">
+              {interrupcionesPorEmpleado.slice(0, 8).map((item) => (
+                <div className="reportes-lista-item" key={item.id}>
+                  <div>
+                    <strong>{item.nombre}</strong>
 
-              {interrupcionesPorEmpleado
-                .slice(0, 8)
-                .map((item) => (
-                  <div
-                    className="reportes-lista-item"
-                    key={item.id}
-                  >
-                    <div>
-                      <strong>
-                        {item.nombre}
-                      </strong>
-
-                      <span>
-                        {
-                          item.tareasAfectadas
-                        }{" "}
-                        tareas afectadas
-                      </span>
-                    </div>
-
-                    <strong className="reportes-numero-alerta">
-                      {
-                        item.interrupciones
-                      }
-                    </strong>
+                    <span>{item.tareasAfectadas} tareas afectadas</span>
                   </div>
-                ))}
 
+                  <strong className="reportes-numero-alerta">
+                    {item.interrupciones}
+                  </strong>
+                </div>
+              ))}
             </div>
           )}
-
         </section>
-
       </div>
 
       {/* DETALLE DE INTERRUPCIONES */}
 
       <section className="reportes-panel reportes-panel-grande">
-
         <div className="reportes-panel-header">
           <div>
-            <span>
-              TRAZABILIDAD
-            </span>
+            <span>TRAZABILIDAD</span>
 
-            <h2>
-              Detalle de interrupciones
-            </h2>
+            <h2>Detalle de interrupciones</h2>
 
             <p>
-              Esta trazabilidad registra únicamente cambios de tarea y tareas urgentes.
-              Permite ver las dos partes del evento: qué tarea generó la interrupción
-              y qué tarea estaba ejecutando la persona cuando tuvo que cambiar de actividad.
+              Esta trazabilidad registra únicamente cambios de tarea y tareas
+              urgentes. Permite ver las dos partes del evento: qué tarea generó
+              la interrupción y qué tarea estaba ejecutando la persona cuando
+              tuvo que cambiar de actividad.
             </p>
           </div>
         </div>
 
-        {detalleInterrupciones.length ===
-        0 ? (
+        {detalleInterrupciones.length === 0 ? (
           <div className="reportes-vacio">
-            No existen interrupciones operativas
-            para mostrar en el período seleccionado.
+            No existen interrupciones operativas para mostrar en el período
+            seleccionado.
           </div>
         ) : (
           <div className="reportes-table-wrapper">
-
             <table className="reportes-table">
-
               <thead>
                 <tr>
-                  <th>
-                    Fecha
-                  </th>
+                  <th>Fecha</th>
 
-                  <th>
-                    Hora
-                  </th>
+                  <th>Hora</th>
 
-                  <th>
-                    Departamento de origen
-                  </th>
+                  <th>Departamento de origen</th>
 
-                  <th>
-                    Tarea que generó
-                  </th>
+                  <th>Tarea que generó</th>
 
-                  <th>
-                    Departamento afectado
-                  </th>
+                  <th>Departamento afectado</th>
 
-                  <th>
-                    Empleado ejecutor
-                  </th>
+                  <th>Empleado ejecutor</th>
 
-                  <th>
-                    Tarea afectada
-                  </th>
+                  <th>Tarea afectada</th>
 
-                  <th>
-                    Motivo
-                  </th>
+                  <th>Motivo</th>
                 </tr>
               </thead>
 
               <tbody>
-                {detalleInterrupciones
-                  .slice(0, 15)
-                  .map(
-                    (item) => (
-                      <tr
-                        key={
-                          item.id
-                        }
-                      >
-                        <td>
-                          {formatearFecha(
-                            item.fecha ||
-                              item.created_at
-                          )}
-                        </td>
+                {detalleInterrupciones.slice(0, 15).map((item) => (
+                  <tr key={item.id}>
+                    <td>{formatearFecha(item.fecha || item.created_at)}</td>
 
-                        <td>
-                          {
-                            item.hora
-                          }
-                        </td>
+                    <td>{item.hora}</td>
 
-                        <td>
-                          <strong>
-                            {
-                              item.departamentoGenerador ||
-                              "No identificado"
-                            }
-                          </strong>
-                        </td>
+                    <td>
+                      <strong>
+                        {item.departamentoGenerador || "No identificado"}
+                      </strong>
+                    </td>
 
-                        <td>
-                          {
-                            item.tareaGeneradora?.titulo ||
-                            "Tarea generadora no registrada"
-                          }
-                        </td>
+                    <td>
+                      {item.tareaGeneradora?.titulo ||
+                        "Tarea generadora no registrada"}
+                    </td>
 
-                        <td>
-                          {
-                            item.departamento
-                          }
-                        </td>
+                    <td>{item.departamento}</td>
 
-                        <td>
-                          <strong>
-                            {
-                              item.empleado
-                            }
-                          </strong>
-                        </td>
+                    <td>
+                      <strong>{item.empleado}</strong>
+                    </td>
 
-                        <td>
-                          {
-                            item.tarea
-                              ?.titulo ||
-                            "Tarea no identificada"
-                          }
-                        </td>
+                    <td>{item.tarea?.titulo || "Tarea no identificada"}</td>
 
-                        <td>
-                          {
-                            item.motivo ||
-                            "Sin motivo registrado"
-                          }
-                        </td>
-                      </tr>
-                    )
-                  )}
+                    <td>{item.motivo || "Sin motivo registrado"}</td>
+                  </tr>
+                ))}
               </tbody>
-
             </table>
-
           </div>
         )}
 
-        {detalleInterrupciones.length >
-          15 && (
+        {detalleInterrupciones.length > 15 && (
           <div className="reportes-nota-tabla">
-            Se muestran las 15 interrupciones
-            más recientes en pantalla. El
-            informe PDF contiene el detalle
-            completo.
+            Se muestran las 15 interrupciones más recientes en pantalla. El
+            informe PDF contiene el detalle completo.
           </div>
         )}
-
       </section>
 
       {/* CARGA POR EMPLEADO */}
 
       <section className="reportes-panel reportes-panel-grande">
-
         <div className="reportes-panel-header">
           <div>
-            <span>
-              CAPACIDAD OPERATIVA
-            </span>
+            <span>CAPACIDAD OPERATIVA</span>
 
-            <h2>
-              Carga de trabajo por empleado
-            </h2>
+            <h2>Carga de trabajo por empleado</h2>
 
             <p>
-              Distribución de las actividades
-              ejecutadas por las personas
+              Distribución de las actividades ejecutadas por las personas
               responsables.
             </p>
           </div>
         </div>
 
-        {cargaPorEmpleado.length ===
-        0 ? (
+        {cargaPorEmpleado.length === 0 ? (
           <div className="reportes-vacio">
-            No existen datos de carga
-            operativa para este período.
+            No existen datos de carga operativa para este período.
           </div>
         ) : (
           <div className="reportes-table-wrapper">
-
             <table className="reportes-table">
-
               <thead>
                 <tr>
-                  <th>
-                    Empleado
-                  </th>
+                  <th>Empleado</th>
 
-                  <th>
-                    Tareas
-                  </th>
+                  <th>Tareas</th>
 
-                  <th>
-                    Completadas
-                  </th>
+                  <th>Completadas</th>
 
-                  <th>
-                    Pendientes
-                  </th>
+                  <th>Pendientes</th>
 
-                  <th>
-                    Tiempo trabajado
-                  </th>
+                  <th>Tiempo trabajado</th>
                 </tr>
               </thead>
 
               <tbody>
-                {cargaPorEmpleado.map(
-                  (item) => (
-                    <tr
-                      key={item.id}
-                    >
-                      <td>
-                        <strong>
-                          {
-                            item.nombre
-                          }
-                        </strong>
-                      </td>
+                {cargaPorEmpleado.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <strong>{item.nombre}</strong>
+                    </td>
 
-                      <td>
-                        {
-                          item.tareas
-                        }
-                      </td>
+                    <td>{item.tareas}</td>
 
-                      <td>
-                        {
-                          item.completadas
-                        }
-                      </td>
+                    <td>{item.completadas}</td>
 
-                      <td>
-                        {
-                          item.pendientes
-                        }
-                      </td>
+                    <td>{item.pendientes}</td>
 
-                      <td>
-                        {formatearDuracion(
-                          item.minutos
-                        )}
-                      </td>
-                    </tr>
-                  )
-                )}
+                    <td>{formatearDuracion(item.minutos)}</td>
+                  </tr>
+                ))}
               </tbody>
-
             </table>
-
           </div>
         )}
-
       </section>
 
       {/* PRIORIDADES */}
 
       <section className="reportes-panel reportes-panel-grande">
-
         <div className="reportes-panel-header">
           <div>
-            <span>
-              SEGUIMIENTO
-            </span>
+            <span>SEGUIMIENTO</span>
 
-            <h2>
-              Actividades prioritarias
-            </h2>
+            <h2>Actividades prioritarias</h2>
 
-            <p>
-              Actividades de prioridad alta
-              dentro del período analizado.
-            </p>
+            <p>Actividades de prioridad alta dentro del período analizado.</p>
           </div>
         </div>
 
-        {tareasPrioritarias.length ===
-        0 ? (
+        {tareasPrioritarias.length === 0 ? (
           <div className="reportes-vacio">
-            No existen actividades
-            prioritarias para mostrar.
+            No existen actividades prioritarias para mostrar.
           </div>
         ) : (
           <div className="reportes-table-wrapper">
-
             <table className="reportes-table">
-
               <thead>
                 <tr>
-                  <th>
-                    Actividad
-                  </th>
+                  <th>Actividad</th>
 
-                  <th>
-                    Departamento
-                  </th>
+                  <th>Departamento</th>
 
-                  <th>
-                    Ejecutor
-                  </th>
+                  <th>Ejecutor</th>
 
-                  <th>
-                    Estado
-                  </th>
+                  <th>Estado</th>
 
-                  <th>
-                    Tiempo
-                  </th>
+                  <th>Tiempo</th>
                 </tr>
               </thead>
 
               <tbody>
-                {tareasPrioritarias.map(
-                  (tarea) => (
-                    <tr
-                      key={
-                        tarea.id
-                      }
-                    >
-                      <td>
-                        <strong>
-                          {
-                            tarea.titulo
-                          }
-                        </strong>
-                      </td>
+                {tareasPrioritarias.map((tarea) => (
+                  <tr key={tarea.id}>
+                    <td>
+                      <strong>{tarea.titulo}</strong>
+                    </td>
 
-                      <td>
-                        {obtenerNombreDepartamento(
-                          tarea.departamento_id
-                        )}
-                      </td>
+                    <td>{obtenerNombreDepartamento(tarea.departamento_id)}</td>
 
-                      <td>
-                        {obtenerNombreUsuario(
-                          tarea.responsable_id
-                        )}
-                      </td>
+                    <td>{obtenerNombreUsuario(tarea.responsable_id)}</td>
 
-                      <td>
-                        <span className="reportes-estado">
-                          {tarea.estado ===
-                          "completada"
-                            ? "Completada"
-                            : tarea.estado ===
-                              "en_proceso"
+                    <td>
+                      <span className="reportes-estado">
+                        {tarea.estado === "completada"
+                          ? "Completada"
+                          : tarea.estado === "en_proceso"
                             ? "En proceso"
                             : "Pendiente"}
-                        </span>
-                      </td>
+                      </span>
+                    </td>
 
-                      <td>
-                        {formatearDuracion(
-                          tarea.tiempo_trabajado_min
-                        )}
-                      </td>
-                    </tr>
-                  )
-                )}
+                    <td>{formatearDuracion(tarea.tiempo_trabajado_min)}</td>
+                  </tr>
+                ))}
               </tbody>
-
             </table>
-
           </div>
         )}
-
       </section>
-
     </section>
   );
 }
