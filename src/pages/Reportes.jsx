@@ -8,6 +8,8 @@ function Reportes() {
   const [tareas, setTareas] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [departamentoSeleccionado, setDepartamentoSeleccionado] =
+    useState("todos");
   const [interrupciones, setInterrupciones] = useState([]);
 
   const [cargando, setCargando] = useState(true);
@@ -625,7 +627,58 @@ function Reportes() {
       }))
       .sort((a, b) => b.interrupciones - a.interrupciones);
   }, [interrupcionesOperativas, usuarios]);
+  // =========================================================
+  // TRABAJO POR DEPARTAMENTO
+  // =========================================================
 
+  const trabajoPorDepartamento = useMemo(() => {
+    const mapaDepartamentos = {};
+
+    tareasFiltradas.forEach((tarea) => {
+      const departamentoId = tarea.departamento_id;
+      const responsableId = tarea.responsable_id;
+
+      if (!mapaDepartamentos[departamentoId]) {
+        mapaDepartamentos[departamentoId] = {
+          id: departamentoId,
+          nombre: obtenerNombreDepartamento(departamentoId),
+          empleados: {},
+          tareas: 0,
+          minutos: 0,
+        };
+      }
+
+      const departamento = mapaDepartamentos[departamentoId];
+
+      if (!departamento.empleados[responsableId]) {
+        departamento.empleados[responsableId] = {
+          id: responsableId,
+          nombre: obtenerNombreUsuario(responsableId),
+          tareas: [],
+          minutos: 0,
+        };
+      }
+
+      const empleado = departamento.empleados[responsableId];
+
+      empleado.tareas.push(tarea);
+
+      empleado.minutos += Number(tarea.tiempo_trabajado_min) || 0;
+
+      departamento.tareas += 1;
+
+      departamento.minutos += Number(tarea.tiempo_trabajado_min) || 0;
+    });
+
+    return Object.values(mapaDepartamentos)
+      .map((departamento) => ({
+        ...departamento,
+        empleados: Object.values(departamento.empleados).sort(
+          (a, b) => b.tareas.length - a.tareas.length,
+        ),
+      }))
+      .sort((a, b) => b.tareas - a.tareas);
+  }, [tareasFiltradas, departamentos, usuarios]);
   // =========================================================
   // CARGA DE TRABAJO POR EMPLEADO
   // =========================================================
@@ -1233,6 +1286,155 @@ function Reportes() {
           fontStyle: "bold",
         },
       });
+
+
+
+
+      // -------------------------------------------------------
+      // TRABAJO POR DEPARTAMENTO
+      // -------------------------------------------------------
+
+      doc.addPage("a4", "portrait");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+
+      doc.text("8. Trabajo por departamento", 20, 20);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      doc.text(
+        "Detalle de las personas que trabajaron, las tareas realizadas y el tiempo empleado.",
+        20,
+        27,
+      );
+
+      let posicionYDepartamento = 34;
+
+      trabajoPorDepartamento.forEach((departamento) => {
+        // -------------------------------------------------------
+        // ENCABEZADO DEL DEPARTAMENTO
+        // -------------------------------------------------------
+
+        if (posicionYDepartamento > 250) {
+          doc.addPage("a4", "portrait");
+          posicionYDepartamento = 20;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+
+        doc.text(
+          departamento.nombre,
+          20,
+          posicionYDepartamento,
+        );
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+
+        doc.text(
+          `Total de tareas: ${departamento.tareas} | Tiempo total: ${formatearDuracion(departamento.minutos)}`,
+          20,
+          posicionYDepartamento + 6,
+        );
+
+        posicionYDepartamento += 12;
+
+        // -------------------------------------------------------
+        // PERSONAS DEL DEPARTAMENTO
+        // -------------------------------------------------------
+
+        departamento.empleados.forEach((empleado) => {
+          if (posicionYDepartamento > 245) {
+            doc.addPage("a4", "portrait");
+            posicionYDepartamento = 20;
+          }
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+
+          doc.text(
+            empleado.nombre,
+            20,
+            posicionYDepartamento,
+          );
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+
+          doc.text(
+            `${empleado.tareas.length} tareas | Tiempo trabajado: ${formatearDuracion(empleado.minutos)}`,
+            20,
+            posicionYDepartamento + 5,
+          );
+
+          autoTable(doc, {
+            startY: posicionYDepartamento + 9,
+
+            head: [
+              [
+                "Tarea solicitada",
+                "Estado",
+                "Tiempo trabajado",
+              ],
+            ],
+
+            body: empleado.tareas.map((tarea) => [
+              tarea.titulo,
+
+              tarea.estado === "completada"
+                ? "Completada"
+                : tarea.estado === "en_proceso"
+                  ? "En proceso"
+                  : "Pendiente",
+
+              formatearDuracion(
+                tarea.tiempo_trabajado_min,
+              ),
+            ]),
+
+            styles: {
+              fontSize: 8,
+              cellPadding: 2.5,
+            },
+
+            headStyles: {
+              fontStyle: "bold",
+            },
+
+            columnStyles: {
+              0: {
+                cellWidth: 110,
+              },
+              1: {
+                cellWidth: 55,
+              },
+              2: {
+                cellWidth: 45,
+              },
+            },
+
+            margin: {
+              left: 20,
+              right: 20,
+            },
+          });
+
+          posicionYDepartamento =
+            doc.lastAutoTable.finalY + 10;
+        });
+
+        // Separación entre departamentos
+        posicionYDepartamento += 5;
+      });
+
+
+
+
+
+
 
       // -------------------------------------------------------
       // ACTIVIDADES PRIORITARIAS
@@ -1861,7 +2063,112 @@ function Reportes() {
           </div>
         )}
       </section>
+      {/* TRABAJO POR DEPARTAMENTO */}
 
+      <section className="reportes-panel reportes-panel-grande">
+        <div className="reportes-panel-header">
+          <div>
+            <span>DETALLE OPERATIVO</span>
+
+            <h2>Trabajo por departamento</h2>
+
+            <p>
+              Personas que trabajaron, tareas solicitadas y tiempo empleado
+              durante el período analizado.
+            </p>
+          </div>
+
+          <div>
+            <select
+              value={departamentoSeleccionado}
+              onChange={(e) => setDepartamentoSeleccionado(e.target.value)}
+              className="reportes-select"
+            >
+              <option value="todos">Todos los departamentos</option>
+
+              {departamentos.map((departamento) => (
+                <option key={departamento.id} value={departamento.id}>
+                  {departamento.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {trabajoPorDepartamento
+          .filter(
+            (departamento) =>
+              departamentoSeleccionado === "todos" ||
+              String(departamento.id) === String(departamentoSeleccionado),
+          )
+          .map((departamento) => (
+            <div
+              key={departamento.id}
+              className="reportes-departamento-detalle"
+            >
+              <div className="reportes-departamento-detalle-header">
+                <div>
+                  <span>DEPARTAMENTO</span>
+
+                  <h3>{departamento.nombre}</h3>
+                </div>
+
+                <div>
+                  <strong>{departamento.tareas} tareas</strong>
+
+                  <span>{formatearDuracion(departamento.minutos)}</span>
+                </div>
+              </div>
+
+              {departamento.empleados.map((empleado) => (
+                <div key={empleado.id} className="reportes-empleado-detalle">
+                  <div className="reportes-empleado-detalle-header">
+                    <strong>{empleado.nombre}</strong>
+
+                    <span>
+                      {empleado.tareas.length} tareas ·{" "}
+                      {formatearDuracion(empleado.minutos)}
+                    </span>
+                  </div>
+
+                  <div className="reportes-table-wrapper">
+                    <table className="reportes-table">
+                      <thead>
+                        <tr>
+                          <th>Tarea solicitada</th>
+                          <th>Estado</th>
+                          <th>Tiempo trabajado</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {empleado.tareas.map((tarea) => (
+                          <tr key={tarea.id}>
+                            <td>
+                              <strong>{tarea.titulo}</strong>
+                            </td>
+
+                            <td>
+                              {tarea.estado === "completada"
+                                ? "Completada"
+                                : tarea.estado === "en_proceso"
+                                  ? "En proceso"
+                                  : "Pendiente"}
+                            </td>
+
+                            <td>
+                              {formatearDuracion(tarea.tiempo_trabajado_min)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+      </section>
       {/* CARGA POR EMPLEADO */}
 
       <section className="reportes-panel reportes-panel-grande">
