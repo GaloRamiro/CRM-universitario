@@ -30,7 +30,8 @@ function MisTareas() {
   const [mostrarPausa, setMostrarPausa] = useState(false);
   const [motivoPausa, setMotivoPausa] = useState("");
   const [tareaParaPausar, setTareaParaPausar] = useState(null);
-  const [mostrarSelectorOtraTarea, setMostrarSelectorOtraTarea] = useState(false);
+  const [mostrarSelectorOtraTarea, setMostrarSelectorOtraTarea] =
+    useState(false);
   const [tareaSeleccionadaOtra, setTareaSeleccionadaOtra] = useState(null);
 
   // =========================================================
@@ -849,7 +850,9 @@ function MisTareas() {
       }
 
       if (String(tareaGeneradora.id) === String(tareaParaPausar.id)) {
-        throw new Error("No puedes seleccionar la misma tarea que acabas de pausar.");
+        throw new Error(
+          "No puedes seleccionar la misma tarea que acabas de pausar.",
+        );
       }
 
       if (tareaGeneradora.estado === "completada") {
@@ -1134,10 +1137,10 @@ function MisTareas() {
     if (ahora < cincoPM) {
       return;
     }
-
     const tareasProcesoActual = tareas.filter(
       (tarea) =>
-        tarea.estado === "en_proceso" && tarea.responsable_id === usuario.id,
+        tarea.estado === "en_proceso" &&
+        String(tarea.responsable_id) === String(usuario.id),
     );
 
     if (tareasProcesoActual.length === 0) {
@@ -1809,7 +1812,8 @@ function MisTareas() {
                       <strong>{tarea.titulo}</strong>
 
                       <span>
-                        {tarea.descripcion || "Tarea disponible para continuar."}
+                        {tarea.descripcion ||
+                          "Tarea disponible para continuar."}
                       </span>
                     </div>
                   </label>
