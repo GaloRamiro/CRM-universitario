@@ -1,29 +1,75 @@
 import { useEffect, useMemo, useState } from "react";
+
 import { supabase } from "../lib/supabase";
+
 import jsPDF from "jspdf";
+
 import autoTable from "jspdf-autotable";
+
 import "./Reportes.css";
+
+// Paginación estable: evita el límite habitual de 1.000 registros de Supabase.
+async function consultarTodas(tabla, columnas) {
+  const tamano = 500;
+  const resultado = [];
+  for (let desde = 0; ; desde += tamano) {
+    const { data, error } = await supabase
+      .from(tabla)
+      .select(columnas)
+      .order("id", { ascending: true })
+      .range(desde, desde + tamano - 1);
+    if (error) throw error;
+    resultado.push(...(data || []));
+    if (!data || data.length < tamano) break;
+  }
+  return resultado;
+}
+
+const TZ_REPORTE = "America/Guayaquil";
+const fechaLocalISO = (valor) => {
+  if (!valor) return "";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ_REPORTE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(fecha);
+};
 
 function Reportes() {
   const [tareas, setTareas] = useState([]);
+
   const [departamentos, setDepartamentos] = useState([]);
+
   const [usuarios, setUsuarios] = useState([]);
+
   const [departamentoSeleccionado, setDepartamentoSeleccionado] =
     useState("todos");
+
   const [interrupciones, setInterrupciones] = useState([]);
+  const [sesiones, setSesiones] = useState([]);
+  const [ahora, setAhora] = useState(Date.now());
 
   const [cargando, setCargando] = useState(true);
+
   const [error, setError] = useState("");
+
   const [generandoPDF, setGenerandoPDF] = useState(false);
 
   const [periodo, setPeriodo] = useState("todo");
 
   // NUEVO: filtro manual por fechas
+
   const [fechaDesde, setFechaDesde] = useState("");
+
   const [fechaHasta, setFechaHasta] = useState("");
 
   // =========================================================
+
   // CARGAR DATOS
+
   // =========================================================
 
   useEffect(() => {
@@ -32,107 +78,42 @@ function Reportes() {
 
   const cargarDatos = async () => {
     setCargando(true);
+
     setError("");
 
     try {
       const [
-        tareasResponse,
-        departamentosResponse,
-        usuariosResponse,
-        interrupcionesResponse,
+        datosTareas,
+        datosDepartamentos,
+        datosUsuarios,
+        datosInterrupciones,
+        datosSesiones,
       ] = await Promise.all([
-        supabase
-          .from("tareas")
-          .select(
-            `
-            id,
-            titulo,
-            descripcion,
-            fecha,
-            fecha_inicio,
-            fecha_fin,
-            hora_inicio,
-            hora_fin,
-            prioridad,
-            estado,
-            responsable_id,
-            departamento_id,
-            tiempo_estimado,
-            inicio_real,
-            fin_real,
-            tiempo_trabajado_min,
-            estado_ejecucion
-          `,
-          )
-          .order("fecha_inicio", { ascending: true }),
-
-        supabase
-          .from("departamentos")
-          .select(
-            `
-            id,
-            nombre
-          `,
-          )
-          .order("nombre", { ascending: true }),
-
-        supabase
-          .from("usuarios")
-          .select(
-            `
-            id,
-            nombre,
-            apellido,
-            email,
-            activo
-          `,
-          )
-          .order("nombre", { ascending: true }),
-
-        supabase
-          .from("historial_interrupciones")
-          .select(
-            `
-            id,
-            tarea_id,
-            empleado_id,
-            departamento_id,
-            tarea_interrumpidora_id,
-            motivo,
-            fecha,
-            hora,
-            created_at
-          `,
-          )
-          .order("created_at", { ascending: true }),
+        consultarTodas(
+          "tareas",
+          "id,titulo,descripcion,fecha,fecha_inicio,fecha_fin,hora_inicio,hora_fin,prioridad,estado,responsable_id,departamento_id,tiempo_estimado,inicio_real,fin_real,tiempo_trabajado_min,estado_ejecucion",
+        ),
+        consultarTodas("departamentos", "id,nombre"),
+        consultarTodas("usuarios", "id,nombre,apellido,email,activo"),
+        consultarTodas(
+          "historial_interrupciones",
+          "id,tarea_id,empleado_id,departamento_id,tarea_interrumpidora_id,motivo,fecha,hora,created_at",
+        ),
+        consultarTodas(
+          "tarea_sesiones",
+          "id,tarea_id,usuario_id,inicio,fin,duracion_minutos,tipo_cierre",
+        ),
       ]);
-
-      if (tareasResponse.error) {
-        throw tareasResponse.error;
-      }
-
-      if (departamentosResponse.error) {
-        throw departamentosResponse.error;
-      }
-
-      if (usuariosResponse.error) {
-        throw usuariosResponse.error;
-      }
-
-      if (interrupcionesResponse.error) {
-        console.warn(
-          "No se pudo cargar historial_interrupciones:",
-          interrupcionesResponse.error,
-        );
-
-        setInterrupciones([]);
-      } else {
-        setInterrupciones(interrupcionesResponse.data || []);
-      }
-
-      setTareas(tareasResponse.data || []);
-      setDepartamentos(departamentosResponse.data || []);
-      setUsuarios(usuariosResponse.data || []);
+      setTareas(datosTareas);
+      setDepartamentos(
+        datosDepartamentos.sort((a, b) =>
+          (a.nombre || "").localeCompare(b.nombre || ""),
+        ),
+      );
+      setUsuarios(datosUsuarios);
+      setInterrupciones(datosInterrupciones);
+      setSesiones(datosSesiones);
+      setAhora(Date.now());
     } catch (err) {
       console.error("Error cargando reportes:", err);
 
@@ -143,7 +124,9 @@ function Reportes() {
   };
 
   // =========================================================
+
   // UTILIDADES
+
   // =========================================================
 
   const obtenerFecha = (valor) => {
@@ -163,7 +146,9 @@ function Reportes() {
 
     return new Date(
       Number(partes[0]),
+
       Number(partes[1]) - 1,
+
       Number(partes[2]),
     );
   };
@@ -177,7 +162,9 @@ function Reportes() {
 
     return fecha.toLocaleDateString("es-EC", {
       day: "2-digit",
+
       month: "2-digit",
+
       year: "numeric",
     });
   };
@@ -191,7 +178,9 @@ function Reportes() {
 
     return fecha.toLocaleDateString("es-EC", {
       day: "2-digit",
+
       month: "long",
+
       year: "numeric",
     });
   };
@@ -229,7 +218,9 @@ function Reportes() {
   };
 
   // =========================================================
+
   // RANGO DE FECHAS DEL PERÍODO
+
   // =========================================================
 
   const obtenerRangoPeriodo = () => {
@@ -244,6 +235,7 @@ function Reportes() {
     if (periodo === "todo") {
       return {
         inicio: null,
+
         fin: null,
       };
     }
@@ -256,6 +248,7 @@ function Reportes() {
 
     if (periodo === "mes") {
       inicio.setDate(1);
+
       inicio.setHours(0, 0, 0, 0);
     }
 
@@ -277,6 +270,7 @@ function Reportes() {
 
     if (periodo === "año") {
       inicio.setMonth(0);
+
       inicio.setDate(1);
 
       inicio.setHours(0, 0, 0, 0);
@@ -284,12 +278,15 @@ function Reportes() {
 
     return {
       inicio,
+
       fin: hoy,
     };
   };
 
   // =========================================================
+
   // FILTRO DE TAREAS
+
   // =========================================================
 
   const tareasFiltradas = useMemo(() => {
@@ -319,7 +316,9 @@ function Reportes() {
   }, [tareas, periodo, fechaDesde, fechaHasta]);
 
   // =========================================================
+
   // FILTRO DE INTERRUPCIONES
+
   // =========================================================
 
   const interrupcionesFiltradas = useMemo(() => {
@@ -349,24 +348,35 @@ function Reportes() {
   }, [interrupciones, periodo, fechaDesde, fechaHasta]);
 
   // =========================================================
+
   // TRAZABILIDAD OPERATIVA
+
   //
+
   // La trazabilidad muestra únicamente interrupciones causadas
+
   // por una nueva tarea: cambio de tarea o tarea urgente.
+
   // Almuerzo, otros motivos y cierre de jornada no representan
+
   // una interrupción entre departamentos y por eso no aparecen aquí.
+
   // =========================================================
 
   const interrupcionesOperativas = useMemo(() => {
     return interrupcionesFiltradas.filter(
       (interrupcion) =>
         interrupcion.motivo === "cambio_tarea" ||
-        interrupcion.motivo === "tarea_urgente",
+        interrupcion.motivo === "tarea_urgente" ||
+        (interrupcion.motivo === "otra_tarea" &&
+          Boolean(interrupcion.tarea_interrumpidora_id)),
     );
   }, [interrupcionesFiltradas]);
 
   // =========================================================
+
   // DEPARTAMENTO DE LA TAREA AFECTADA
+
   // =========================================================
 
   const obtenerDepartamentoInterrupcion = (interrupcion) => {
@@ -375,8 +385,11 @@ function Reportes() {
     }
 
     // El departamento mostrado en los reportes debe corresponder
+
     // a la tarea que fue afectada/interrumpida.
+
     // tarea_id identifica la tarea que estaba ejecutándose.
+
     if (interrupcion.tarea_id) {
       const tareaAfectada = tareas.find(
         (item) => String(item.id) === String(interrupcion.tarea_id),
@@ -388,12 +401,16 @@ function Reportes() {
     }
 
     // Compatibilidad con registros históricos donde el departamento
+
     // sí quedó almacenado directamente en historial_interrupciones.
+
     return interrupcion.departamento_id || null;
   };
 
   // =========================================================
+
   // DEPARTAMENTO QUE GENERÓ LA INTERRUPCIÓN
+
   // =========================================================
 
   const obtenerDepartamentoGeneradorInterrupcion = (interrupcion) => {
@@ -402,9 +419,13 @@ function Reportes() {
     }
 
     // En trazabilidad solo se consideran interrupciones operativas:
+
     // cambio de tarea y tarea urgente.
+
     // Para estos eventos, departamento_id representa el departamento
+
     // de la nueva tarea que provocó la interrupción.
+
     if (
       interrupcion.motivo === "cambio_tarea" ||
       interrupcion.motivo === "tarea_urgente"
@@ -427,7 +448,9 @@ function Reportes() {
   };
 
   // =========================================================
+
   // TAREA QUE GENERÓ LA INTERRUPCIÓN
+
   // =========================================================
 
   const obtenerTareaGeneradoraInterrupcion = (interrupcion) => {
@@ -444,7 +467,9 @@ function Reportes() {
   };
 
   // =========================================================
+
   // MÉTRICAS GENERALES
+
   // =========================================================
 
   const metricas = useMemo(() => {
@@ -465,12 +490,14 @@ function Reportes() {
     const minutosTrabajados = tareasFiltradas.reduce(
       (totalMinutos, tarea) =>
         totalMinutos + (Number(tarea.tiempo_trabajado_min) || 0),
+
       0,
     );
 
     const tiempoEstimado = tareasFiltradas.reduce(
       (totalMinutos, tarea) =>
         totalMinutos + (Number(tarea.tiempo_estimado) || 0),
+
       0,
     );
 
@@ -479,19 +506,121 @@ function Reportes() {
 
     return {
       total,
+
       completadas,
+
       enProceso,
+
       pendientes,
+
       minutosTrabajados,
+
       tiempoEstimado,
+
       porcentajeCompletado,
+
       interrupciones: interrupcionesFiltradas.length,
     };
   }, [tareasFiltradas, interrupcionesFiltradas]);
 
   // =========================================================
+
   // TAREAS POR DEPARTAMENTO SOLICITANTE
+
   // =========================================================
+
+  // =========================================================
+  // SESIONES REALES: tiempo por intervalo y fecha local de Ecuador.
+  // No se suma al acumulado de tareas: son dos vistas del mismo trabajo.
+  // =========================================================
+  const analisisSesiones = useMemo(() => {
+    const idsTareas = new Set(tareasFiltradas.map((t) => String(t.id)));
+    const { inicio, fin } = obtenerRangoPeriodo();
+    const desdeISO = inicio
+      ? `${inicio.getFullYear()}-${String(inicio.getMonth() + 1).padStart(2, "0")}-${String(inicio.getDate()).padStart(2, "0")}`
+      : "";
+    const hastaISO = fin
+      ? `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, "0")}-${String(fin.getDate()).padStart(2, "0")}`
+      : "";
+    const porEmpleado = new Map();
+    const porDepartamento = new Map();
+    const mapaTareas = new Map(tareas.map((t) => [String(t.id), t]));
+    let minutos = 0;
+    let cerradas = 0;
+    let abiertas = 0;
+    let registros = 0;
+    let sesionesSinDuracion = 0;
+    const dias = new Set();
+
+    for (const sesion of sesiones) {
+      if (!idsTareas.has(String(sesion.tarea_id))) continue;
+      const tarea = mapaTareas.get(String(sesion.tarea_id));
+      if (!tarea || !sesion.inicio) continue;
+      const inicioMs = new Date(sesion.inicio).getTime();
+      const finMs = sesion.fin ? new Date(sesion.fin).getTime() : ahora;
+      if (
+        !Number.isFinite(inicioMs) ||
+        !Number.isFinite(finMs) ||
+        finMs < inicioMs
+      )
+        continue;
+      // Recorte exacto al período en horario Ecuador (UTC-5, sin horario de verano).
+      const limiteInicio = desdeISO
+        ? new Date(`${desdeISO}T00:00:00-05:00`).getTime()
+        : -Infinity;
+      const limiteFin = hastaISO
+        ? new Date(`${hastaISO}T00:00:00-05:00`).getTime() + 86400000
+        : Infinity;
+      const a = Math.max(inicioMs, limiteInicio);
+      const b = Math.min(finMs, limiteFin);
+      if (b <= a) continue;
+      const duracionIntervalo = Math.max(0, (finMs - inicioMs) / 60000);
+      const duracionContabilizada =
+        sesion.fin && sesion.duracion_minutos != null
+          ? Math.max(0, Number(sesion.duracion_minutos) || 0)
+          : duracionIntervalo;
+      const minutosSesion =
+        duracionIntervalo > 0
+          ? duracionContabilizada * ((b - a) / (finMs - inicioMs))
+          : 0;
+      if (sesion.fin && sesion.duracion_minutos == null) sesionesSinDuracion++;
+      registros++;
+      if (sesion.fin) cerradas++;
+      else abiertas++;
+      minutos += minutosSesion;
+      dias.add(fechaLocalISO(a));
+      const empleadoId = String(
+        sesion.usuario_id || tarea.responsable_id || "",
+      );
+      const departamentoId = String(tarea.departamento_id || "");
+      porEmpleado.set(
+        empleadoId,
+        (porEmpleado.get(empleadoId) || 0) + minutosSesion,
+      );
+      porDepartamento.set(
+        departamentoId,
+        (porDepartamento.get(departamentoId) || 0) + minutosSesion,
+      );
+    }
+    return {
+      minutos: Math.round(minutos),
+      cerradas,
+      abiertas,
+      registros,
+      sesionesSinDuracion,
+      dias: dias.size,
+      porEmpleado,
+      porDepartamento,
+    };
+  }, [
+    sesiones,
+    tareas,
+    tareasFiltradas,
+    periodo,
+    fechaDesde,
+    fechaHasta,
+    ahora,
+  ]);
 
   const tareasPorDepartamento = useMemo(() => {
     const mapa = {};
@@ -502,13 +631,21 @@ function Reportes() {
       if (!mapa[nombre]) {
         mapa[nombre] = {
           nombre,
+
           total: 0,
+
           completadas: 0,
+
           pendientes: 0,
+
           enProceso: 0,
+
           minutos: 0,
+
           prioridadBaja: 0,
+
           prioridadMedia: 0,
+
           prioridadAlta: 0,
         };
       }
@@ -542,7 +679,9 @@ function Reportes() {
   }, [tareasFiltradas, departamentos]);
 
   // =========================================================
+
   // INTERRUPCIONES POR DEPARTAMENTO AFECTADO
+
   // =========================================================
 
   const interrupcionesPorDepartamento = useMemo(() => {
@@ -556,9 +695,13 @@ function Reportes() {
       if (!mapa[id]) {
         mapa[id] = {
           id,
+
           nombre,
+
           interrupciones: 0,
+
           tareasAfectadas: new Set(),
+
           empleados: new Set(),
         };
       }
@@ -575,17 +718,55 @@ function Reportes() {
     });
 
     return Object.values(mapa)
+
       .map((item) => ({
         ...item,
+
         tareasAfectadas: item.tareasAfectadas.size,
+
         empleados: item.empleados.size,
       }))
+
       .sort((a, b) => b.interrupciones - a.interrupciones);
   }, [interrupcionesOperativas, departamentos, usuarios]);
 
   // =========================================================
+
   // INTERRUPCIONES POR EMPLEADO EJECUTOR
+
   // =========================================================
+
+  // Ranking de departamentos que ORIGINAN interrupciones.
+  // No se confunde con el departamento afectado.
+  const interrupcionesPorDepartamentoGenerador = useMemo(() => {
+    const mapa = new Map();
+    interrupcionesOperativas.forEach((evento) => {
+      const id = obtenerDepartamentoGeneradorInterrupcion(evento);
+      const clave = id ? String(id) : "no_identificado";
+      if (!mapa.has(clave)) {
+        mapa.set(clave, {
+          id: clave,
+          nombre: id ? obtenerNombreDepartamento(id) : "No identificado",
+          interrupciones: 0,
+          tareasSolicitadas: new Set(),
+          empleadosInterrumpidos: new Set(),
+        });
+      }
+      const fila = mapa.get(clave);
+      fila.interrupciones += 1;
+      if (evento.tarea_interrumpidora_id)
+        fila.tareasSolicitadas.add(String(evento.tarea_interrumpidora_id));
+      if (evento.empleado_id)
+        fila.empleadosInterrumpidos.add(String(evento.empleado_id));
+    });
+    return [...mapa.values()]
+      .map((fila) => ({
+        ...fila,
+        tareasSolicitadas: fila.tareasSolicitadas.size,
+        empleadosInterrumpidos: fila.empleadosInterrumpidos.size,
+      }))
+      .sort((a, b) => b.interrupciones - a.interrupciones);
+  }, [interrupcionesOperativas, tareas, departamentos]);
 
   const interrupcionesPorEmpleado = useMemo(() => {
     const mapa = {};
@@ -598,9 +779,13 @@ function Reportes() {
       if (!mapa[id]) {
         mapa[id] = {
           id,
+
           nombre,
+
           interrupciones: 0,
+
           tareasAfectadas: new Set(),
+
           departamentos: new Set(),
         };
       }
@@ -620,15 +805,22 @@ function Reportes() {
     });
 
     return Object.values(mapa)
+
       .map((item) => ({
         ...item,
+
         tareasAfectadas: item.tareasAfectadas.size,
+
         departamentos: item.departamentos.size,
       }))
+
       .sort((a, b) => b.interrupciones - a.interrupciones);
   }, [interrupcionesOperativas, usuarios]);
+
   // =========================================================
+
   // TRABAJO POR DEPARTAMENTO
+
   // =========================================================
 
   const trabajoPorDepartamento = useMemo(() => {
@@ -636,14 +828,19 @@ function Reportes() {
 
     tareasFiltradas.forEach((tarea) => {
       const departamentoId = tarea.departamento_id;
+
       const responsableId = tarea.responsable_id;
 
       if (!mapaDepartamentos[departamentoId]) {
         mapaDepartamentos[departamentoId] = {
           id: departamentoId,
+
           nombre: obtenerNombreDepartamento(departamentoId),
+
           empleados: {},
+
           tareas: 0,
+
           minutos: 0,
         };
       }
@@ -653,8 +850,11 @@ function Reportes() {
       if (!departamento.empleados[responsableId]) {
         departamento.empleados[responsableId] = {
           id: responsableId,
+
           nombre: obtenerNombreUsuario(responsableId),
+
           tareas: [],
+
           minutos: 0,
         };
       }
@@ -671,16 +871,22 @@ function Reportes() {
     });
 
     return Object.values(mapaDepartamentos)
+
       .map((departamento) => ({
         ...departamento,
+
         empleados: Object.values(departamento.empleados).sort(
           (a, b) => b.tareas.length - a.tareas.length,
         ),
       }))
+
       .sort((a, b) => b.tareas - a.tareas);
   }, [tareasFiltradas, departamentos, usuarios]);
+
   // =========================================================
+
   // CARGA DE TRABAJO POR EMPLEADO
+
   // =========================================================
 
   const cargaPorEmpleado = useMemo(() => {
@@ -694,10 +900,15 @@ function Reportes() {
       if (!mapa[id]) {
         mapa[id] = {
           id,
+
           nombre,
+
           tareas: 0,
+
           completadas: 0,
+
           pendientes: 0,
+
           minutos: 0,
         };
       }
@@ -717,12 +928,16 @@ function Reportes() {
   }, [tareasFiltradas, usuarios]);
 
   // =========================================================
+
   // TAREAS PRIORITARIAS
+
   // =========================================================
 
   const tareasPrioritarias = useMemo(() => {
     return tareasFiltradas
+
       .filter((tarea) => tarea.prioridad === "alta")
+
       .sort((a, b) => {
         const estadoA = a.estado === "completada" ? 0 : 1;
 
@@ -730,15 +945,19 @@ function Reportes() {
 
         return estadoB - estadoA;
       })
+
       .slice(0, 10);
   }, [tareasFiltradas]);
 
   // =========================================================
+
   // DETALLE DE INTERRUPCIONES
+
   // =========================================================
 
   const detalleInterrupciones = useMemo(() => {
     return interrupcionesOperativas
+
       .map((interrupcion) => {
         const tarea = tareas.find(
           (item) => String(item.id) === String(interrupcion.tarea_id),
@@ -746,17 +965,23 @@ function Reportes() {
 
         return {
           ...interrupcion,
+
           tarea,
+
           empleado: obtenerNombreUsuario(interrupcion.empleado_id),
+
           departamento: obtenerNombreDepartamento(
             obtenerDepartamentoInterrupcion(interrupcion),
           ),
+
           departamentoGenerador: obtenerNombreDepartamento(
             obtenerDepartamentoGeneradorInterrupcion(interrupcion),
           ),
+
           tareaGeneradora: obtenerTareaGeneradoraInterrupcion(interrupcion),
         };
       })
+
       .sort((a, b) => {
         const fechaA = obtenerFecha(a.fecha || a.created_at);
 
@@ -771,7 +996,9 @@ function Reportes() {
   }, [interrupcionesOperativas, tareas, usuarios, departamentos]);
 
   // =========================================================
+
   // PERÍODO HUMANO
+
   // =========================================================
 
   const obtenerPeriodoTexto = () => {
@@ -809,17 +1036,23 @@ function Reportes() {
   };
 
   // =========================================================
+
   // LIMPIAR FILTROS
+
   // =========================================================
 
   const limpiarFiltros = () => {
     setPeriodo("todo");
+
     setFechaDesde("");
+
     setFechaHasta("");
   };
 
   // =========================================================
+
   // PDF EJECUTIVO
+
   // =========================================================
 
   const generarPDF = () => {
@@ -828,7 +1061,9 @@ function Reportes() {
     try {
       const doc = new jsPDF({
         orientation: "portrait",
+
         unit: "mm",
+
         format: "a4",
       });
 
@@ -841,7 +1076,9 @@ function Reportes() {
       let pagina = 1;
 
       // -------------------------------------------------------
+
       // ENCABEZADO
+
       // -------------------------------------------------------
 
       doc.setFont("helvetica", "bold");
@@ -867,7 +1104,9 @@ function Reportes() {
       doc.line(20, 50, anchoPagina - 20, 50);
 
       // -------------------------------------------------------
+
       // RESUMEN EJECUTIVO
+
       // -------------------------------------------------------
 
       doc.setFont("helvetica", "bold");
@@ -898,7 +1137,7 @@ function Reportes() {
 
       if (interrupcionesPorDepartamento.length > 0) {
         resumen +=
-          `El departamento con mayor número de interrupciones fue ` +
+          `El departamento más afectado por interrupciones fue ` +
           `${interrupcionesPorDepartamento[0].nombre}, ` +
           `con ${interrupcionesPorDepartamento[0].interrupciones} registros.`;
       }
@@ -908,7 +1147,9 @@ function Reportes() {
       doc.text(resumenLineas, 20, 70);
 
       // -------------------------------------------------------
+
       // INDICADORES
+
       // -------------------------------------------------------
 
       const yIndicadores = 70 + resumenLineas.length * 5 + 10;
@@ -926,17 +1167,25 @@ function Reportes() {
 
         body: [
           ["Total de tareas", metricas.total],
+
           ["Tareas completadas", metricas.completadas],
+
           ["Tareas en proceso", metricas.enProceso],
+
           ["Tareas pendientes", metricas.pendientes],
+
           ["Cumplimiento", `${metricas.porcentajeCompletado}%`],
+
           ["Tiempo trabajado", formatearDuracion(metricas.minutosTrabajados)],
+
           ["Tiempo estimado", formatearDuracion(metricas.tiempoEstimado)],
+
           ["Interrupciones", metricas.interrupciones],
         ],
 
         styles: {
           fontSize: 9,
+
           cellPadding: 3,
         },
 
@@ -946,7 +1195,9 @@ function Reportes() {
       });
 
       // -------------------------------------------------------
+
       // DEPARTAMENTOS
+
       // -------------------------------------------------------
 
       doc.addPage();
@@ -963,7 +1214,9 @@ function Reportes() {
 
       doc.text(
         "Este análisis identifica qué departamentos concentran la demanda de trabajo.",
+
         20,
+
         27,
       );
 
@@ -973,31 +1226,48 @@ function Reportes() {
         head: [
           [
             "Departamento",
+
             "Tareas",
+
             "Completadas",
+
             "Pendientes",
+
             "En proceso",
+
             "Prioridad baja",
+
             "Prioridad media",
+
             "Prioridad alta",
+
             "Tiempo",
           ],
         ],
 
         body: tareasPorDepartamento.map((item) => [
           item.nombre,
+
           item.total,
+
           item.completadas,
+
           item.pendientes,
+
           item.enProceso,
+
           item.prioridadBaja,
+
           item.prioridadMedia,
+
           item.prioridadAlta,
+
           formatearDuracion(item.minutos),
         ]),
 
         styles: {
           fontSize: 8,
+
           cellPadding: 2.5,
         },
 
@@ -1007,7 +1277,9 @@ function Reportes() {
       });
 
       // -------------------------------------------------------
+
       // INTERRUPCIONES POR DEPARTAMENTO
+
       // -------------------------------------------------------
 
       doc.addPage();
@@ -1024,7 +1296,9 @@ function Reportes() {
 
       doc.text(
         "El análisis identifica qué departamentos fueron afectados por interrupciones durante la ejecución de las actividades.",
+
         20,
+
         27,
       );
 
@@ -1034,21 +1308,28 @@ function Reportes() {
         head: [
           [
             "Departamento",
+
             "Interrupciones",
+
             "Tareas afectadas",
+
             "Empleados afectados",
           ],
         ],
 
         body: interrupcionesPorDepartamento.map((item) => [
           item.nombre,
+
           item.interrupciones,
+
           item.tareasAfectadas,
+
           item.empleados,
         ]),
 
         styles: {
           fontSize: 8,
+
           cellPadding: 2.5,
         },
 
@@ -1058,7 +1339,43 @@ function Reportes() {
       });
 
       // -------------------------------------------------------
+      // RANKING DE DEPARTAMENTOS QUE GENERAN INTERRUPCIONES
+      // -------------------------------------------------------
+      doc.addPage("a4", "portrait");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("Ranking: departamentos que generan interrupciones", 20, 20);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(
+        "Distingue el origen de la solicitud del departamento afectado.",
+        20,
+        27,
+      );
+      autoTable(doc, {
+        startY: 34,
+        head: [
+          [
+            "Departamento de origen",
+            "Interrupciones",
+            "Tareas nuevas",
+            "Empleados afectados",
+          ],
+        ],
+        body: interrupcionesPorDepartamentoGenerador.map((item) => [
+          item.nombre,
+          item.interrupciones,
+          item.tareasSolicitadas,
+          item.empleadosInterrumpidos,
+        ]),
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: { fontStyle: "bold" },
+      });
+
+      // -------------------------------------------------------
+
       // INTERRUPCIONES POR EMPLEADO
+
       // -------------------------------------------------------
 
       doc.addPage();
@@ -1075,7 +1392,9 @@ function Reportes() {
 
       doc.text(
         "Los empleados representan a las personas ejecutoras de las actividades y se mide cuántas interrupciones afectaron su trabajo.",
+
         20,
+
         27,
       );
 
@@ -1085,21 +1404,28 @@ function Reportes() {
         head: [
           [
             "Empleado ejecutor",
+
             "Interrupciones",
+
             "Tareas afectadas",
+
             "Departamentos",
           ],
         ],
 
         body: interrupcionesPorEmpleado.map((item) => [
           item.nombre,
+
           item.interrupciones,
+
           item.tareasAfectadas,
+
           item.departamentos,
         ]),
 
         styles: {
           fontSize: 8,
+
           cellPadding: 2.5,
         },
 
@@ -1109,9 +1435,13 @@ function Reportes() {
       });
 
       // -------------------------------------------------------
+
       // DETALLE DE INTERRUPCIONES
+
       // -------------------------------------------------------
+
       // Esta sección usa A4 horizontal porque contiene 8 columnas.
+
       // Así evitamos que el texto se comprima verticalmente en el PDF.
 
       doc.addPage("a4", "landscape");
@@ -1128,7 +1458,9 @@ function Reportes() {
 
       doc.text(
         "Se detallan únicamente cambios de tarea y solicitudes urgentes: origen de la nueva tarea, departamento afectado, empleado y tarea interrumpida.",
+
         20,
+
         27,
       );
 
@@ -1138,12 +1470,19 @@ function Reportes() {
         head: [
           [
             "Fecha",
+
             "Hora",
+
             "Departamento de origen",
+
             "Tarea que generó",
+
             "Departamento afectado",
+
             "Empleado",
+
             "Tarea afectada",
+
             "Motivo",
           ],
         ],
@@ -1168,13 +1507,17 @@ function Reportes() {
 
         styles: {
           fontSize: 8,
+
           cellPadding: 2.2,
+
           overflow: "linebreak",
+
           valign: "middle",
         },
 
         headStyles: {
           fontStyle: "bold",
+
           valign: "middle",
         },
 
@@ -1184,8 +1527,11 @@ function Reportes() {
 
         columnStyles: {
           // A4 horizontal: 297 mm de ancho.
+
           // Márgenes de 20 mm => 257 mm disponibles.
+
           // Las columnas suman exactamente 257 mm.
+
           0: {
             cellWidth: 18,
           },
@@ -1221,6 +1567,7 @@ function Reportes() {
 
         margin: {
           left: 20,
+
           right: 20,
         },
 
@@ -1234,8 +1581,11 @@ function Reportes() {
       });
 
       // -------------------------------------------------------
+
       // CARGA POR EMPLEADO
+
       // -------------------------------------------------------
+
       // Regresamos a A4 vertical para el resto del informe.
 
       doc.addPage("a4", "portrait");
@@ -1252,7 +1602,9 @@ function Reportes() {
 
       doc.text(
         "Los empleados representan a las personas ejecutoras de las actividades.",
+
         20,
+
         27,
       );
 
@@ -1262,23 +1614,32 @@ function Reportes() {
         head: [
           [
             "Empleado",
+
             "Tareas",
+
             "Completadas",
+
             "Pendientes",
+
             "Tiempo trabajado",
           ],
         ],
 
         body: cargaPorEmpleado.map((item) => [
           item.nombre,
+
           item.tareas,
+
           item.completadas,
+
           item.pendientes,
+
           formatearDuracion(item.minutos),
         ]),
 
         styles: {
           fontSize: 8,
+
           cellPadding: 2.5,
         },
 
@@ -1287,26 +1648,29 @@ function Reportes() {
         },
       });
 
-
-
-
       // -------------------------------------------------------
+
       // TRABAJO POR DEPARTAMENTO
+
       // -------------------------------------------------------
 
       doc.addPage("a4", "portrait");
 
       doc.setFont("helvetica", "bold");
+
       doc.setFontSize(14);
 
       doc.text("8. Trabajo por departamento", 20, 20);
 
       doc.setFont("helvetica", "normal");
+
       doc.setFontSize(9);
 
       doc.text(
         "Detalle de las personas que trabajaron, las tareas realizadas y el tiempo empleado.",
+
         20,
+
         27,
       );
 
@@ -1314,72 +1678,84 @@ function Reportes() {
 
       trabajoPorDepartamento.forEach((departamento) => {
         // -------------------------------------------------------
+
         // ENCABEZADO DEL DEPARTAMENTO
+
         // -------------------------------------------------------
 
         if (posicionYDepartamento > 250) {
           doc.addPage("a4", "portrait");
+
           posicionYDepartamento = 20;
         }
 
         doc.setFont("helvetica", "bold");
+
         doc.setFontSize(12);
 
         doc.text(
           departamento.nombre,
+
           20,
+
           posicionYDepartamento,
         );
 
         doc.setFont("helvetica", "normal");
+
         doc.setFontSize(8);
 
         doc.text(
           `Total de tareas: ${departamento.tareas} | Tiempo total: ${formatearDuracion(departamento.minutos)}`,
+
           20,
+
           posicionYDepartamento + 6,
         );
 
         posicionYDepartamento += 12;
 
         // -------------------------------------------------------
+
         // PERSONAS DEL DEPARTAMENTO
+
         // -------------------------------------------------------
 
         departamento.empleados.forEach((empleado) => {
           if (posicionYDepartamento > 245) {
             doc.addPage("a4", "portrait");
+
             posicionYDepartamento = 20;
           }
 
           doc.setFont("helvetica", "bold");
+
           doc.setFontSize(9);
 
           doc.text(
             empleado.nombre,
+
             20,
+
             posicionYDepartamento,
           );
 
           doc.setFont("helvetica", "normal");
+
           doc.setFontSize(8);
 
           doc.text(
             `${empleado.tareas.length} tareas | Tiempo trabajado: ${formatearDuracion(empleado.minutos)}`,
+
             20,
+
             posicionYDepartamento + 5,
           );
 
           autoTable(doc, {
             startY: posicionYDepartamento + 9,
 
-            head: [
-              [
-                "Tarea solicitada",
-                "Estado",
-                "Tiempo trabajado",
-              ],
-            ],
+            head: [["Tarea solicitada", "Estado", "Tiempo trabajado"]],
 
             body: empleado.tareas.map((tarea) => [
               tarea.titulo,
@@ -1390,13 +1766,12 @@ function Reportes() {
                   ? "En proceso"
                   : "Pendiente",
 
-              formatearDuracion(
-                tarea.tiempo_trabajado_min,
-              ),
+              formatearDuracion(tarea.tiempo_trabajado_min),
             ]),
 
             styles: {
               fontSize: 8,
+
               cellPadding: 2.5,
             },
 
@@ -1406,11 +1781,13 @@ function Reportes() {
 
             columnStyles: {
               0: {
-                cellWidth: 110,
+                cellWidth: 90,
               },
+
               1: {
                 cellWidth: 55,
               },
+
               2: {
                 cellWidth: 45,
               },
@@ -1418,26 +1795,23 @@ function Reportes() {
 
             margin: {
               left: 20,
+
               right: 20,
             },
           });
 
-          posicionYDepartamento =
-            doc.lastAutoTable.finalY + 10;
+          posicionYDepartamento = doc.lastAutoTable.finalY + 10;
         });
 
         // Separación entre departamentos
+
         posicionYDepartamento += 5;
       });
 
-
-
-
-
-
-
       // -------------------------------------------------------
+
       // ACTIVIDADES PRIORITARIAS
+
       // -------------------------------------------------------
 
       doc.addPage();
@@ -1446,7 +1820,7 @@ function Reportes() {
 
       doc.setFontSize(14);
 
-      doc.text("8. Actividades prioritarias", 20, 20);
+      doc.text("9. Actividades prioritarias", 20, 20);
 
       autoTable(doc, {
         startY: 28,
@@ -1454,9 +1828,13 @@ function Reportes() {
         head: [
           [
             "Actividad",
+
             "Departamento solicitante",
+
             "Ejecutor",
+
             "Estado",
+
             "Tiempo",
           ],
         ],
@@ -1479,6 +1857,7 @@ function Reportes() {
 
         styles: {
           fontSize: 8,
+
           cellPadding: 2.5,
         },
 
@@ -1488,7 +1867,9 @@ function Reportes() {
       });
 
       // -------------------------------------------------------
+
       // CONCLUSIONES
+
       // -------------------------------------------------------
 
       doc.addPage();
@@ -1497,7 +1878,7 @@ function Reportes() {
 
       doc.setFontSize(14);
 
-      doc.text("9. Conclusiones ejecutivas", 20, 20);
+      doc.text("11. Conclusiones ejecutivas", 20, 20);
 
       doc.setFont("helvetica", "normal");
 
@@ -1506,6 +1887,9 @@ function Reportes() {
       const departamentoMayor = tareasPorDepartamento[0];
 
       const departamentoMayorInterrupciones = interrupcionesPorDepartamento[0];
+
+      const departamentoMayorGenerador =
+        interrupcionesPorDepartamentoGenerador[0];
 
       const empleadoMayorInterrupciones = interrupcionesPorEmpleado[0];
 
@@ -1519,8 +1903,12 @@ function Reportes() {
           : "No existe información suficiente para determinar el departamento con mayor demanda.",
 
         departamentoMayorInterrupciones
-          ? `El departamento que generó mayor cantidad de interrupciones fue ${departamentoMayorInterrupciones.nombre}, con ${departamentoMayorInterrupciones.interrupciones} registros.`
+          ? `El departamento más afectado por interrupciones fue ${departamentoMayorInterrupciones.nombre}, con ${departamentoMayorInterrupciones.interrupciones} registros.`
           : "No existen interrupciones registradas suficientes para identificar un departamento con mayor nivel de interrupción.",
+
+        departamentoMayorGenerador
+          ? `El departamento que generó más interrupciones fue ${departamentoMayorGenerador.nombre}, con ${departamentoMayorGenerador.interrupciones} eventos.`
+          : "No se identificaron departamentos generadores de interrupciones en el período.",
 
         empleadoMayorInterrupciones
           ? `${empleadoMayorInterrupciones.nombre} fue el empleado ejecutor más afectado por interrupciones, con ${empleadoMayorInterrupciones.interrupciones} registros.`
@@ -1536,6 +1924,7 @@ function Reportes() {
       conclusiones.forEach((conclusion, index) => {
         const lineas = doc.splitTextToSize(
           `${index + 1}. ${conclusion}`,
+
           anchoPagina - 45,
         );
 
@@ -1545,7 +1934,9 @@ function Reportes() {
       });
 
       // -------------------------------------------------------
+
       // FUENTE DE DATOS
+
       // -------------------------------------------------------
 
       y += 5;
@@ -1563,14 +1954,16 @@ function Reportes() {
       y += 7;
 
       const fuente =
-        "Los datos de este informe provienen del sistema interno de gestión de tareas, principalmente de las tablas de tareas, usuarios, departamentos e historial de interrupciones de Supabase. El informe se genera automáticamente a partir de los registros disponibles en el período seleccionado.";
+        "Los datos de este informe provienen del sistema interno de gestión de tareas, principalmente de las tablas de tareas, usuarios, departamentos, tarea_sesiones e historial_interrupciones de Supabase. El informe se genera automáticamente a partir de los registros disponibles en el período seleccionado.";
 
       const fuenteLineas = doc.splitTextToSize(fuente, anchoPagina - 40);
 
       doc.text(fuenteLineas, 20, y);
 
       // -------------------------------------------------------
+
       // PIE DE PÁGINA
+
       // -------------------------------------------------------
 
       const totalPaginas = doc.internal.getNumberOfPages();
@@ -1579,6 +1972,7 @@ function Reportes() {
         doc.setPage(pagina);
 
         // Cada página puede tener orientación diferente.
+
         const anchoPaginaActual = doc.internal.pageSize.getWidth();
 
         const altoPaginaActual = doc.internal.pageSize.getHeight();
@@ -1589,13 +1983,17 @@ function Reportes() {
 
         doc.text(
           "Informe ejecutivo de gestión — Sistema interno de tareas",
+
           20,
+
           altoPaginaActual - 12,
         );
 
         doc.text(
           `Página ${pagina} de ${totalPaginas}`,
+
           anchoPaginaActual - 42,
+
           altoPaginaActual - 12,
         );
       }
@@ -1613,7 +2011,9 @@ function Reportes() {
   };
 
   // =========================================================
+
   // CARGANDO
+
   // =========================================================
 
   if (cargando) {
@@ -1629,7 +2029,9 @@ function Reportes() {
   }
 
   // =========================================================
+
   // RENDER
+
   // =========================================================
 
   return (
@@ -1765,6 +2167,45 @@ function Reportes() {
           <small>Registros de interrupción</small>
         </article>
       </div>
+
+      {/* SESIONES REALES */}
+      <section className="reportes-panel reportes-panel-grande">
+        <div className="reportes-panel-header">
+          <div>
+            <span>TRAZABILIDAD TEMPORAL</span>
+            <h2>Tiempo de ejecución por sesiones</h2>
+            <p>
+              Registros de inicio, pausa y finalización. Este tiempo no se suma
+              al acumulado histórico de tareas para evitar duplicaciones.
+            </p>
+          </div>
+        </div>
+        <div className="reportes-estado-grid">
+          <div className="reportes-estado-item">
+            <span>Tiempo en sesiones</span>
+            <strong>{formatearDuracion(analisisSesiones.minutos)}</strong>
+          </div>
+          <div className="reportes-estado-item">
+            <span>Sesiones cerradas</span>
+            <strong>{analisisSesiones.cerradas}</strong>
+          </div>
+          <div className="reportes-estado-item">
+            <span>Sesiones abiertas</span>
+            <strong>{analisisSesiones.abiertas}</strong>
+          </div>
+        </div>
+        <p>
+          Las sesiones anteriores a la instalación del registro automático
+          pueden no estar disponibles. Las sesiones abiertas se actualizan
+          aproximadamente cada minuto.
+        </p>
+        {analisisSesiones.sesionesSinDuracion > 0 && (
+          <p>
+            Atención: {analisisSesiones.sesionesSinDuracion} sesiones cerradas
+            no tienen duración contabilizada; se estimó su tiempo por intervalo.
+          </p>
+        )}
+      </section>
 
       {/* ESTADO GENERAL */}
 
@@ -1976,6 +2417,53 @@ function Reportes() {
         </section>
       </div>
 
+      {/* RANKING DE DEPARTAMENTOS QUE GENERAN INTERRUPCIONES */}
+      <section className="reportes-panel reportes-panel-grande">
+        <div className="reportes-panel-header">
+          <div>
+            <span>ORIGEN DE SOLICITUDES</span>
+            <h2>Departamentos que más interrumpen</h2>
+            <p>
+              Ranking de departamentos que solicitan nuevas tareas mientras
+              otras actividades están en ejecución. Es diferente del ranking de
+              departamentos afectados.
+            </p>
+          </div>
+        </div>
+        {interrupcionesPorDepartamentoGenerador.length === 0 ? (
+          <div className="reportes-vacio">
+            No existen interrupciones operativas en el período seleccionado.
+          </div>
+        ) : (
+          <div className="reportes-table-wrapper">
+            <table className="reportes-table">
+              <thead>
+                <tr>
+                  <th>Posición</th>
+                  <th>Departamento que interrumpe</th>
+                  <th>Interrupciones</th>
+                  <th>Tareas nuevas identificadas</th>
+                  <th>Empleados interrumpidos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {interrupcionesPorDepartamentoGenerador.map((item, indice) => (
+                  <tr key={item.id}>
+                    <td>{indice + 1}</td>
+                    <td>
+                      <strong>{item.nombre}</strong>
+                    </td>
+                    <td>{item.interrupciones}</td>
+                    <td>{item.tareasSolicitadas}</td>
+                    <td>{item.empleadosInterrumpidos}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {/* DETALLE DE INTERRUPCIONES */}
 
       <section className="reportes-panel reportes-panel-grande">
@@ -2063,6 +2551,7 @@ function Reportes() {
           </div>
         )}
       </section>
+
       {/* TRABAJO POR DEPARTAMENTO */}
 
       <section className="reportes-panel reportes-panel-grande">
@@ -2096,11 +2585,13 @@ function Reportes() {
         </div>
 
         {trabajoPorDepartamento
+
           .filter(
             (departamento) =>
               departamentoSeleccionado === "todos" ||
               String(departamento.id) === String(departamentoSeleccionado),
           )
+
           .map((departamento) => (
             <div
               key={departamento.id}
@@ -2136,7 +2627,9 @@ function Reportes() {
                       <thead>
                         <tr>
                           <th>Tarea solicitada</th>
+
                           <th>Estado</th>
+
                           <th>Tiempo trabajado</th>
                         </tr>
                       </thead>
@@ -2169,6 +2662,7 @@ function Reportes() {
             </div>
           ))}
       </section>
+
       {/* CARGA POR EMPLEADO */}
 
       <section className="reportes-panel reportes-panel-grande">

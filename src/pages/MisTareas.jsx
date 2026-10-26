@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import "./MisTareas.css";
@@ -41,12 +41,6 @@ function MisTareas() {
   const [mostrarAvisoDiaAnterior, setMostrarAvisoDiaAnterior] = useState(false);
 
   const [tareasAutoPausadasAyer, setTareasAutoPausadasAyer] = useState([]);
-
-  // =========================================================
-  // REF PARA EVITAR EJECUCIONES DUPLICADAS
-  // =========================================================
-
-  const procesandoAutoPausa = useRef(false);
 
   // =========================================================
   // CARGAR HORA
@@ -166,9 +160,8 @@ function MisTareas() {
     cargarTareas();
   }, [usuario?.id]);
 
-  const cargarTareas = async () => {
-    setCargando(true);
-    setError("");
+  const cargarTareas = async (silencioso = false) => {
+    if (!silencioso) setCargando(true);
 
     try {
       const { data, error: tareasError } = await supabase
@@ -210,9 +203,10 @@ function MisTareas() {
     } catch (err) {
       console.error("Error cargando tareas:", err);
 
-      setError(err.message || "No se pudieron cargar tus tareas.");
+      if (!silencioso)
+        setError(err.message || "No se pudieron cargar tus tareas.");
     } finally {
-      setCargando(false);
+      if (!silencioso) setCargando(false);
     }
   };
 
@@ -373,21 +367,38 @@ function MisTareas() {
   const obtenerTiempoVisual = (tarea) => {
     const acumulado = obtenerTiempoAcumulado(tarea);
 
-    if (tarea.estado !== "en_proceso" || !tarea.inicio_real) {
+    if (
+      tarea.estado !== "en_proceso" ||
+      tarea.estado_ejecucion !== "en_proceso" ||
+      !tarea.inicio_real
+    ) {
       return acumulado;
     }
 
     const inicio = new Date(tarea.inicio_real);
-
     if (Number.isNaN(inicio.getTime())) {
       return acumulado;
     }
 
-    const ahora = new Date();
+    const ahora = horaActual;
 
-    const diferencia = Math.max(0, ahora.getTime() - inicio.getTime()) / 60000;
+    const partes = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Guayaquil",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(inicio);
+    const p = Object.fromEntries(partes.map((x) => [x.type, x.value]));
+    const cierreSesion = new Date(`${p.year}-${p.month}-${p.day}T22:00:00Z`);
 
-    return acumulado + diferencia;
+    const fin =
+      inicio.getTime() < cierreSesion.getTime()
+        ? Math.min(ahora.getTime(), cierreSesion.getTime())
+        : ahora.getTime();
+
+    const minutosSesion = Math.max(0, (fin - inicio.getTime()) / 60000);
+
+    return acumulado + minutosSesion;
   };
 
   // =========================================================
@@ -401,54 +412,46 @@ function MisTareas() {
   // NO REINICIA EL TIEMPO.
   // =========================================================
 
-  const pausarTareaInternamente = async (
-    tarea,
-    fechaHoraPausa = new Date(),
-    motivo = "otra_tarea",
+  const ejecutarAccion = async (
+    tareaId,
+    accion,
+    motivo = null,
+    interrumpidaId = null,
   ) => {
-    if (!tarea) {
-      return null;
-    }
-
-    const ahora = fechaHoraPausa;
-
-    const inicio = tarea.inicio_real ? new Date(tarea.inicio_real) : null;
-
-    const acumuladoAnterior = Math.max(
-      0,
-      Number(tarea.tiempo_trabajado_min) || 0,
-    );
-
-    let minutosSesion = 0;
-
-    if (inicio && !Number.isNaN(inicio.getTime())) {
-      minutosSesion = Math.max(0, ahora.getTime() - inicio.getTime()) / 60000;
-    }
-
-    const nuevoAcumulado = Math.round(acumuladoAnterior + minutosSesion);
-
-    const { error: updateError } = await supabase
-      .from("tareas")
-      .update({
-        estado: "pendiente",
-        tiempo_trabajado_min: nuevoAcumulado,
-        fin_real: ahora.toISOString(),
-        estado_ejecucion: "pausada",
-      })
-      .eq("id", tarea.id);
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    return {
-      ...tarea,
-      estado: "pendiente",
-      tiempo_trabajado_min: nuevoAcumulado,
-      fin_real: ahora.toISOString(),
-      estado_ejecucion: "pausada",
+    console.log("CRM - Enviando acción:", {
+      tareaId,
+      accion,
       motivo,
-    };
+      interrumpidaId,
+    });
+
+    const { data, error: rpcError } = await supabase.rpc("crm_accion_tarea", {
+      p_tarea_id: tareaId,
+      p_accion: accion,
+      p_motivo: motivo,
+      p_interrumpida_id: interrumpidaId,
+    });
+
+    if (rpcError) {
+      console.error("CRM - Error Supabase:", {
+        message: rpcError.message,
+        code: rpcError.code,
+        details: rpcError.details,
+        hint: rpcError.hint,
+      });
+
+      throw rpcError;
+    }
+
+    console.log("CRM - Acción completada:", {
+      id: data?.id,
+      estado: data?.estado,
+      estado_ejecucion: data?.estado_ejecucion,
+      inicio_real: data?.inicio_real,
+      tiempo_trabajado_min: data?.tiempo_trabajado_min,
+    });
+
+    return data;
   };
 
   // =========================================================
@@ -464,99 +467,8 @@ function MisTareas() {
   // De esta manera SOLO puede existir
   // UNA tarea en proceso.
   // =========================================================
-  const pausarOtrasTareasEnProceso = async (
-    tareaActual,
-    fechaHoraPausa = new Date(),
-  ) => {
-    const otrasTareas = tareasEnProceso.filter(
-      (tarea) => String(tarea.id) !== String(tareaActual.id),
-    );
+  // La exclusividad y el historial ahora se gestionan en la RPC transaccional.
 
-    if (otrasTareas.length === 0) {
-      return [];
-    }
-
-    const tareasPausadas = [];
-
-    for (const tarea of otrasTareas) {
-      // -------------------------------------------------------
-      // 1. PAUSAR LA TAREA ANTERIOR
-      // -------------------------------------------------------
-      const tareaPausada = await pausarTareaInternamente(
-        tarea,
-        fechaHoraPausa,
-        "cambio_tarea",
-      );
-
-      if (tareaPausada) {
-        tareasPausadas.push(tareaPausada);
-
-        // -----------------------------------------------------
-        // 2. OBTENER EL DEPARTAMENTO REAL DE LA TAREA NUEVA
-        //    DIRECTAMENTE DESDE SUPABASE
-        // -----------------------------------------------------
-        // No usamos únicamente el objeto que está en memoria,
-        // porque puede estar desactualizado si el departamento
-        // fue editado recientemente.
-        const { data: tareaActualizada, error: tareaActualError } =
-          await supabase
-            .from("tareas")
-            .select("departamento_id")
-            .eq("id", tareaActual.id)
-            .single();
-
-        if (tareaActualError) {
-          throw tareaActualError;
-        }
-
-        const departamentoInterrupcion =
-          tareaActualizada?.departamento_id ||
-          tareaActual.departamento_id ||
-          null;
-
-        // -----------------------------------------------------
-        // 3. REGISTRAR LA INTERRUPCIÓN EN SUPABASE
-        // -----------------------------------------------------
-        const { error: interrupcionError } = await supabase
-          .from("historial_interrupciones")
-          .insert({
-            tarea_id: tarea.id,
-            empleado_id: usuario.id,
-            // ID DE LA TAREA QUE REALMENTE PROVOCA LA INTERRUPCIÓN.
-            // tarea.id = tarea afectada
-            // tareaActual.id = tarea que se inicia y genera el cambio
-            tarea_interrumpidora_id: tareaActual.id,
-            // Departamento de la TAREA QUE PROVOCA LA INTERRUPCIÓN.
-            departamento_id: departamentoInterrupcion,
-            motivo: "cambio_tarea",
-            fecha: obtenerFechaActual(fechaHoraPausa),
-            hora: obtenerHoraActual(fechaHoraPausa),
-          });
-
-        if (interrupcionError) {
-          throw interrupcionError;
-        }
-
-        // -----------------------------------------------------
-        // 3. SE MANTIENE LA LÓGICA ACTUAL DE LOCALSTORAGE
-        // -----------------------------------------------------
-        localStorage.setItem(
-          `tarea_pausa_${tarea.id}`,
-          JSON.stringify({
-            tarea_id: tarea.id,
-            motivo: "cambio_tarea",
-            hora: obtenerHoraActual(fechaHoraPausa),
-            fecha: obtenerFechaActual(fechaHoraPausa),
-            minutos_acumulados: tareaPausada.tiempo_trabajado_min,
-          }),
-        );
-
-        localStorage.removeItem(`tarea_reanudacion_${tarea.id}`);
-      }
-    }
-
-    return tareasPausadas;
-  };
   // =========================================================
   // INICIAR TAREA
   //
@@ -565,75 +477,15 @@ function MisTareas() {
   // =========================================================
 
   const iniciarTarea = async (tarea) => {
-    if (!tarea || guardando) {
-      return;
-    }
-
-    setMensaje("");
-    setError("");
-
+    if (!tarea || guardando) return;
     setGuardando(true);
-
+    setError("");
+    setMensaje("");
     try {
-      const ahora = new Date();
-
-      const otrasTareas = tareasEnProceso.filter(
-        (item) => String(item.id) !== String(tarea.id),
-      );
-
-      if (otrasTareas.length > 0) {
-        await pausarOtrasTareasEnProceso(tarea, ahora);
-      }
-
-      const fechaActual = obtenerFechaActual(ahora);
-
-      const horaActual = obtenerHoraActual(ahora);
-
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "en_proceso",
-          fecha_inicio: tarea.fecha_inicio || fechaActual,
-          fecha: tarea.fecha || fechaActual,
-          hora_inicio: tarea.hora_inicio || horaActual,
-          inicio_real: ahora.toISOString(),
-          fin_real: null,
-          estado_ejecucion: "en_proceso",
-        })
-        .eq("id", tarea.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      localStorage.removeItem(`tarea_pausa_${tarea.id}`);
-
-      localStorage.setItem(
-        `tarea_reanudacion_${tarea.id}`,
-        JSON.stringify({
-          tarea_id: tarea.id,
-          fecha: fechaActual,
-          hora: horaActual,
-        }),
-      );
-
+      await ejecutarAccion(tarea.id, "iniciar");
       await cargarTareas();
-
-      if (otrasTareas.length > 0) {
-        setMensaje(
-          `Tarea "${tarea.titulo}" iniciada. Las otras tareas en proceso fueron pausadas automáticamente.`,
-        );
-      } else {
-        setMensaje(
-          `Tarea "${tarea.titulo}" iniciada a las ${horaActual.substring(
-            0,
-            5,
-          )}.`,
-        );
-      }
+      setMensaje(`Tarea "${tarea.titulo}" iniciada correctamente.`);
     } catch (err) {
-      console.error("Error iniciando tarea:", err);
-
       setError(err.message || "No se pudo iniciar la tarea.");
     } finally {
       setGuardando(false);
@@ -677,133 +529,55 @@ function MisTareas() {
   // =========================================================
 
   const confirmarPausa = async () => {
-    if (!tareaParaPausar) {
-      return;
-    }
-
+    if (!tareaParaPausar || guardando) return;
     if (!motivoPausa) {
       setError("Selecciona el motivo de la pausa.");
       return;
     }
-
     setGuardando(true);
     setError("");
     setMensaje("");
-
     try {
-      const ahora = new Date();
-
-      const tareaPausada = await pausarTareaInternamente(
-        tareaParaPausar,
-        ahora,
-        motivoPausa,
-      );
-
-      if (!tareaPausada) {
-        return;
-      }
-
-      const horaPausa = obtenerHoraActual(ahora);
-
-      const fechaPausa = obtenerFechaActual(ahora);
-
-      // -------------------------------------------------------
-      // TAREA URGENTE:
-      // La actividad todavía no existe, por eso se conserva
-      // temporalmente la relación para NuevaTarea.jsx.
-      //
-      // OTRA TAREA:
-      // NO crea una tarea nueva. Se seleccionará una tarea que
-      // ya existe en Mis tareas y esa será la generadora.
-      // -------------------------------------------------------
-      if (motivoPausa === "tarea_urgente") {
+      const tareaOrigen = tareaParaPausar;
+      const motivo = motivoPausa;
+      const pausada = await ejecutarAccion(tareaOrigen.id, "pausar", motivo);
+      if (motivo === "tarea_urgente") {
         localStorage.setItem(
           `interrupcion_pendiente_${usuario.id}`,
           JSON.stringify({
-            tarea_id: tareaParaPausar.id,
-            motivo: motivoPausa,
-            fecha: fechaPausa,
-            hora: horaPausa,
+            tarea_id: tareaOrigen.id,
+            motivo,
+            fecha: obtenerFechaActual(),
+            hora: obtenerHoraActual(),
           }),
         );
-      } else if (motivoPausa === "otra_tarea") {
-        // La relación se registra cuando el usuario seleccione
-        // la tarea existente que realmente va a ejecutar.
-      } else {
-        // Una pausa que no genera otra tarea no tiene un
-        // departamento interrup­tor.
-        const { error: interrupcionError } = await supabase
-          .from("historial_interrupciones")
-          .insert({
-            tarea_id: tareaParaPausar.id,
-            empleado_id: usuario.id,
-            departamento_id: null,
-            motivo: motivoPausa,
-            fecha: fechaPausa,
-            hora: horaPausa,
-          });
-
-        if (interrupcionError) {
-          throw interrupcionError;
-        }
       }
-
-      // -------------------------------------------------------
-      // REGISTRO TEMPORAL DE PAUSA
-      // -------------------------------------------------------
-
+      localStorage.removeItem(`tarea_reanudacion_${tareaOrigen.id}`);
       localStorage.setItem(
-        `tarea_pausa_${tareaParaPausar.id}`,
+        `tarea_pausa_${tareaOrigen.id}`,
         JSON.stringify({
-          tarea_id: tareaParaPausar.id,
-          motivo: motivoPausa,
-          hora: horaPausa,
-          fecha: fechaPausa,
-          minutos_acumulados: tareaPausada.tiempo_trabajado_min,
+          tarea_id: tareaOrigen.id,
+          motivo,
+          minutos_acumulados: pausada.tiempo_trabajado_min,
         }),
       );
-
-      localStorage.removeItem(`tarea_reanudacion_${tareaParaPausar.id}`);
-
-      const titulo = tareaParaPausar.titulo;
-
-      const tiempoFinal = tareaPausada.tiempo_trabajado_min;
-
       setMostrarPausa(false);
-      setTareaParaPausar(null);
       setMotivoPausa("");
-
       await cargarTareas();
-
       setMensaje(
-        `Tarea "${titulo}" pausada a las ${horaPausa.substring(
-          0,
-          5,
-        )}. Tiempo acumulado: ${formatearDuracion(tiempoFinal)}.`,
+        `Tarea "${tareaOrigen.titulo}" pausada. Tiempo acumulado: ${formatearDuracion(pausada.tiempo_trabajado_min)}.`,
       );
-
-      // -------------------------------------------------------
-      // TAREA URGENTE:
-      // Sí necesita crear una nueva tarea.
-      // -------------------------------------------------------
-      if (motivoPausa === "tarea_urgente") {
+      if (motivo === "tarea_urgente") {
+        setTareaParaPausar(null);
         navigate("/tareas/nueva");
-        return;
-      }
-
-      // -------------------------------------------------------
-      // OTRA TAREA:
-      // NO se crea una nueva tarea. Se muestra el listado de
-      // tareas existentes para elegir cuál va a interrumpir
-      // la actividad actual.
-      // -------------------------------------------------------
-      if (motivoPausa === "otra_tarea") {
+      } else if (motivo === "otra_tarea") {
+        setTareaParaPausar(tareaOrigen);
         setTareaSeleccionadaOtra(null);
         setMostrarSelectorOtraTarea(true);
+      } else {
+        setTareaParaPausar(null);
       }
     } catch (err) {
-      console.error("Error pausando tarea:", err);
-
       setError(err.message || "No se pudo pausar la tarea.");
     } finally {
       setGuardando(false);
@@ -822,109 +596,25 @@ function MisTareas() {
       setError("Selecciona la tarea que vas a realizar.");
       return;
     }
-
     setGuardando(true);
     setError("");
     setMensaje("");
-
     try {
-      const ahora = new Date();
-      const fechaActual = obtenerFechaActual(ahora);
-      const horaActual = obtenerHoraActual(ahora);
-
-      // -------------------------------------------------------
-      // OBTENER DATOS ACTUALES DE LA TAREA QUE GENERA
-      // -------------------------------------------------------
-      const { data: tareaGeneradora, error: tareaError } = await supabase
-        .from("tareas")
-        .select("id, titulo, departamento_id, responsable_id, estado")
-        .eq("id", tareaSeleccionadaOtra.id)
-        .single();
-
-      if (tareaError) {
-        throw tareaError;
-      }
-
-      if (!tareaGeneradora) {
-        throw new Error("No se encontró la tarea seleccionada.");
-      }
-
-      if (String(tareaGeneradora.id) === String(tareaParaPausar.id)) {
-        throw new Error(
-          "No puedes seleccionar la misma tarea que acabas de pausar.",
-        );
-      }
-
-      if (tareaGeneradora.estado === "completada") {
-        throw new Error("La tarea seleccionada ya está completada.");
-      }
-
-      // -------------------------------------------------------
-      // REGISTRAR LA TRAZABILIDAD COMPLETA
-      //
-      // tarea_id = tarea afectada
-      // tarea_interrumpidora_id = tarea que genera el cambio
-      // departamento_id = departamento de la tarea generadora
-      // -------------------------------------------------------
-      const { error: interrupcionError } = await supabase
-        .from("historial_interrupciones")
-        .insert({
-          tarea_id: tareaParaPausar.id,
-          empleado_id: usuario.id,
-          tarea_interrumpidora_id: tareaGeneradora.id,
-          departamento_id: tareaGeneradora.departamento_id || null,
-          motivo: "cambio_tarea",
-          fecha: fechaActual,
-          hora: horaActual,
-        });
-
-      if (interrupcionError) {
-        throw interrupcionError;
-      }
-
-      // -------------------------------------------------------
-      // INICIAR LA TAREA EXISTENTE SELECCIONADA
-      // -------------------------------------------------------
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "en_proceso",
-          fecha_inicio: tareaGeneradora.fecha_inicio || fechaActual,
-          fecha: tareaGeneradora.fecha || fechaActual,
-          hora_inicio: tareaGeneradora.hora_inicio || horaActual,
-          inicio_real: ahora.toISOString(),
-          fin_real: null,
-          estado_ejecucion: "en_proceso",
-        })
-        .eq("id", tareaGeneradora.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      localStorage.removeItem(`tarea_pausa_${tareaParaPausar.id}`);
-
-      localStorage.setItem(
-        `tarea_reanudacion_${tareaGeneradora.id}`,
-        JSON.stringify({
-          tarea_id: tareaGeneradora.id,
-          fecha: fechaActual,
-          hora: horaActual,
-        }),
-      );
-
+      const origen = tareaParaPausar;
+      const destino = tareaSeleccionadaOtra;
+      if (String(origen.id) === String(destino.id))
+        throw new Error("Selecciona otra tarea.");
+      await ejecutarAccion(destino.id, "iniciar", null, origen.id);
+      localStorage.removeItem(`tarea_pausa_${origen.id}`);
       setMostrarSelectorOtraTarea(false);
       setTareaSeleccionadaOtra(null);
       setTareaParaPausar(null);
       setMotivoPausa("");
-
       await cargarTareas();
-
       setMensaje(
-        `Tarea "${tareaGeneradora.titulo}" iniciada. Se registró como interrupción de "${tareaParaPausar.titulo}".`,
+        `Tarea "${destino.titulo}" iniciada. Se registró como interrupción de "${origen.titulo}".`,
       );
     } catch (err) {
-      console.error("Error seleccionando otra tarea:", err);
       setError(err.message || "No se pudo iniciar la tarea seleccionada.");
     } finally {
       setGuardando(false);
@@ -954,70 +644,33 @@ function MisTareas() {
   // =========================================================
 
   const reanudarTarea = async (tarea) => {
-    if (!tarea || guardando) {
-      return;
-    }
+    console.log("BOTÓN REANUDAR PRESIONADO:", {
+      id: tarea?.id,
+      titulo: tarea?.titulo,
+      guardando,
+    });
 
+    if (!tarea || guardando) return;
+
+    if (!tarea || guardando) return;
     setGuardando(true);
     setError("");
     setMensaje("");
-
     try {
-      const ahora = new Date();
-
-      const otrasTareas = tareasEnProceso.filter(
-        (item) => String(item.id) !== String(tarea.id),
-      );
-
-      if (otrasTareas.length > 0) {
-        await pausarOtrasTareasEnProceso(tarea, ahora);
-      }
-
-      const horaActual = obtenerHoraActual(ahora);
-
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "en_proceso",
-          inicio_real: ahora.toISOString(),
-          fin_real: null,
-          estado_ejecucion: "en_proceso",
-        })
-        .eq("id", tarea.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      localStorage.setItem(
-        `tarea_reanudacion_${tarea.id}`,
-        JSON.stringify({
-          tarea_id: tarea.id,
-          fecha: obtenerFechaActual(ahora),
-          hora: horaActual,
-        }),
-      );
-
+      await ejecutarAccion(tarea.id, "reanudar");
       localStorage.removeItem(`tarea_pausa_${tarea.id}`);
-
       await cargarTareas();
-
-      if (otrasTareas.length > 0) {
-        setMensaje(
-          `Tarea "${tarea.titulo}" reanudada. Las otras tareas fueron pausadas automáticamente.`,
-        );
-      } else {
-        setMensaje(
-          `Tarea "${tarea.titulo}" reanudada a las ${horaActual.substring(
-            0,
-            5,
-          )}.`,
-        );
-      }
+      setMensaje(`Tarea "${tarea.titulo}" reanudada.`);
     } catch (err) {
-      console.error("Error reanudando tarea:", err);
+      console.error("ERROR AL REANUDAR TAREA:", {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        hint: err.hint,
+        tareaId: tarea.id,
+      });
 
-      setError(err.message || "No se pudo reanudar la tarea.");
+      setError(`Error al reanudar: ${err.message || "Error desconocido"}`);
     } finally {
       setGuardando(false);
     }
@@ -1028,74 +681,20 @@ function MisTareas() {
   // =========================================================
 
   const terminarTarea = async (tarea) => {
-    if (!tarea || guardando) {
-      return;
-    }
-
-    const confirmar = window.confirm(
-      "¿Confirmas que esta tarea ya está terminada?",
-    );
-
-    if (!confirmar) {
-      return;
-    }
-
+    if (!tarea || guardando) return;
+    if (!window.confirm("¿Confirmas que esta tarea ya está terminada?")) return;
     setGuardando(true);
     setError("");
     setMensaje("");
-
     try {
-      const ahora = new Date();
-
-      const inicio = tarea.inicio_real ? new Date(tarea.inicio_real) : null;
-
-      const acumuladoAnterior = Math.max(
-        0,
-        Number(tarea.tiempo_trabajado_min) || 0,
-      );
-
-      let minutosSesion = 0;
-
-      if (inicio && !Number.isNaN(inicio.getTime())) {
-        minutosSesion = Math.max(0, ahora.getTime() - inicio.getTime()) / 60000;
-      }
-
-      const totalFinal = Math.round(acumuladoAnterior + minutosSesion);
-
-      const fechaActual = obtenerFechaActual(ahora);
-
-      const horaActual = obtenerHoraActual(ahora);
-
-      const { error: updateError } = await supabase
-        .from("tareas")
-        .update({
-          estado: "completada",
-          fecha_fin: fechaActual,
-          hora_fin: horaActual,
-          fin_real: ahora.toISOString(),
-          tiempo_trabajado_min: totalFinal,
-          estado_ejecucion: "finalizada",
-        })
-        .eq("id", tarea.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
+      const finalizada = await ejecutarAccion(tarea.id, "terminar");
       localStorage.removeItem(`tarea_pausa_${tarea.id}`);
-
       localStorage.removeItem(`tarea_reanudacion_${tarea.id}`);
-
       await cargarTareas();
-
       setMensaje(
-        `Tarea terminada. Tiempo contabilizado: ${formatearDuracion(
-          totalFinal,
-        )}.`,
+        `Tarea terminada. Tiempo contabilizado: ${formatearDuracion(finalizada.tiempo_trabajado_min)}.`,
       );
     } catch (err) {
-      console.error("Error terminando tarea:", err);
-
       setError(err.message || "No se pudo terminar la tarea.");
     } finally {
       setGuardando(false);
@@ -1103,146 +702,38 @@ function MisTareas() {
   };
 
   // =========================================================
-  // HORA DE CIERRE AUTOMÁTICO
-  // =========================================================
-
-  const obtenerFechaHoraCincoPM = () => {
-    const ahora = new Date();
-
-    const cincoPM = new Date(ahora);
-
-    cincoPM.setHours(17, 0, 0, 0);
-
-    return cincoPM;
-  };
-
-  // =========================================================
-  // PAUSA AUTOMÁTICA A LAS 17:00
-  //
-  // IMPORTANTE:
-  // El tiempo se calcula hasta exactamente las 17:00.
-  //
-  // NO se contabiliza tiempo durante la noche.
-  // =========================================================
-
-  const ejecutarPausaAutomatica = async () => {
-    if (!usuario?.id || procesandoAutoPausa.current) {
-      return;
-    }
-
-    const ahora = new Date();
-
-    const cincoPM = obtenerFechaHoraCincoPM();
-
-    if (ahora < cincoPM) {
-      return;
-    }
-    const tareasProcesoActual = tareas.filter(
-      (tarea) =>
-        tarea.estado === "en_proceso" &&
-        String(tarea.responsable_id) === String(usuario.id),
-    );
-
-    if (tareasProcesoActual.length === 0) {
-      return;
-    }
-
-    procesandoAutoPausa.current = true;
-
-    try {
-      const tareasPausadas = [];
-
-      for (const tarea of tareasProcesoActual) {
-        const inicio = tarea.inicio_real ? new Date(tarea.inicio_real) : null;
-
-        let momentoPausa = cincoPM;
-
-        // Si por alguna razón el inicio
-        // fuera después de las 17:00,
-        // no usamos una fecha futura.
-        if (inicio && !Number.isNaN(inicio.getTime()) && inicio > cincoPM) {
-          momentoPausa = ahora;
-        }
-
-        const tareaPausada = await pausarTareaInternamente(
-          tarea,
-          momentoPausa,
-          "cierre_jornada",
-        );
-
-        if (tareaPausada) {
-          tareasPausadas.push(tareaPausada);
-
-          localStorage.setItem(
-            `tarea_pausa_${tarea.id}`,
-            JSON.stringify({
-              tarea_id: tarea.id,
-              motivo: "cierre_jornada",
-              hora: obtenerHoraActual(momentoPausa),
-              fecha: obtenerFechaActual(momentoPausa),
-              minutos_acumulados: tareaPausada.tiempo_trabajado_min,
-              pausa_automatica: true,
-            }),
-          );
-
-          localStorage.removeItem(`tarea_reanudacion_${tarea.id}`);
-        }
-      }
-
-      if (tareasPausadas.length > 0) {
-        const fechaCierre = obtenerFechaActual(cincoPM);
-
-        const registro = {
-          fecha: fechaCierre,
-          hora: "17:00:00",
-          tareas: tareasPausadas.map((tarea) => ({
-            id: tarea.id,
-            titulo: tarea.titulo,
-            tiempo: tarea.tiempo_trabajado_min,
-          })),
-        };
-
-        localStorage.setItem(
-          `tareas_auto_pausadas_${fechaCierre}`,
-          JSON.stringify(registro),
-        );
-
-        await cargarTareas();
-
-        setMensaje(
-          `La jornada terminó. ${tareasPausadas.length} ${
-            tareasPausadas.length === 1
-              ? "tarea fue pausada"
-              : "tareas fueron pausadas"
-          } automáticamente a las 17:00.`,
-        );
-      }
-    } catch (err) {
-      console.error("Error en pausa automática:", err);
-
-      setError("No se pudieron pausar automáticamente las tareas.");
-    } finally {
-      procesandoAutoPausa.current = false;
-    }
-  };
-
-  // =========================================================
   // VIGILAR LAS 17:00
   // =========================================================
 
+  /* =========================================================
+   SINCRONIZACIÓN CON SUPABASE
+   La pausa automática la realiza pg_cron.
+   React únicamente consulta el estado actualizado.
+========================================================= */
+
   useEffect(() => {
-    if (!usuario?.id) {
-      return;
-    }
+    if (!usuario?.id) return;
 
-    ejecutarPausaAutomatica();
+    const sincronizar = () => {
+      if (document.visibilityState === "visible") {
+        cargarTareas(true);
+      }
+    };
 
-    const intervalo = setInterval(() => {
-      ejecutarPausaAutomatica();
-    }, 1000);
+    const intervalo = setInterval(sincronizar, 60000);
 
-    return () => clearInterval(intervalo);
-  }, [usuario?.id, tareas]);
+    document.addEventListener("visibilitychange", sincronizar);
+
+    window.addEventListener("focus", sincronizar);
+
+    return () => {
+      clearInterval(intervalo);
+
+      document.removeEventListener("visibilitychange", sincronizar);
+
+      window.removeEventListener("focus", sincronizar);
+    };
+  }, [usuario?.id]);
 
   // =========================================================
   // DETECTAR TAREAS AUTO-PAUSADAS DEL DÍA ANTERIOR
@@ -1252,42 +743,38 @@ function MisTareas() {
   // =========================================================
 
   useEffect(() => {
-    if (!usuario?.id) {
-      return;
-    }
-
+    if (!usuario?.id) return;
     const ayer = obtenerFechaAnterior();
-
-    const clave = `tareas_auto_pausadas_${ayer}`;
-
-    const registro = localStorage.getItem(clave);
-
-    if (!registro) {
-      return;
-    }
-
-    try {
-      const datos = JSON.parse(registro);
-
-      if (datos?.tareas && datos.tareas.length > 0) {
-        setTareasAutoPausadasAyer(datos.tareas);
-
-        setMostrarAvisoDiaAnterior(true);
-      }
-    } catch (err) {
-      console.error("Error leyendo aviso del día anterior:", err);
-    }
+    const clave = `aviso_auto_pausa_${usuario.id}_${ayer}`;
+    if (localStorage.getItem(clave)) return;
+    let cancelado = false;
+    const revisar = async () => {
+      const { data, error: consultaError } = await supabase
+        .from("tareas")
+        .select("id,titulo,tiempo_trabajado_min,fin_real,estado_ejecucion")
+        .eq("responsable_id", usuario.id)
+        .eq("estado_ejecucion", "pausada")
+        .gte("fin_real", `${ayer}T22:00:00Z`)
+        .lt("fin_real", `${ayer}T22:00:01Z`);
+      if (consultaError || cancelado || !data?.length) return;
+      setTareasAutoPausadasAyer(
+        data.map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          tiempo: t.tiempo_trabajado_min,
+        })),
+      );
+      setMostrarAvisoDiaAnterior(true);
+    };
+    revisar();
+    return () => {
+      cancelado = true;
+    };
   }, [usuario?.id]);
-
-  // =========================================================
-  // CERRAR AVISO DEL DÍA ANTERIOR
-  // =========================================================
 
   const cerrarAvisoDiaAnterior = () => {
     const ayer = obtenerFechaAnterior();
-
-    localStorage.removeItem(`tareas_auto_pausadas_${ayer}`);
-
+    localStorage.setItem(`aviso_auto_pausa_${usuario.id}_${ayer}`, "1");
     setMostrarAvisoDiaAnterior(false);
     setTareasAutoPausadasAyer([]);
   };
@@ -1302,9 +789,7 @@ function MisTareas() {
     const estaCompletada = tarea.estado === "completada";
 
     const estaPausada =
-      !estaEnProceso &&
-      !estaCompletada &&
-      Boolean(localStorage.getItem(`tarea_pausa_${tarea.id}`));
+      !estaEnProceso && !estaCompletada && tarea.estado_ejecucion === "pausada";
 
     const tiempo = obtenerTiempoVisual(tarea);
 
