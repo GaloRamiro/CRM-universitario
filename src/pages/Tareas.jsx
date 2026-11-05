@@ -37,7 +37,52 @@ function Tareas() {
   // =========================================================
   // CARGAR INFORMACIÓN
   // =========================================================
+  const cargarTodasLasTareas = async () => {
+    const todas = [];
+    const tamañoPagina = 500;
+    let desde = 0;
 
+    while (true) {
+      const { data, error } = await supabase
+        .from("tareas")
+        .select(
+          `
+        id,
+        titulo,
+        descripcion,
+        fecha,
+        fecha_inicio,
+        fecha_fin,
+        hora_inicio,
+        hora_fin,
+        prioridad,
+        estado,
+        responsable_id,
+        departamento_id,
+        tiempo_estimado
+      `,
+        )
+        .order("fecha_inicio", { ascending: true })
+        .order("hora_inicio", { ascending: true })
+        .order("id", { ascending: true })
+        .range(desde, desde + tamañoPagina - 1);
+
+      if (error) {
+        return { data: null, error };
+      }
+
+      const pagina = data || [];
+      todas.push(...pagina);
+
+      if (pagina.length === 0) {
+        break;
+      }
+
+      desde += pagina.length;
+    }
+
+    return { data: todas, error: null };
+  };
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -52,27 +97,7 @@ function Tareas() {
         { data: usuariosData, error: usuariosError },
         { data: departamentosData, error: departamentosError },
       ] = await Promise.all([
-        supabase
-          .from("tareas")
-          .select(
-            `
-              id,
-              titulo,
-              descripcion,
-              fecha,
-              fecha_inicio,
-              fecha_fin,
-              hora_inicio,
-              hora_fin,
-              prioridad,
-              estado,
-              responsable_id,
-              departamento_id,
-              tiempo_estimado
-            `,
-          )
-          .order("fecha_inicio", { ascending: true })
-          .order("hora_inicio", { ascending: true }),
+        cargarTodasLasTareas(),
 
         supabase
           .from("usuarios")
