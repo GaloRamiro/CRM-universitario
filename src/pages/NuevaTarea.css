@@ -352,3 +352,93 @@
     padding: 15px;
   }
 }
+/* Formulario de Nueva tarea */
+.nueva-tarea-page .nueva-tarea-header h1 {
+  color: #10243d;
+  font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.nueva-tarea-page .nueva-tarea-header p,
+.nueva-tarea-page .nueva-tarea-section > p,
+.nueva-tarea-page .nueva-tarea-help {
+  color: #52667c;
+}
+
+.nueva-tarea-page .nueva-tarea-card {
+  border-color: #dce6ef;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.nueva-tarea-page .nueva-tarea-section {
+  padding: clamp(16px, 2.4vw, 24px);
+  border-bottom-color: #e6edf4;
+}
+
+.nueva-tarea-page .nueva-tarea-section h2 {
+  color: #10243d;
+  font-size: 1.125rem;
+}
+
+.nueva-tarea-page .nueva-tarea-section > p {
+  margin-bottom: 16px;
+}
+
+.nueva-tarea-page .nueva-tarea-grid {
+  gap: 16px;
+}
+
+.nueva-tarea-page .nueva-tarea-group :is(input, select, textarea) {
+  border-color: #dce6ef;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #10243d;
+}
+
+.nueva-tarea-page .nueva-tarea-group :is(input, select, textarea):focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+
+.nueva-tarea-page .nueva-tarea-group :is(input, select, textarea):disabled {
+  background: #edf2f7;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.nueva-tarea-page .nueva-tarea-actions {
+  padding: 16px clamp(16px, 2.4vw, 24px);
+  border-top-color: #e6edf4;
+  background: #f1f6fb;
+}
+
+.nueva-tarea-page .nueva-tarea-btn-guardar {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  box-shadow: none;
+}
+
+.nueva-tarea-page .nueva-tarea-btn-guardar:hover:not(:disabled) {
+  border-color: #1e40af;
+  background: #1e40af;
+  transform: none;
+}
+
+.nueva-tarea-page .nueva-tarea-btn-cancelar {
+  border-color: #dce6ef;
+  background: #fff;
+  color: #193c61;
+}
+
+.nueva-tarea-page .nueva-tarea-btn-cancelar:hover:not(:disabled) {
+  border-color: #aac5df;
+  background: #edf4fa;
+  transform: none;
+}
+
+.nueva-tarea-page .nueva-tarea-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
