@@ -1,63 +1,51 @@
-/* =========================================
-   MAIN LAYOUT
-========================================= */
-
+/* Estructura principal */
 .main-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
   width: 100%;
   min-height: 100vh;
-
-  display: flex;
-
-  background: #f5f7fb;
+  background: #eef4f8;
 }
 
-/* =========================================
-   CONTENIDO PRINCIPAL
-========================================= */
-
+/* Columna del encabezado y las páginas */
 .main-content {
-  flex: 1;
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
   min-width: 0;
   min-height: 100vh;
-
-  display: flex;
-  flex-direction: column;
+  box-sizing: border-box;
+  padding: 16px 24px 0 0;
 }
-
-/* =========================================
-   CONTENIDO DE LAS PÁGINAS
-========================================= */
 
 .page-content {
   flex: 1;
-
-  padding: 28px;
-
   min-width: 0;
+  box-sizing: border-box;
+  padding: 24px 0;
 }
-
-/* =========================================
-   OVERLAY MÓVIL
-========================================= */
 
 .mobile-overlay {
   display: none;
 }
 
-/* =========================================
-   TABLET
-========================================= */
+/* Tablet */
+@media (min-width: 769px) and (max-width: 900px) {
+  .main-layout {
+    gap: 18px;
+  }
 
-@media (max-width: 900px) {
+  .main-content {
+    padding-right: 16px;
+  }
+
   .page-content {
-    padding: 24px;
+    padding-block: 20px;
   }
 }
 
-/* =========================================
-   MÓVIL
-========================================= */
-
+/* Móvil */
 @media (max-width: 768px) {
   .main-layout {
     display: block;
@@ -65,7 +53,7 @@
 
   .main-content {
     width: 100%;
-    min-height: 100vh;
+    padding: 0;
   }
 
   .page-content {
@@ -74,31 +62,20 @@
 
   .mobile-overlay {
     position: fixed;
-
     inset: 0;
-
+    z-index: 999;
+    display: block;
     width: 100%;
     height: 100%;
-
-    display: block;
-
+    padding: 0;
     border: 0;
-
-    background: rgba(15, 23, 42, 0.35);
-
+    background: rgb(15 23 42 / 38%);
     cursor: pointer;
-
-    z-index: 999;
   }
 }
-
-/* =========================================
-   MÓVIL PEQUEÑO
-========================================= */
 
 @media (max-width: 480px) {
   .page-content {
     padding: 16px 12px;
   }
 }
-

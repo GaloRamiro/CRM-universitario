@@ -32,6 +32,85 @@
   box-shadow: 0 8px 24px rgba(16, 35, 63, 0.06);
   overflow: hidden;
 }
+/* Editar departamento */
+.editar-departamento-page .editar-departamento-header h1 {
+  color: #10243d;
+  font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.editar-departamento-page .editar-departamento-header p,
+.editar-departamento-page .editar-departamento-section p {
+  color: #52667c;
+}
+
+.editar-departamento-page .editar-departamento-card {
+  box-sizing: border-box;
+  border-color: #dce6ef;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.editar-departamento-page .editar-departamento-form-group :is(input, textarea) {
+  border-color: #dce6ef;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #10243d;
+}
+
+.editar-departamento-page
+  .editar-departamento-form-group
+  :is(input, textarea):focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+
+.editar-departamento-page
+  .editar-departamento-form-group
+  :is(input, textarea):disabled {
+  background: #edf2f7;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.editar-departamento-page .editar-departamento-actions {
+  padding-top: 16px;
+  border-top: 1px solid #e6edf4;
+}
+
+.editar-departamento-page .editar-departamento-btn-principal {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  font-weight: 700;
+}
+
+.editar-departamento-page
+  .editar-departamento-btn-principal:hover:not(:disabled) {
+  border-color: #1e40af;
+  background: #1e40af;
+  transform: none;
+}
+
+.editar-departamento-page .editar-departamento-btn-secundario {
+  border-color: #dce6ef;
+  color: #193c61;
+}
+
+.editar-departamento-page
+  .editar-departamento-btn-secundario:hover:not(:disabled) {
+  border-color: #aac5df;
+  background: #edf4fa;
+}
+
+.editar-departamento-page .editar-departamento-actions button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.editar-departamento-page .editar-departamento-loader {
+  border-top-color: #1d4ed8;
+}
 
 .editar-departamento-section {
   padding: 28px 30px 20px;
@@ -290,4 +369,3 @@
     min-height: 46px;
   }
 }
-

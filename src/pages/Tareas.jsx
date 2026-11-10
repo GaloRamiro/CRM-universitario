@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -7,7 +7,52 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
 import "./Tareas.css";
+const cargarTodasLasTareas = async () => {
+  const todas = [];
+  const tamañoPagina = 500;
+  let desde = 0;
 
+  while (true) {
+    const { data, error } = await supabase
+      .from("tareas")
+      .select(
+        `
+        id,
+        titulo,
+        descripcion,
+        fecha,
+        fecha_inicio,
+        fecha_fin,
+        hora_inicio,
+        hora_fin,
+        prioridad,
+        estado,
+        responsable_id,
+        departamento_id,
+        tiempo_trabajado_min
+      `,
+      )
+      .order("fecha_inicio", { ascending: true })
+      .order("hora_inicio", { ascending: true })
+      .order("id", { ascending: true })
+      .range(desde, desde + tamañoPagina - 1);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    const pagina = data || [];
+    todas.push(...pagina);
+
+    if (pagina.length === 0) {
+      break;
+    }
+
+    desde += pagina.length;
+  }
+
+  return { data: todas, error: null };
+};
 function Tareas() {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -34,60 +79,7 @@ function Tareas() {
   const esAdministrador =
     rolActual === "admin" || rolActual === "administrador";
 
-  // =========================================================
-  // CARGAR INFORMACIÓN
-  // =========================================================
-  const cargarTodasLasTareas = async () => {
-    const todas = [];
-    const tamañoPagina = 500;
-    let desde = 0;
-
-    while (true) {
-      const { data, error } = await supabase
-        .from("tareas")
-        .select(
-          `
-        id,
-        titulo,
-        descripcion,
-        fecha,
-        fecha_inicio,
-        fecha_fin,
-        hora_inicio,
-        hora_fin,
-        prioridad,
-        estado,
-        responsable_id,
-        departamento_id,
-        tiempo_estimado
-      `,
-        )
-        .order("fecha_inicio", { ascending: true })
-        .order("hora_inicio", { ascending: true })
-        .order("id", { ascending: true })
-        .range(desde, desde + tamañoPagina - 1);
-
-      if (error) {
-        return { data: null, error };
-      }
-
-      const pagina = data || [];
-      todas.push(...pagina);
-
-      if (pagina.length === 0) {
-        break;
-      }
-
-      desde += pagina.length;
-    }
-
-    return { data: todas, error: null };
-  };
-  useEffect(() => {
-    cargarDatos();
-  }, []);
-
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
     setCargando(true);
     setError("");
 
@@ -130,7 +122,18 @@ function Tareas() {
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
+  useEffect(() => {
+    let cancelado = false;
+
+    queueMicrotask(() => {
+      if (!cancelado) cargarDatos();
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [cargarDatos]);
 
   // =========================================================
   // NOMBRES
@@ -505,10 +508,11 @@ function Tareas() {
           </div>
 
           <div className="tarea-info-item">
-            <span className="tarea-info-label">Tiempo</span>
-
+            <span className="tarea-info-label">Tiempo trabajado</span>
             <span className="tarea-info-value">
-              {tarea.tiempo_estimado || 0} min
+              {Number(tarea.tiempo_trabajado_min) > 0
+                ? `${tarea.tiempo_trabajado_min} min`
+                : "Sin tiempo registrado"}
             </span>
           </div>
         </div>

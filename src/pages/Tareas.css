@@ -1159,12 +1159,12 @@
     flex-direction: column;
     margin-bottom: 18px;
   }
-   .tareas-header-acciones {
+  .tareas-header-acciones {
     display: flex;
     align-items: center;
     gap: 14px;
   }
-  
+
   .tareas-header h1 {
     font-size: 27px;
   }
@@ -1236,5 +1236,271 @@
 
   .vista-dia-header h2 {
     font-size: 18px;
+  }
+}
+/* Cabecera y controles de Tareas */
+.tareas-page {
+  --tareas-azul: #1d4ed8;
+  --tareas-texto: #10243d;
+  --tareas-secundario: #52667c;
+  --tareas-borde: #dce6ef;
+  --tareas-fondo-control: #f1f6fb;
+}
+
+.tareas-page .tareas-header {
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+
+.tareas-page .tareas-header h1 {
+  color: var(--tareas-texto);
+  font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.tareas-page .tareas-header p {
+  color: var(--tareas-secundario);
+}
+
+.tareas-page .tareas-header-acciones {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tareas-page .tareas-header-acciones button {
+  box-sizing: border-box;
+  min-height: 42px;
+  margin: 0;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.tareas-page .tareas-btn-principal {
+  border: 1px solid transparent;
+  background: var(--tareas-azul);
+  color: #fff;
+  box-shadow: none;
+}
+
+.tareas-page .tareas-btn-principal:hover {
+  background: #1e40af;
+}
+
+.tareas-page .tareas-btn-secundario {
+  border: 1px solid var(--tareas-borde);
+  background: #fff;
+  color: var(--tareas-texto);
+}
+
+.tareas-page .tareas-btn-secundario:hover {
+  border-color: #b8cce0;
+  background: var(--tareas-fondo-control);
+}
+
+.tareas-page .tareas-toolbar {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tareas-page .tareas-vistas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--tareas-borde);
+  border-radius: 12px;
+  background: var(--tareas-fondo-control);
+}
+
+.tareas-page .tareas-vistas button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tareas-secundario);
+  font-weight: 700;
+}
+
+.tareas-page .tareas-vistas button:hover {
+  background: #e5eef8;
+  color: var(--tareas-texto);
+}
+
+.tareas-page .tareas-vistas button.vista-activa {
+  border-color: #d5e2ef;
+  background: #fff;
+  color: var(--tareas-azul);
+  box-shadow: 0 1px 3px rgb(16 36 61 / 8%);
+}
+
+.tareas-page .tareas-filtros select,
+.tareas-page .tareas-navegacion-botones button {
+  min-height: 40px;
+  border-color: var(--tareas-borde);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--tareas-texto);
+}
+
+.tareas-page
+  :is(
+    .tareas-header-acciones button,
+    .tareas-vistas button,
+    .tareas-filtros select,
+    .tareas-navegacion-botones button
+  ):focus-visible {
+  outline: 2px solid var(--tareas-azul);
+  outline-offset: 2px;
+}
+
+@media (max-width: 650px) {
+  .tareas-page .tareas-header-acciones {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .tareas-page .tareas-vistas {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .tareas-page .tareas-vistas button {
+    padding-inline: 4px;
+  }
+
+  .tareas-page .tareas-filtros,
+  .tareas-page .tareas-filtros select {
+    width: 100%;
+  }
+}
+/* Tarjetas de las vistas Día y Semana */
+.tareas-page :is(.vista-dia, .calendario-semana) .tarea-card-item {
+  --tarea-acento: #94a3b8;
+
+  border: 1px solid var(--tareas-borde, #dce6ef);
+  border-inline-start: 3px solid var(--tarea-acento);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgb(16 36 61 / 5%);
+}
+
+.tareas-page
+  :is(.vista-dia, .calendario-semana)
+  .tarea-card-item.prioridad-alta {
+  --tarea-acento: #e11d48;
+}
+
+.tareas-page
+  :is(.vista-dia, .calendario-semana)
+  .tarea-card-item.prioridad-media {
+  --tarea-acento: #d97706;
+}
+
+.tareas-page
+  :is(.vista-dia, .calendario-semana)
+  .tarea-card-item.prioridad-baja {
+  --tarea-acento: #3b82f6;
+}
+
+.tareas-page :is(.vista-dia, .calendario-semana) .tarea-card-item:hover {
+  background: #f8fbff;
+  box-shadow: 0 5px 14px rgb(16 36 61 / 9%);
+  transform: none;
+}
+
+.tareas-page :is(.vista-dia, .calendario-semana) .tarea-card-top {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px 10px;
+}
+
+.tareas-page :is(.vista-dia, .calendario-semana) .tarea-card-titulo {
+  min-width: 0;
+}
+
+.tareas-page :is(.vista-dia, .calendario-semana) .tarea-card-titulo strong {
+  color: #10243d;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.tareas-page :is(.vista-dia, .calendario-semana) .tarea-info-item {
+  border-radius: 8px;
+  background: #f1f6fb;
+}
+
+.tareas-page :is(.vista-dia, .calendario-semana) .tarea-info-value {
+  font-variant-numeric: tabular-nums;
+}
+/* Tarjetas por colaborador */
+.persona-carga-card {
+  border-color: #dce6ef;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.persona-carga-card:hover {
+  transform: none;
+  border-color: #b9cde0;
+  box-shadow: 0 6px 18px rgb(16 36 61 / 8%);
+}
+
+.persona-carga-card .persona-carga-resumen {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.persona-carga-card .persona-carga-resumen > div {
+  padding: 10px;
+  border: 1px solid #e2ebf3;
+  border-radius: 10px;
+  background: #f6f8fb;
+}
+
+.persona-carga-card .persona-carga-resumen span {
+  color: #52667c;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.persona-carga-card .persona-carga-resumen strong {
+  color: #10243d;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* Segunda fila de indicadores */
+.persona-carga-card .persona-carga-resumen + .persona-carga-resumen > div {
+  border-color: #d5e6f7;
+  background: #edf5ff;
+}
+
+.persona-carga-card
+  .persona-carga-resumen
+  + .persona-carga-resumen
+  > div:first-child {
+  border-inline-start: 3px solid #2563eb;
+}
+
+.persona-carga-card
+  .persona-carga-resumen
+  + .persona-carga-resumen
+  > div:first-child
+  strong {
+  color: #174a8b;
+  font-size: 1.125rem;
+}
+
+@media (max-width: 430px) {
+  .persona-carga-card .persona-carga-resumen {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

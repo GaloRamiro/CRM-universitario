@@ -437,3 +437,79 @@
   }
 
 }
+/* Departamentos */
+.departamentos-page .departamentos-header h1 {
+  color: #10243d;
+  font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.departamentos-page .departamentos-header p,
+.departamentos-page .departamentos-section > p,
+.departamentos-page .departamento-info p {
+  color: #52667c;
+}
+
+.departamentos-page .departamentos-card {
+  border-color: #dce6ef;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.departamentos-page .departamentos-form :is(input, textarea) {
+  border-color: #dce6ef;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #10243d;
+}
+
+.departamentos-page .departamentos-form :is(input, textarea):focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+
+.departamentos-page .departamentos-btn {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  font-weight: 700;
+}
+
+.departamentos-page .departamentos-btn:hover:not(:disabled) {
+  border-color: #1e40af;
+  background: #1e40af;
+  transform: none;
+}
+
+/* Departamentos registrados */
+.departamentos-page .departamentos-lista {
+  display: grid;
+  gap: 8px;
+}
+
+.departamentos-page .departamentos-lista .departamento-item {
+  padding: 12px 14px;
+  border: 1px solid #e2ebf3;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.departamentos-page .departamento-info {
+  overflow-wrap: anywhere;
+}
+
+.departamentos-page .departamento-btn-editar {
+  border-color: #dce6ef;
+  color: #193c61;
+}
+
+.departamentos-page .departamento-btn-editar:hover {
+  border-color: #aac5df;
+  background: #edf4fa;
+  transform: none;
+}
+
+.departamentos-page :is(.departamentos-btn, .departamento-btn-editar):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

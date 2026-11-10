@@ -907,3 +907,238 @@
     align-self: flex-start;
   }
 }
+.mi-entregas-filtro {
+  display: grid;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.mi-entregas-filtro input[type="date"] {
+  min-width: 155px;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f2742;
+  font: inherit;
+}
+
+.mi-entregas-btn,
+.mi-confirmar-cancelar {
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mi-entregas-btn {
+  margin-top: 10px;
+  background: #12355b;
+  color: #fff;
+}
+
+.mi-entregas-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.mi-confirmar-fin {
+  width: min(440px, calc(100% - 32px));
+  padding: 24px;
+  border: 1px solid #dbe4ef;
+  border-radius: 18px;
+  color: #0f2742;
+  box-shadow: 0 16px 44px #0f172a26;
+}
+
+.mi-confirmar-fin::backdrop {
+  background: #0f172a70;
+}
+
+.mi-confirmar-fin h2 {
+  margin: 0 0 10px;
+}
+
+.mi-confirmar-fin p {
+  margin: 0;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.mi-confirmar-fin-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.mi-confirmar-fin-acciones .mi-entregas-btn {
+  margin-top: 0;
+}
+
+.mi-confirmar-cancelar {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #0f2742;
+}
+.mi-entregas-calendario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mi-entregas-calendario input[type="date"] {
+  width: 165px;
+  max-width: 100%;
+}
+
+/* Tarea en curso */
+.mi-tarea-card.mi-tarea-card-activa {
+  border-color: #91b8e4;
+  border-inline-start: 4px solid #2563eb;
+  background: #fff;
+  box-shadow: 0 6px 18px rgb(16 36 61 / 8%);
+}
+
+.mi-tarea-card.mi-tarea-card-activa:hover {
+  transform: none;
+  box-shadow: 0 8px 22px rgb(16 36 61 / 10%);
+}
+
+/* Cronómetro */
+.mi-tarea-card-activa .mi-tarea-meta-item:has(.tiempo-en-vivo) {
+  border: 1px solid #cfe2fa;
+  border-radius: 10px;
+  background: #edf5ff;
+}
+
+.mi-tarea-card-activa .mi-tarea-meta-item strong.tiempo-en-vivo {
+  color: #174a8b;
+  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.75rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Acciones de la tarea en curso */
+.mi-tarea-card-activa .mi-tarea-actions .mi-tarea-btn-pausar {
+  border-color: #f1cd91;
+  background: #fff7e6;
+  color: #8a430b;
+}
+
+.mi-tarea-card-activa .mi-tarea-actions .mi-tarea-btn-terminar {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.mi-tarea-card-activa
+  .mi-tarea-actions
+  .mi-tarea-btn-terminar:hover:not(:disabled) {
+  border-color: #1e40af;
+  background: #1e40af;
+}
+
+.mi-tarea-card-activa .mi-tarea-actions button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+/* Entregas */
+section[aria-labelledby="mis-tareas-entregas"] {
+  margin-top: 28px;
+  padding: clamp(14px, 2vw, 22px);
+  border: 1px solid #dce6ef;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tareas-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-entregas-calendario {
+  margin-top: 0;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tareas-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dce6ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgb(16 36 61 / 5%);
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card:hover {
+  transform: none;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > h3 {
+  margin: 0;
+  color: #10243d;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > strong {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.75rem;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > p {
+  margin: 0;
+  color: #52667c;
+  font-size: 0.8125rem;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > button {
+  min-height: 36px;
+  margin-top: 4px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > button:disabled {
+  cursor: wait;
+}
+
+@media (max-width: 650px) {
+  section[aria-labelledby="mis-tareas-entregas"] .mi-tareas-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  section[aria-labelledby="mis-tareas-entregas"] .mi-tareas-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

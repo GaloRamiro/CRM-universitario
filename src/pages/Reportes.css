@@ -652,7 +652,6 @@
   white-space: nowrap;
 }
 
-
 /* =========================================================
    EMPLEADO DENTRO DEL DEPARTAMENTO
    ========================================================= */
@@ -691,7 +690,6 @@
   white-space: nowrap;
 }
 
-
 /* =========================================================
    TABLA DE TAREAS
    ========================================================= */
@@ -712,13 +710,11 @@
   padding: 13px 14px;
 }
 
-
 /* =========================================================
    RESPONSIVE - TABLET
    ========================================================= */
 
 @media (max-width: 800px) {
-
   .reportes-departamento-detalle {
     padding: 16px;
     border-radius: 18px;
@@ -750,13 +746,11 @@
   }
 }
 
-
 /* =========================================================
    RESPONSIVE - CELULAR
    ========================================================= */
 
 @media (max-width: 600px) {
-
   .reportes-departamento-detalle {
     margin-top: 15px;
     padding: 12px;
@@ -802,5 +796,243 @@
 
   .reportes-empleado-detalle .reportes-table {
     min-width: 560px;
+  }
+}
+/* Cabecera y filtros de Reportes */
+.reportes-page {
+  --reportes-azul: #1d4ed8;
+  --reportes-texto: #10243d;
+  --reportes-texto-secundario: #52667c;
+  --reportes-borde: #dce6ef;
+}
+
+.reportes-page .reportes-header {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 24px;
+}
+
+.reportes-page .reportes-header h1 {
+  color: var(--reportes-texto);
+  font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.reportes-page .reportes-header p {
+  color: var(--reportes-texto-secundario);
+}
+
+.reportes-page .reportes-header-actions .reportes-btn {
+  min-height: 42px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.reportes-page .reportes-btn-principal {
+  background: var(--reportes-azul);
+  color: #fff;
+}
+
+.reportes-page .reportes-btn-principal:hover:not(:disabled) {
+  background: #1e40af;
+  transform: none;
+}
+
+.reportes-page .reportes-btn-secundario,
+.reportes-page .reportes-btn-limpiar {
+  border: 1px solid var(--reportes-borde);
+  background: #fff;
+  color: var(--reportes-texto);
+}
+
+.reportes-page .reportes-btn-secundario:hover,
+.reportes-page .reportes-btn-limpiar:hover {
+  border-color: #b9cde0;
+  background: #edf4fa;
+  transform: none;
+}
+
+.reportes-page .reportes-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding: 14px;
+  border-color: var(--reportes-borde);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.reportes-page .reportes-filtro-periodo {
+  flex: 1 1 280px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f6fb;
+}
+
+.reportes-page .reportes-filtro-periodo span,
+.reportes-page .reportes-fechas label span {
+  color: var(--reportes-texto-secundario);
+}
+
+.reportes-page .reportes-fechas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.reportes-page .reportes-filtros select,
+.reportes-page .reportes-fechas input {
+  box-sizing: border-box;
+  min-height: 42px;
+  max-width: 100%;
+  border-color: var(--reportes-borde);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--reportes-texto);
+}
+
+.reportes-page
+  :is(
+    .reportes-header-actions button,
+    .reportes-filtros button,
+    .reportes-filtros select,
+    .reportes-filtros input
+  ):focus-visible {
+  outline: 2px solid var(--reportes-azul);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .reportes-page .reportes-header-actions {
+    width: 100%;
+  }
+
+  .reportes-page .reportes-filtros,
+  .reportes-page .reportes-filtro-periodo,
+  .reportes-page .reportes-fechas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reportes-page .reportes-filtro-periodo {
+    flex: 0 1 auto;
+  }
+
+  .reportes-page .reportes-filtros select,
+  .reportes-page .reportes-fechas input {
+    width: 100%;
+  }
+}
+/* Indicadores de Reportes */
+.reportes-page .reportes-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.reportes-page .reportes-stats > .reportes-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dce6ef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.reportes-page .reportes-stat > span,
+.reportes-page .reportes-stat > small {
+  margin: 0;
+  color: #52667c;
+  line-height: 1.35;
+}
+
+.reportes-page .reportes-stat > strong {
+  margin: 0;
+  color: #10243d;
+  font-size: clamp(1.5rem, 1.15rem + 0.9vw, 2.25rem);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.reportes-page .reportes-stat:has(> .reportes-stat-tiempo) {
+  border-color: #c9dff8;
+  border-inline-start: 3px solid #2563eb;
+  background: #edf5ff;
+}
+
+.reportes-page .reportes-stat > .reportes-stat-tiempo {
+  color: #174a8b;
+  font-size: clamp(1.25rem, 1rem + 0.75vw, 1.85rem);
+}
+
+@media (max-width: 1100px) {
+  .reportes-page .reportes-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .reportes-page .reportes-stats {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+}
+/* Tablas de Reportes */
+.reportes-page .reportes-panel {
+  min-width: 0;
+}
+
+.reportes-page .reportes-table-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #dce6ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.reportes-page .reportes-table th {
+  padding: 12px 14px;
+  border-bottom: 1px solid #dce6ef;
+  background: #eaf3fc;
+  color: #193c61;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.reportes-page .reportes-table td {
+  padding: 11px 14px;
+  border-bottom-color: #e6edf4;
+  color: #334b63;
+  line-height: 1.4;
+}
+
+.reportes-page .reportes-table td strong {
+  color: #10243d;
+}
+
+.reportes-page .reportes-table tbody tr:nth-child(even) {
+  background: #f7fafd;
+}
+
+.reportes-page .reportes-table tbody tr:hover {
+  background: #edf5ff;
+}
+
+@media (max-width: 600px) {
+  .reportes-page .reportes-table :is(th, td) {
+    padding: 9px 10px;
   }
 }
