@@ -915,7 +915,7 @@
   color: #334155;
 }
 
-.mi-entregas-filtro select {
+.mi-entregas-filtro input[type="date"] {
   min-width: 155px;
   padding: 9px 12px;
   border: 1px solid #cbd5e1;
@@ -985,4 +985,16 @@
   border-color: #cbd5e1;
   background: #fff;
   color: #0f2742;
+}
+.mi-entregas-calendario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mi-entregas-calendario input[type="date"] {
+  width: 165px;
+  max-width: 100%;
 }

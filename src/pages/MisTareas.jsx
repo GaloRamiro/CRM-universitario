@@ -18,7 +18,6 @@ async function comprimirCaptura(archivo) {
     }
 
     const ladoMayor = Math.max(imagen.width, imagen.height);
-
     for (const ladoMaximo of [1920, 1600, 1280]) {
       const escala = Math.min(1, ladoMaximo / ladoMayor);
       canvas.width = Math.max(1, Math.round(imagen.width * escala));
@@ -933,12 +932,6 @@ function MisTareas() {
     (tarea) => tarea.estado === "completada",
   );
 
-  const fechasEntregas = [
-    ...new Set(tareasCompletadas.map(obtenerDiaEntrega).filter(Boolean)),
-  ]
-    .filter((fecha) => fecha < hoyEntregas)
-    .sort((a, b) => b.localeCompare(a));
-
   const tareasEntregaDelDia = tareasCompletadas
     .filter((tarea) => obtenerDiaEntrega(tarea) === fechaVisible)
     .sort(
@@ -1268,22 +1261,31 @@ function MisTareas() {
               <h2 id="mis-tareas-entregas">Entregas</h2>
               <p>Adjunta una captura de tus trabajos completados.</p>
             </div>
-            <label className="mi-entregas-filtro">
-              <span>Fecha de finalización</span>
-              <select
-                value={fechaEntregaSeleccionada}
-                onChange={(evento) =>
-                  setFechaEntregaSeleccionada(evento.target.value)
-                }
+            <div className="mi-entregas-calendario">
+              <label className="mi-entregas-filtro" htmlFor="fecha-entregas">
+                <span>Fecha de finalización</span>
+                <input
+                  id="fecha-entregas"
+                  type="date"
+                  value={fechaVisible}
+                  max={hoyEntregas}
+                  onChange={(evento) => {
+                    const fecha = evento.currentTarget.value;
+                    setFechaEntregaSeleccionada(
+                      !fecha || fecha >= hoyEntregas ? "hoy" : fecha,
+                    );
+                  }}
+                />
+              </label>
+
+              <button
+                type="button"
+                className="mi-confirmar-cancelar"
+                onClick={() => setFechaEntregaSeleccionada("hoy")}
               >
-                <option value="hoy">Hoy</option>
-                {fechasEntregas.map((fecha) => (
-                  <option key={fecha} value={fecha}>
-                    {fecha.split("-").reverse().join("/")}
-                  </option>
-                ))}
-              </select>
-            </label>
+                Hoy
+              </button>
+            </div>
           </div>
 
           <div className="mi-tareas-grid">
