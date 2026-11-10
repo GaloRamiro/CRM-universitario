@@ -192,3 +192,101 @@
     width: 100%;
   }
 }
+/* Nuevo usuario */
+.nuevo-usuario-page .nuevo-usuario-header h1 {
+  color: #10243d;
+  font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.nuevo-usuario-page .nuevo-usuario-header p,
+.nuevo-usuario-page .nuevo-usuario-section > p {
+  color: #52667c;
+}
+
+.nuevo-usuario-page .nuevo-usuario-card {
+  border-color: #dce6ef;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.nuevo-usuario-page .nuevo-usuario-section {
+  padding: clamp(16px, 2.4vw, 24px);
+  border-bottom-color: #e6edf4;
+}
+
+.nuevo-usuario-page .nuevo-usuario-section h2 {
+  color: #10243d;
+  font-size: 1.125rem;
+}
+
+.nuevo-usuario-page .nuevo-usuario-section > p {
+  margin-bottom: 16px;
+}
+
+.nuevo-usuario-page .nuevo-usuario-grid {
+  gap: 16px;
+}
+
+.nuevo-usuario-page .nuevo-usuario-grid .form-group :is(input, select) {
+  border-color: #dce6ef;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #10243d;
+}
+
+.nuevo-usuario-page .nuevo-usuario-grid .form-group :is(input, select):focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+
+.nuevo-usuario-page .nuevo-usuario-grid .form-group select:disabled {
+  background: #edf2f7;
+  color: #64748b;
+}
+
+.nuevo-usuario-page .nuevo-usuario-checkbox {
+  margin-top: 16px;
+  padding: 8px 12px;
+  border: 1px solid #dce6ef;
+  border-radius: 10px;
+  background: #f1f6fb;
+}
+
+.nuevo-usuario-page .nuevo-usuario-checkbox input {
+  margin: 0;
+  accent-color: #1d4ed8;
+}
+
+.nuevo-usuario-page .nuevo-usuario-actions {
+  gap: 8px;
+  padding: 16px clamp(16px, 2.4vw, 24px);
+  background: #f1f6fb;
+}
+
+.nuevo-usuario-page .nuevo-usuario-btn {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  font-weight: 700;
+}
+
+.nuevo-usuario-page .nuevo-usuario-btn:hover:not(:disabled) {
+  border-color: #1e40af;
+  background: #1e40af;
+}
+
+.nuevo-usuario-page .nuevo-usuario-cancelar {
+  border-color: #dce6ef;
+  color: #193c61;
+}
+
+.nuevo-usuario-page .nuevo-usuario-cancelar:hover {
+  border-color: #aac5df;
+  background: #edf4fa;
+}
+
+.nuevo-usuario-page :is(button, .nuevo-usuario-checkbox input):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
