@@ -254,3 +254,121 @@
     box-sizing: border-box;
   }
 }
+/* Pantalla de Usuarios */
+.usuarios-page .usuarios-header {
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  margin-bottom: 22px;
+}
+
+.usuarios-page .usuarios-header h1 {
+  color: #10243d;
+  font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.usuarios-page .usuarios-header p,
+.usuarios-page .usuarios-card-header p,
+.usuarios-page .usuario-cell span {
+  color: #52667c;
+}
+
+.usuarios-page .usuarios-btn {
+  min-height: 42px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+}
+
+.usuarios-page .usuarios-btn:hover {
+  background: #1e40af;
+  transform: none;
+}
+
+.usuarios-page .usuarios-card {
+  border-color: #dce6ef;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.usuarios-page .usuarios-card-header {
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 16px 20px;
+}
+
+.usuarios-page .usuarios-search input {
+  box-sizing: border-box;
+  min-height: 42px;
+  max-width: 100%;
+  border-color: #dce6ef;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #10243d;
+}
+
+.usuarios-page .usuarios-search input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+
+.usuarios-page .usuarios-table th {
+  background: #eaf3fc;
+  color: #193c61;
+}
+
+.usuarios-page .usuarios-table td {
+  border-top-color: #e6edf4;
+  color: #334b63;
+}
+
+.usuarios-page .usuarios-table tbody tr:nth-child(even) {
+  background: #f7fafd;
+}
+
+.usuarios-page .usuarios-table tbody tr:hover {
+  background: #edf5ff;
+}
+
+.usuarios-page .usuario-avatar {
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #e4effc;
+  color: #174a8b;
+}
+
+.usuarios-page .estado-badge {
+  background: #edf2f7;
+  color: #475569;
+}
+
+.usuarios-page .estado-badge.activo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.usuarios-page .accion-btn:hover {
+  border-color: #aac5df;
+  background: #edf4fa;
+}
+
+.usuarios-page :is(.usuarios-btn, .accion-btn):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .usuarios-page {
+    padding: 12px 0;
+  }
+
+  .usuarios-page .usuarios-card-header {
+    padding: 14px;
+  }
+
+  .usuarios-page .usuarios-table :is(th, td) {
+    padding-inline: 14px;
+  }
+}

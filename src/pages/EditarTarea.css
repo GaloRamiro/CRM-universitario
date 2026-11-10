@@ -544,3 +544,106 @@
     font-size: 12px;
   }
 }
+/* Formulario de Editar tarea */
+.editar-tarea-page .editar-tarea-header h1 {
+  color: #10243d;
+  font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.editar-tarea-page .editar-tarea-header p,
+.editar-tarea-page .editar-tarea-section > p,
+.editar-tarea-page .editar-tarea-help {
+  color: #52667c;
+}
+
+.editar-tarea-page .editar-tarea-card {
+  border-color: #dce6ef;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgb(16 36 61 / 5%);
+}
+
+.editar-tarea-page .editar-tarea-section {
+  padding: clamp(16px, 2.4vw, 24px);
+  border-bottom-color: #e6edf4;
+}
+
+.editar-tarea-page .editar-tarea-section h2 {
+  color: #10243d;
+  font-size: 1.125rem;
+}
+
+.editar-tarea-page .editar-tarea-grid {
+  gap: 16px;
+}
+
+.editar-tarea-page .editar-tarea-group :is(input, select, textarea) {
+  border-color: #dce6ef;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #10243d;
+}
+
+.editar-tarea-page .editar-tarea-group :is(input, select, textarea):focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+
+.editar-tarea-page .editar-tarea-group :is(input, select, textarea):disabled {
+  background: #edf2f7;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* Resumen de tiempo y estado */
+.editar-tarea-page .editar-tarea-tiempo-item {
+  min-width: 0;
+  border: 1px solid #d5e6f7;
+  border-radius: 12px;
+  background: #edf5ff;
+}
+
+.editar-tarea-page .editar-tarea-tiempo-item strong {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* Acciones */
+.editar-tarea-page .editar-tarea-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top-color: #e6edf4;
+  background: #f1f6fb;
+}
+
+.editar-tarea-page .editar-tarea-btn.guardar {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #fff;
+  box-shadow: none;
+}
+
+.editar-tarea-page .editar-tarea-btn.guardar:hover:not(:disabled) {
+  border-color: #1e40af;
+  background: #1e40af;
+  transform: none;
+}
+
+.editar-tarea-page .editar-tarea-btn:is(.cancelar, .secundario) {
+  border-color: #dce6ef;
+  background: #fff;
+  color: #193c61;
+}
+
+.editar-tarea-page
+  .editar-tarea-btn:is(.cancelar, .secundario):hover:not(:disabled) {
+  border-color: #aac5df;
+  background: #edf4fa;
+  transform: none;
+}
+
+.editar-tarea-page .editar-tarea-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
