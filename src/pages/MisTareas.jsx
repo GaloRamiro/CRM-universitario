@@ -1,8 +1,74 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import "./MisTareas.css";
+const BUCKET_EVIDENCIAS = "crm-evidencias-tareas";
 
+async function comprimirCaptura(archivo) {
+  const imagen = await createImageBitmap(archivo).catch(() => {
+    throw new Error("Selecciona una captura válida en PNG, JPG o WebP.");
+  });
+
+  try {
+    const canvas = document.createElement("canvas");
+    const contexto = canvas.getContext("2d");
+
+    if (!contexto) {
+      throw new Error("El navegador no pudo preparar la captura.");
+    }
+
+    const ladoMayor = Math.max(imagen.width, imagen.height);
+
+    for (const ladoMaximo of [1920, 1600, 1280]) {
+      const escala = Math.min(1, ladoMaximo / ladoMayor);
+      canvas.width = Math.max(1, Math.round(imagen.width * escala));
+      canvas.height = Math.max(1, Math.round(imagen.height * escala));
+      contexto.drawImage(imagen, 0, 0, canvas.width, canvas.height);
+
+      let alternativa = null;
+
+      for (const calidad of [0.88, 0.78, 0.68]) {
+        const captura = await new Promise((resolver) => {
+          canvas.toBlob(resolver, "image/webp", calidad);
+        });
+
+        if (captura?.type !== "image/webp") {
+          throw new Error("El navegador no pudo convertir la captura a WebP.");
+        }
+
+        if (captura.size <= 250_000) return captura;
+        if (captura.size <= 500_000) alternativa ??= captura;
+      }
+
+      if (alternativa) return alternativa;
+    }
+
+    throw new Error(
+      "La captura sigue pesando más de 500 KB. Recórtala e inténtalo de nuevo.",
+    );
+  } finally {
+    imagen.close();
+  }
+}
+const TAREAS_POR_PAGINA = 6; // =========================================================
+// OBTENER FECHA ACTUAL
+// =========================================================
+const obtenerFechaActual = (fecha = new Date()) => {
+  const año = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dia = String(fecha.getDate()).padStart(2, "0");
+
+  return `${año}-${mes}-${dia}`;
+}; // =========================================================
+// OBTENER FECHA ANTERIOR
+// =========================================================
+
+const obtenerFechaAnterior = () => {
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() - 1);
+
+  return obtenerFechaActual(fecha);
+};
 function MisTareas() {
   const navigate = useNavigate();
 
@@ -12,6 +78,10 @@ function MisTareas() {
 
   const [usuario, setUsuario] = useState(null);
   const [tareas, setTareas] = useState([]);
+  const [entregaEnCurso, setEntregaEnCurso] = useState(null);
+  const [fechaEntregaSeleccionada, setFechaEntregaSeleccionada] =
+    useState("hoy");
+  const [tareaPorTerminar, setTareaPorTerminar] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
@@ -21,7 +91,6 @@ function MisTareas() {
   const [horaActual, setHoraActual] = useState(new Date());
 
   const [pagina, setPagina] = useState(1);
-  const TAREAS_POR_PAGINA = 6;
 
   // =========================================================
   // POPUP — MOTIVO DE PAUSA
@@ -55,29 +124,6 @@ function MisTareas() {
   }, []);
 
   // =========================================================
-  // OBTENER FECHA ACTUAL
-  // =========================================================
-
-  const obtenerFechaActual = (fecha = new Date()) => {
-    const año = fecha.getFullYear();
-    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-    const dia = String(fecha.getDate()).padStart(2, "0");
-
-    return `${año}-${mes}-${dia}`;
-  };
-
-  // =========================================================
-  // OBTENER FECHA ANTERIOR
-  // =========================================================
-
-  const obtenerFechaAnterior = () => {
-    const fecha = new Date();
-    fecha.setDate(fecha.getDate() - 1);
-
-    return obtenerFechaActual(fecha);
-  };
-
-  // =========================================================
   // OBTENER HORA ACTUAL
   // =========================================================
 
@@ -90,22 +136,10 @@ function MisTareas() {
   };
 
   // =========================================================
-  // OBTENER HORA EN FORMATO HH:MM
-  // =========================================================
-
-  const obtenerHoraCorta = (fecha = new Date()) => {
-    return obtenerHoraActual(fecha).substring(0, 5);
-  };
-
-  // =========================================================
   // CARGAR USUARIO
   // =========================================================
 
-  useEffect(() => {
-    cargarUsuario();
-  }, []);
-
-  const cargarUsuario = async () => {
+  const cargarUsuario = useCallback(async () => {
     try {
       const { data: authData, error: authError } =
         await supabase.auth.getUser();
@@ -146,28 +180,33 @@ function MisTareas() {
 
       setCargando(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    queueMicrotask(() => {
+      if (!cancelado) cargarUsuario();
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [cargarUsuario]);
 
   // =========================================================
   // CARGAR TAREAS
   // =========================================================
+  const usuarioId = usuario?.id;
+  const cargarTareas = useCallback(
+    async (silencioso = false) => {
+      if (!silencioso) setCargando(true);
 
-  useEffect(() => {
-    if (!usuario?.id) {
-      return;
-    }
-
-    cargarTareas();
-  }, [usuario?.id]);
-
-  const cargarTareas = async (silencioso = false) => {
-    if (!silencioso) setCargando(true);
-
-    try {
-      const { data, error: tareasError } = await supabase
-        .from("tareas")
-        .select(
-          `
+      try {
+        const { data, error: tareasError } = await supabase
+          .from("tareas")
+          .select(
+            `
           id,
           titulo,
           descripcion,
@@ -183,32 +222,62 @@ function MisTareas() {
           tiempo_estimado,
           inicio_real,
           fin_real,
-          tiempo_trabajado_min,
-          estado_ejecucion
+            tiempo_trabajado_min,
+          estado_ejecucion,
+          tarea_entregas (
+            entregado_en,
+            captura_ruta
+          )
         `,
-        )
-        .eq("responsable_id", usuario.id)
-        .order("fecha_inicio", {
-          ascending: true,
-        })
-        .order("hora_inicio", {
-          ascending: true,
-        });
+          )
+          .eq("responsable_id", usuarioId)
+          .order("fecha_inicio", {
+            ascending: true,
+          })
+          .order("hora_inicio", {
+            ascending: true,
+          });
 
-      if (tareasError) {
-        throw tareasError;
+        if (tareasError) {
+          throw tareasError;
+        }
+
+        const tareasCargadas = data || [];
+        const cantidadActivas = tareasCargadas.filter(
+          (tarea) => tarea.estado !== "completada",
+        ).length;
+        const ultimaPagina = Math.max(
+          1,
+          Math.ceil(cantidadActivas / TAREAS_POR_PAGINA),
+        );
+
+        setTareas(tareasCargadas);
+        setPagina((actual) => Math.min(actual, ultimaPagina));
+      } catch (err) {
+        console.error("Error cargando tareas:", err);
+
+        if (!silencioso)
+          setError(err.message || "No se pudieron cargar tus tareas.");
+      } finally {
+        if (!silencioso) setCargando(false);
       }
+    },
+    [usuarioId],
+  );
 
-      setTareas(data || []);
-    } catch (err) {
-      console.error("Error cargando tareas:", err);
+  useEffect(() => {
+    if (!usuario?.id) return;
 
-      if (!silencioso)
-        setError(err.message || "No se pudieron cargar tus tareas.");
-    } finally {
-      if (!silencioso) setCargando(false);
-    }
-  };
+    let cancelado = false;
+
+    queueMicrotask(() => {
+      if (!cancelado) cargarTareas();
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [usuario?.id, cargarTareas]);
 
   // =========================================================
   // TAREAS ACTIVAS
@@ -240,12 +309,6 @@ function MisTareas() {
 
     return tareasActivas.slice(inicio, inicio + TAREAS_POR_PAGINA);
   }, [tareasActivas, pagina]);
-
-  useEffect(() => {
-    if (pagina > totalPaginas) {
-      setPagina(totalPaginas);
-    }
-  }, [pagina, totalPaginas]);
 
   // =========================================================
   // FORMATEAR DURACIÓN
@@ -682,7 +745,6 @@ function MisTareas() {
 
   const terminarTarea = async (tarea) => {
     if (!tarea || guardando) return;
-    if (!window.confirm("¿Confirmas que esta tarea ya está terminada?")) return;
     setGuardando(true);
     setError("");
     setMensaje("");
@@ -691,6 +753,7 @@ function MisTareas() {
       localStorage.removeItem(`tarea_pausa_${tarea.id}`);
       localStorage.removeItem(`tarea_reanudacion_${tarea.id}`);
       await cargarTareas();
+      setFechaEntregaSeleccionada("hoy");
       setMensaje(
         `Tarea terminada. Tiempo contabilizado: ${formatearDuracion(finalizada.tiempo_trabajado_min)}.`,
       );
@@ -733,7 +796,7 @@ function MisTareas() {
 
       window.removeEventListener("focus", sincronizar);
     };
-  }, [usuario?.id]);
+  }, [usuario?.id, cargarTareas]);
 
   // =========================================================
   // DETECTAR TAREAS AUTO-PAUSADAS DEL DÍA ANTERIOR
@@ -778,7 +841,111 @@ function MisTareas() {
     setMostrarAvisoDiaAnterior(false);
     setTareasAutoPausadasAyer([]);
   };
+  const entregarTrabajo = async (tarea, archivo) => {
+    if (!archivo || entregaEnCurso || !usuario?.auth_user_id) return;
 
+    setEntregaEnCurso(tarea.id);
+    setError("");
+    setMensaje("");
+
+    try {
+      const captura = await comprimirCaptura(archivo);
+      const ruta = `${usuario.auth_user_id}/${tarea.id}.webp`;
+
+      const { error: errorSubida } = await supabase.storage
+        .from(BUCKET_EVIDENCIAS)
+        .upload(ruta, captura, {
+          contentType: "image/webp",
+          upsert: false,
+        });
+
+      // Supabase solo registra la entrega si la captura ya existe.
+      const { data, error: errorEntrega } = await supabase
+        .from("tarea_entregas")
+        .insert({ tarea_id: tarea.id })
+        .select("entregado_en, captura_ruta")
+        .single();
+
+      let entrega = data;
+
+      if (errorEntrega) {
+        const { data: existente } = await supabase
+          .from("tarea_entregas")
+          .select("entregado_en, captura_ruta")
+          .eq("tarea_id", tarea.id)
+          .maybeSingle();
+
+        if (!existente) throw errorSubida ?? errorEntrega;
+        entrega = existente;
+      }
+
+      setTareas((actuales) =>
+        actuales.map((actual) =>
+          actual.id === tarea.id
+            ? { ...actual, tarea_entregas: entrega }
+            : actual,
+        ),
+      );
+
+      setMensaje("Trabajo entregado.");
+    } catch (err) {
+      setError(err.message || "No se pudo entregar el trabajo.");
+    } finally {
+      setEntregaEnCurso(null);
+    }
+  };
+
+  const verCaptura = async (ruta) => {
+    setError("");
+
+    const { data, error: errorCaptura } = await supabase.storage
+      .from(BUCKET_EVIDENCIAS)
+      .createSignedUrl(ruta, 60);
+
+    if (errorCaptura) {
+      setError("No se pudo abrir la captura.");
+      return;
+    }
+
+    window.location.assign(data.signedUrl);
+  };
+
+  const formatoDiaEntrega = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Guayaquil",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const hoyEntregas = formatoDiaEntrega.format(new Date());
+  const fechaVisible =
+    fechaEntregaSeleccionada === "hoy" ? hoyEntregas : fechaEntregaSeleccionada;
+
+  const obtenerDiaEntrega = (tarea) => {
+    if (tarea.fin_real) {
+      return formatoDiaEntrega.format(new Date(tarea.fin_real));
+    }
+
+    return tarea.fecha_fin || tarea.fecha_inicio || tarea.fecha;
+  };
+
+  const tareasCompletadas = tareas.filter(
+    (tarea) => tarea.estado === "completada",
+  );
+
+  const fechasEntregas = [
+    ...new Set(tareasCompletadas.map(obtenerDiaEntrega).filter(Boolean)),
+  ]
+    .filter((fecha) => fecha < hoyEntregas)
+    .sort((a, b) => b.localeCompare(a));
+
+  const tareasEntregaDelDia = tareasCompletadas
+    .filter((tarea) => obtenerDiaEntrega(tarea) === fechaVisible)
+    .sort(
+      (a, b) =>
+        new Date(b.fin_real ?? 0).getTime() -
+        new Date(a.fin_real ?? 0).getTime(),
+    );
   // =========================================================
   // RENDER TARJETA
   // =========================================================
@@ -886,7 +1053,10 @@ function MisTareas() {
             <button
               type="button"
               className="mi-tarea-btn-terminar"
-              onClick={() => terminarTarea(tarea)}
+              onClick={() => {
+                setTareaPorTerminar(tarea);
+                document.getElementById("confirmar-fin-tarea").showModal();
+              }}
               disabled={guardando}
             >
               ✓ Terminar
@@ -1091,6 +1261,121 @@ function MisTareas() {
           POPUP — MOTIVO DE PAUSA
       ===================================================== */}
 
+      {tareasCompletadas.length > 0 && (
+        <section aria-labelledby="mis-tareas-entregas">
+          <div className="mi-tareas-section-header">
+            <div>
+              <h2 id="mis-tareas-entregas">Entregas</h2>
+              <p>Adjunta una captura de tus trabajos completados.</p>
+            </div>
+            <label className="mi-entregas-filtro">
+              <span>Fecha de finalización</span>
+              <select
+                value={fechaEntregaSeleccionada}
+                onChange={(evento) =>
+                  setFechaEntregaSeleccionada(evento.target.value)
+                }
+              >
+                <option value="hoy">Hoy</option>
+                {fechasEntregas.map((fecha) => (
+                  <option key={fecha} value={fecha}>
+                    {fecha.split("-").reverse().join("/")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mi-tareas-grid">
+            {tareasEntregaDelDia.length === 0 && (
+              <p>No hay entregas para este día.</p>
+            )}
+            {tareasEntregaDelDia.map((tarea) => {
+              const entrega = tarea.tarea_entregas;
+              const subiendo = entregaEnCurso === tarea.id;
+
+              return (
+                <article className="mi-tarea-card" key={tarea.id}>
+                  <h3>{tarea.titulo}</h3>
+
+                  {entrega ? (
+                    <>
+                      <strong>Trabajo entregado</strong>
+                      <p>
+                        {new Date(entrega.entregado_en).toLocaleString(
+                          "es-EC",
+                          {
+                            timeZone: "America/Guayaquil",
+                          },
+                        )}
+                      </p>
+                      <button
+                        type="button"
+                        className="mi-tarea-btn-editar"
+                        onClick={() => verCaptura(entrega.captura_ruta)}
+                      >
+                        Ver captura
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="mi-entregas-btn"
+                        disabled={Boolean(entregaEnCurso)}
+                        onClick={() =>
+                          document.getElementById(`captura-${tarea.id}`).click()
+                        }
+                      >
+                        {subiendo ? "Procesando captura…" : "Entregar trabajo"}
+                      </button>
+                      <input
+                        id={`captura-${tarea.id}`}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        hidden
+                        onChange={(evento) => {
+                          const archivo = evento.currentTarget.files?.[0];
+                          evento.currentTarget.value = "";
+                          entregarTrabajo(tarea, archivo);
+                        }}
+                      />
+                    </>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      <dialog
+        id="confirmar-fin-tarea"
+        className="mi-confirmar-fin"
+        aria-labelledby="confirmar-fin-titulo"
+        onClose={() => setTareaPorTerminar(null)}
+      >
+        <form method="dialog">
+          <h2 id="confirmar-fin-titulo">¿Terminar esta tarea?</h2>
+          <p>
+            Se registrará el tiempo trabajado en{" "}
+            <strong>{tareaPorTerminar?.titulo}</strong>. Después podrás adjuntar
+            la captura en Entregas.
+          </p>
+
+          <div className="mi-confirmar-fin-acciones">
+            <button type="submit" className="mi-confirmar-cancelar" autoFocus>
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="mi-entregas-btn"
+              onClick={() => terminarTarea(tareaPorTerminar)}
+            >
+              Confirmar
+            </button>
+          </div>
+        </form>
+      </dialog>
       {mostrarPausa && (
         <div className="pausa-overlay">
           <div className="pausa-modal">

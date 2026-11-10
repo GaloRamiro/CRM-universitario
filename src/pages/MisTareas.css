@@ -907,3 +907,82 @@
     align-self: flex-start;
   }
 }
+.mi-entregas-filtro {
+  display: grid;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.mi-entregas-filtro select {
+  min-width: 155px;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f2742;
+  font: inherit;
+}
+
+.mi-entregas-btn,
+.mi-confirmar-cancelar {
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mi-entregas-btn {
+  margin-top: 10px;
+  background: #12355b;
+  color: #fff;
+}
+
+.mi-entregas-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.mi-confirmar-fin {
+  width: min(440px, calc(100% - 32px));
+  padding: 24px;
+  border: 1px solid #dbe4ef;
+  border-radius: 18px;
+  color: #0f2742;
+  box-shadow: 0 16px 44px #0f172a26;
+}
+
+.mi-confirmar-fin::backdrop {
+  background: #0f172a70;
+}
+
+.mi-confirmar-fin h2 {
+  margin: 0 0 10px;
+}
+
+.mi-confirmar-fin p {
+  margin: 0;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.mi-confirmar-fin-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.mi-confirmar-fin-acciones .mi-entregas-btn {
+  margin-top: 0;
+}
+
+.mi-confirmar-cancelar {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #0f2742;
+}
