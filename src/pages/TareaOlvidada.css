@@ -271,3 +271,95 @@
     grid-template-columns: 1fr;
   }
 }
+/* Entregas */
+section[aria-labelledby="mis-tareas-entregas"] {
+  margin-top: 28px;
+  padding: clamp(14px, 2vw, 22px);
+  border: 1px solid #dce6ef;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tareas-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-entregas-calendario {
+  margin-top: 0;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tareas-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dce6ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgb(16 36 61 / 5%);
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card:hover {
+  transform: none;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > h3 {
+  margin: 0;
+  color: #10243d;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > strong {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.75rem;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > p {
+  margin: 0;
+  color: #52667c;
+  font-size: 0.8125rem;
+}
+
+section[aria-labelledby="mis-tareas-entregas"] .mi-tarea-card > button {
+  min-height: 36px;
+  margin-top: 4px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+section[aria-labelledby="mis-tareas-entregas"]
+  .mi-tarea-card
+  > button:disabled {
+  cursor: wait;
+}
+
+@media (max-width: 650px) {
+  section[aria-labelledby="mis-tareas-entregas"] .mi-tareas-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  section[aria-labelledby="mis-tareas-entregas"] .mi-tareas-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
